@@ -1,0 +1,92 @@
+<!doctype html>
+<html>
+	<head>
+		<title>Some layout experiments</title>
+		<style>
+			html, body { margin: 0px; margin: 0px; }
+			#a { height: 220px; padding: 10px; max-width: 1000px; column-width: 320px; column-fill: auto; }
+			
+			/* prefix for browsers that need them */
+			#a { -webkit-column-width: 320px; -webkit-column-fill: auto; }
+			#a { -moz-column-width: 320px; -moz-column-fill: auto; }
+		</style>
+	</head>
+	<body>
+		<div id="a">
+  void               setStart(in Node refNode, 
+                              in long offset)
+                                        raises(RangeException, 
+                                               DOMException);
+  void               setEnd(in Node refNode, 
+                            in long offset)
+                                        raises(RangeException, 
+                                               DOMException);
+  void               setStartBefore(in Node refNode)
+                                        raises(RangeException, 
+                                               DOMException);
+  void               setStartAfter(in Node refNode)
+                                        raises(RangeException, 
+                                               DOMException);
+
+<img src="http://fremycompany.com/fremy.png" style="float: left;" />
+  void               setEndBefore(in Node refNode)
+                                        raises(RangeException, 
+                                               DOMException);
+  void               setEndAfter(in Node refNode)
+                                        raises(RangeException, 
+                                               DOMException);
+  void               collapse(in boolean toStart)
+                                        raises(DOMException);
+  void               selectNode(in Node refNode)
+                                        raises(RangeException, 
+                                               DOMException);
+  void               selectNodeContents(in Node refNode)
+                                        raises(RangeException, 
+                                               DOMException);
+
+  // CompareHow
+  const unsigned short      START_TO_START                 = 0;
+  const unsigned short      START_TO_END                   = 1;
+  const unsigned short      END_TO_END                     = 2;
+  const unsigned short      END_TO_START                   = 3;
+
+  short              compareBoundaryPoints(in unsigned short how, 
+                                           in Range sourceRange)
+                                        raises(DOMException);
+  void               deleteContents()
+                                        raises(DOMException);
+  DocumentFragment   extractContents()
+                                        raises(DOMException);
+  DocumentFragment   cloneContents()
+                                        raises(DOMException);
+  void               insertNode(in Node newNode)
+                                        raises(DOMException, 
+                                               RangeException);
+  void               surroundContents(in Node newParent)
+                                        raises(DOMException, 
+                                               RangeException);
+  Range              cloneRange()
+                                        raises(DOMException);
+  DOMString          toString()
+                                        raises(DOMException);
+  void               detach()
+                                        raises(DOMException);
+};
+		</div>
+		<center>
+			<input type="button" onclick="keepFirstColumn()" value="Keep the first column only" />
+		</center>
+		<script src="j/region-fill.js"></script>
+		<script>
+			function keepFirstColumn() {
+				a = document.getElementById("a");
+				r = document.caretRangeFromPoint(319,219);
+				r.setEndAfter(a.lastChild);
+				r.deleteContents();
+			}
+			document.onclick = function(e) {
+				console.log(e.clientX + ", " + e.clientY);
+			}
+		</script>
+	</body>
+</html>
