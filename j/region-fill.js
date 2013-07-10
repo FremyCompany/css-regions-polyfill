@@ -13,7 +13,6 @@ if(!document.caretRangeFromPoint) {
         }
     } else if(document.body.createTextRange) {
         
-        
         //
         // we may want to convert TextRange to Range
         //
@@ -182,8 +181,8 @@ var cssRegions = {
                 
                 // get the caret point for that location
                 var r = document.caretRangeFromPoint(
-                    pos.left + sizingW,
-                    pos.top + sizingH
+                    pos.left + sizingW - 1,
+                    pos.top + sizingH - 1
                 );
                 
                 // note: maybe the text is one line too big
