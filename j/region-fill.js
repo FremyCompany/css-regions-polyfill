@@ -128,7 +128,7 @@ Range.prototype.myMoveOneCharLeft = function() {
             
         } else if(previousSibling && previousSibling.nodeType==previousSibling.TEXT_NODE) { // todo: lookup value
             
-            // enter the text node from its end
+            // enter the previous text node from its end
             r.setEnd(previousSibling, previousSibling.nodeValue.length);
             
         } else {
@@ -140,6 +140,38 @@ Range.prototype.myMoveOneCharLeft = function() {
         
     } else {
         r.setEndBefore(r.endContainer);
+    }
+    
+}
+
+Range.prototype.myMoveOneCharRight = function() {
+    var r = this;
+    
+    // move to the previous cursor location
+    var max = (r.startContainer.nodeType==r.startContainer.TEXT_NODE ? r.startContainer.nodeValue.length : r.startContainer.childNodes.length)
+    if(r.startOffset < max) {
+        
+        // if we can enter into the next sibling
+        var nextSibling = r.endContainer.childNodes[r.endOffset+1];
+        if(nextSibling && nextSibling.firstChild) {
+            
+            // enter the next sibling from its start
+            r.setStartAfter(nextSibling.firstChild);
+            
+        } else if(nextSibling && nextSibling.nodeType==nextSibling.TEXT_NODE) { // todo: lookup value
+            
+            // enter the next text node from its start
+            r.setStart(nextSibling, 0);
+            
+        } else {
+            
+            // else move before that element
+            r.setStart(r.startContainer, r.startOffset+1);
+            
+        }
+        
+    } else {
+        r.setStartAfter(r.endContainer);
     }
     
 }
@@ -187,7 +219,7 @@ var cssRegions = {
                 
                 // note: maybe the text is one line too big
                 // move the end point char by char until it's completely in the region
-                while(!r.collapsed && r.getBoundingClientRect().bottom>pos.top+sizingH) {
+                while(!(r.endContainer==region && r.endOffset==0) && r.getBoundingClientRect().bottom>pos.top+sizingH) {
                     r.myMoveOneCharLeft()
                 }
                 
