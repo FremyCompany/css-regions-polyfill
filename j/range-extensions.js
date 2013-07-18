@@ -8,9 +8,11 @@ if(!document.caretRangeFromPoint) {
     if (document.caretPositionFromPoint) {
         document.caretRangeFromPoint = function caretRangeFromPoint(x,y) {
             var r = document.createRange();
-            var p = document.caretPositionFromPoint(x,y);
-            r.setStart(p.offsetNode, p.offset);
-            r.setEnd(p.offsetNode, p.offset);
+            var p = document.caretPositionFromPoint(x,y); 
+            if(p.offsetNode) {
+                r.setStart(p.offsetNode, p.offset);
+                r.setEnd(p.offsetNode, p.offset);
+            }
             return r;
         }
     } else if(document.body.createTextRange) {
