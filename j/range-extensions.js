@@ -1,3 +1,5 @@
+"use script";
+
 //
 // start by polyfilling caretRangeFromPoint
 //
@@ -120,7 +122,7 @@ Range.prototype.myMoveOneCharLeft = function() {
     if(r.endOffset > 0) {
         
         // if we can enter into the previous sibling
-        var previousSibling = r.endContainer.childNodes[r.endOffset];
+        var previousSibling = r.endContainer.childNodes[r.endOffset-1];
         if(previousSibling && previousSibling.lastChild) {
             
             // enter the previous sibling from its end
@@ -152,11 +154,11 @@ Range.prototype.myMoveOneCharRight = function() {
     if(r.startOffset < max) {
         
         // if we can enter into the next sibling
-        var nextSibling = r.endContainer.childNodes[r.endOffset+1];
+        var nextSibling = r.endContainer.childNodes[r.endOffset];
         if(nextSibling && nextSibling.firstChild) {
             
             // enter the next sibling from its start
-            r.setStartAfter(nextSibling.firstChild);
+            r.setStartBefore(nextSibling.firstChild);
             
         } else if(nextSibling && nextSibling.nodeType==nextSibling.TEXT_NODE) { // todo: lookup value
             
@@ -175,71 +177,131 @@ Range.prototype.myMoveOneCharRight = function() {
     }
     
 }
+
+
+Range.prototype.myMoveEndOneCharLeft = function() {
+    var r = this;
     
-
-///
-/// now create a module for region reflow
-///
-
-var cssRegions = {
-    layoutContent: function(regions, documentFragment) {
+    // move to the previous cursor location
+    if(r.endOffset > 0) {
         
-        //
-        // this function will iteratively fill all the regions
-        // when we reach the last region, we put accept overflow
-        //
-        
-        // get the next region & its sizing
-        var region = regions.pop();
-        
-        // note: the overflow property of region must be scroll for auto-detection
-        var backup = region.style.overflow;
-        region.style.overflow = 'hidden';
-        
-        // add all the content to the region
-        region.innerHTML = '';
-        region.appendChild(documentFragment);
-        
-        // check if we have more regions to process
-        if(regions.length !== 0) {
+        // if we can enter into the previous sibling
+        var previousSibling = r.endContainer.childNodes[r.endOffset-1];
+        if(previousSibling && previousSibling.lastChild) {
             
-            // check if there was an overflow
-            if(region.scrollHeight != region.offsetHeight) {
-                
-                // get the region sizing
-                var sizingH = region.offsetHeight;
-                var sizingW = region.offsetWidth;
-                var pos = region.getBoundingClientRect();
-                
-                // get the caret point for that location
-                var r = document.caretRangeFromPoint(
-                    pos.left + sizingW - 1,
-                    pos.top + sizingH - 1
-                );
-                
-                // note: maybe the text is one line too big
-                // move the end point char by char until it's completely in the region
-                while(!(r.endContainer==region && r.endOffset==0) && r.getBoundingClientRect().bottom>pos.top+sizingH) {
-                    r.myMoveOneCharLeft()
-                }
-                
-                // select trailing content
-                r.setEndAfter(region.lastChild);
-                documentFragment = r.extractContents();
-                
-            } else {
-                
-                // there's nothing more to insert but we need to reflow next regions
-                documentFragment = document.createDocumentFragment();
-                
-            }
+            // enter the previous sibling from its end
+            r.setEndAfter(previousSibling.lastChild);
             
-            // layout the next regions
-            cssRegions.layoutContent(regions, documentFragment); // TODO: use do...while instead of recursion
+        } else if(previousSibling && previousSibling.nodeType==previousSibling.TEXT_NODE) { // todo: lookup value
+            
+            // enter the previous text node from its end
+            r.setEnd(previousSibling, previousSibling.nodeValue.length);
+            
+        } else {
+            
+            // else move before that element
+            r.setEnd(r.endContainer, r.endOffset-1);
+            
         }
         
-        // restore backed-up overflow
-        region.style.overflow = backup;
-        
+    } else {
+        r.setEndBefore(r.endContainer);
     }
+    
+}
+
+Range.prototype.myMoveEndOneCharRight = function() {
+    var r = this;
+    
+    // move to the previous cursor location
+    var max = (r.endContainer.nodeType==r.endContainer.TEXT_NODE ? r.endContainer.nodeValue.length : r.endContainer.childNodes.length)
+    if(r.endOffset < max) {
+        
+        // if we can enter into the next sibling
+        var nextSibling = r.endContainer.childNodes[r.endOffset];
+        if(nextSibling && nextSibling.firstChild) {
+            
+            // enter the next sibling from its start
+            r.setEndBefore(nextSibling.firstChild);
+            
+        } else if(nextSibling && nextSibling.nodeType==nextSibling.TEXT_NODE) { // todo: lookup value
+            
+            // enter the next text node from its start
+            r.setEnd(nextSibling, 0);
+            
+        } else {
+            
+            // else move before that element
+            r.setEnd(r.endContainer, r.endOffset+1);
+            
+        }
+        
+    } else {
+        r.setEndAfter(r.endContainer);
+    }
+    
+}
+
+Range.prototype.myGetSelectionRect = function() {
+    
+    // get the browser's claimed rect
+    var rect = this.getBoundingClientRect();
+    
+    // if the value seems wrong... (some browsers don't like collapsed selections)
+    if(this.collapsed && rect.top===0 && rect.bottom===0) {
+        
+        // select one char and infer location
+        var clone = this.cloneRange(); var collapseToLeft=false;
+        
+        // the case where no char before is tricky...
+        if(clone.startOffset==0) {
+            
+            // let's move on char to the right
+            clone.myMoveOneCharRight();
+            collapseToLeft=true;
+
+            // note: some browsers don't like selections
+            // that spans multiple containers, so we will
+            // iterate this process until we have one true
+            // char selected
+            clone.setStart(clone.endContainer, 0); 
+            
+        } else {
+            
+            // else, just select the char before
+            clone.setStart(this.startContainer, this.startOffset-1);
+            collapseToLeft=false;
+            
+        }
+        
+        // get some real rect
+        var rect = clone.myGetSelectionRect();
+        
+        // compute final value
+        if(collapseToLeft) {
+            return {
+                left: rect.left,
+                right: rect.left,
+                width: 0,
+                
+                top: rect.top,
+                bottom: rect.bottom,
+                height: rect.height
+            }
+        } else {
+            return {
+                left: rect.right,
+                right: rect.right,
+                width: 0,
+                
+                top: rect.top,
+                bottom: rect.bottom,
+                height: rect.height
+            }
+        }
+        
+    } else {
+        return rect;
+    }
+    
 }

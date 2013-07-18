@@ -41,20 +41,26 @@
         <hr/>
         <div id="region3"></div>
         
-        <script src="j/region-fill.js"></script>
+        <script src="j/range-extensions.js"></script>
+        <script src="j/css-break.js"></script>
+        <script src="j/css-regions.js"></script>
         <script>
             
-            var contentRange = document.createRange();
-            contentRange.selectNodeContents(document.getElementById("content"));
-            
-            cssRegions.layoutContent(
-                [
-                    document.getElementById("region3"),
-                    document.getElementById("region2"),
-                    document.getElementById("region1"),
-                ],
-                contentRange.cloneContents()
-            );
+            window.onload = function() {
+                
+                var contentRange = document.createRange();
+                contentRange.selectNodeContents(document.getElementById("content"));
+                
+                cssRegions.layoutContent(
+                    [
+                        document.getElementById("region3"),
+                        document.getElementById("region2"),
+                        document.getElementById("region1"),
+                    ],
+                    contentRange.cloneContents()
+                );
+                
+            }
             
         </script>
     </body>
