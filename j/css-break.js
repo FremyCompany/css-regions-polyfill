@@ -2,6 +2,49 @@
 
 var cssBreak = {
     
+    isReplacedElement: function isReplacedElement(element) {
+        var replacedElementTags = /(SVG|MATH|IMG|VIDEO|OBJECT|EMBED|IFRAME|TEXTAREA|BUTTON|INPUT)/; // TODO: more
+        return replacedElementTags.test(element.tagName);
+    },
+    
+    isScrollable: function isScrollable(element, elementOverflow) {
+        if(typeof(elementOverflow)=="undefined") elementOverflow = getComputedStyle(element).display;
+        
+        return (
+            elementOverflow !== "visible"
+            && elementOverflow !== "hidden"
+        );
+        
+    },
+    
+    isSingleLineOfTextComponent: function(element, elementDisplay, isReplaced) {
+        if(typeof(elementOverflow)=="undefined") elementOverflow = getComputedStyle(element).display;
+        if(typeof(isReplaced)=="undefined") isReplaced = this.isReplacedElement(element);
+        
+        return (
+            elementDisplay === "inline-block"
+            || elementDisplay === "inline-table"
+            || elementDisplay === "inline-flex"
+            || elementDisplay === "inline-grid"
+            // TODO: more
+        );
+        
+    },
+    
+    areInSameSingleLine: function areInSameSingleLine(element1, element2) {
+        return false; // TODO: figure that out...
+    },
+    
+    isHiddenOverflowing: function isHiddenOverflowing(element, elementOverflow) {
+        if(typeof(elementOverflow)=="undefined") elementOverflow = getComputedStyle(element).display;
+        
+        return (
+            elementOverflow == "hidden" 
+            && element.offsetHeight != element.scrollHeight // trust me that works
+        );
+        
+    },
+    
     isMonolithic: function isMonolithic(element) {
         
         var elementStyle = getComputedStyle(element);
@@ -11,21 +54,15 @@ var cssBreak = {
         // Some content is not fragmentable, for example:
         // - many types of replaced elements (such as images or video)
         
-        var replacedElementTags = /(SVG|MATH|IMG|VIDEO|OBJECT|EMBED|IFRAME|TEXTAREA|BUTTON|INPUT)/; // TODO: more
-        var isReplaced = replacedElementTags.test(element.tagName);
+        var isReplaced = this.isReplacedElement(element);
         
         // - scrollable elements
         
-        var isScrollable = (
-            elementOverflow !== "visible"
-            && elementOverflow !== "hidden"
-        );
+        var isScrollable = this.isScrollable(element, elementOverflow);
         
         // - a single line of text content. 
         
-        var isSingleLineOfText = (
-            elementDisplay === "inline-block" // TODO: more
-        );
+        var isSingleLineOfText = this.isSingleLineOfTextComponent(element, elementDisplay, isReplaced);
         
         // Such content is considered monolithic: it contains no
         // possible break points. 
@@ -35,12 +72,55 @@ var cssBreak = {
         // - any elements with ‘overflow’ set to ‘auto’ or ‘scroll’ 
         // - any elements with ‘overflow: hidden’ and a non-‘auto’ logical height (and no specified maximum logical height).
         
-        var isHiddenOverflowing = (
-            elementOverflow == "hidden" 
-            && element.offsetHeight != element.scrollHeight
-        );
+        var isHiddenOverflowing = this.isHiddenOverflowing(element, elementOverflow);
         
+        // all of them are monolithic
         return isReplaced || isScrollable || isSingleLineOfText || isHiddenOverflowing;
+        
+    },
+    
+    isPossibleBreakPoint: function isPossibleBreakPoint(r, region) {
+        
+        // r has to be a range, and be collapsed
+        if(!(r instanceof Range)) return false;
+        if(!r.collapsed) return false;
+        
+        // there are some very specific conditions for breaking
+        // at the edge of an element:
+        
+        // TODO: work on that
+        
+        // no ancestor up to the region has to be monolithic
+        var ancestor = r.startContainer;
+        while(ancestor !== region) {
+            if(cssBreak.isMonolithic(ancestor)) {
+                return false;
+            }
+            ancestor = ancestor.parentNode;
+        }
+        
+        // we also have to check that we're not between two single-line-of-text elements
+        // that are actually on the same line (in which case you can't break)
+        var ancestor = r.startContainer; 
+        var lastAncestor = r.startContainer.childNodes[r.startOffset];
+        while(lastAncestor !== region) {
+            if(lastAncestor && lastAncestor.previousSibling) {
+                // TODO: check what happens with empty text nodes
+                
+                if(this.areInSameSingleLine(lastAncestor, lastAncestor.previousSibling)) {
+                    return false;
+                }
+                
+            }
+            
+            lastAncestor = ancestor;
+            ancestor = ancestor.parentNode;
+        }
+        
+        // TODO: some more stuff {check the spec}
+        
+        // all conditions are met!
+        return true;
         
     }
     
