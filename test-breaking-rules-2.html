@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+	<head>
+		<title>Some layout experiments</title>
+		<style>
+			html, body { margin: 0px; margin: 0px; }
+			#a { height: 220px; padding: 10px; max-width: 1000px; column-width: 320px; column-fill: auto; }
+			
+			/* prefix for browsers that need them */
+			#a { -webkit-column-width: 320px; -webkit-column-fill: auto; }
+			#a { -moz-column-width: 320px; -moz-column-fill: auto; }
+		</style>
+	</head>
+	<body>
+	    <div id="a">
+	        <div style="border: 50px solid lime; border-width: 150px 50px; background: green;">Some<br/> text</div>
+	    </div>
+	</body>
+</html>

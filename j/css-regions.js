@@ -117,8 +117,9 @@ var cssRegions = {
         // 
         
         // move the selection before the monolithic ancestors
-        var current = r.endContainer;
+        var current = r.endContainer; var allAncestors=[];
         while(current !== region) {
+            allAncestors.push(current);
             if(cssBreak.isMonolithic(current)) {
                 r.setEndBefore(current);
             }
@@ -141,6 +142,56 @@ var cssRegions = {
         
         
         //
+        // note: if we're about to split after the last child of
+        // an element which has bottom-{padding/border/margin}, 
+        // we need to figure how how much of that p/b/m we can
+        // actually keep for the first fragment
+        //
+        
+        // TODO: split bottom-{margin/border/padding} correctly
+        if(r.endOffset == r.endContainer.childNodes.length) {
+            
+            // compute how much of the bottom border can actually fit
+            var box = r.endContainer.getBoundingClientRect();
+            var excessHeight = box.bottom - (pos.top + sizingH);
+            var endContainerStyle = getComputedStyle(r.endContainer);
+            var availBorderHeight = endContainerStyle.borderBottomWidth;
+            var availPaddingHeight = endContainerStyle.paddingBottom;
+            
+            // start by cutting into the border
+            var borderCut = excessHeight;
+            if(excessHeight > availBorderHeight) {
+                borderCut = availBorderHeight;
+                excessHeight -= borderCut;
+                
+                // continue by cutting into the padding
+                var paddingCut = excessHeight;
+                if(paddingCut > availPaddingHeight) {
+                    paddingCut = availPaddingHeight;
+                    excessHeight -= paddingCut;
+                } else {
+                    excessHeight = 0;
+                }
+            } else {
+                excessHeight = 0;
+            }
+            
+        }
+        
+        // remove bottom-{pbm} from all ancestors involved in the cut
+        for(var i=allAncestors.length-1; i; i--) {
+            allAncestors[i].setAttribute('data-css-continued-fragment',true); //TODO: this requires some css
+        }
+        if(typeof(borderCut)==="number")) {
+            allAncestors[i].setAttribute('data-css-special-continued-fragment-with',true);
+            allAncestors[0].style.borderBottom = (availBorderHeight-borderCut);
+        }
+        if(typeof(paddingCut)==="number")) {
+            allAncestors[i].setAttribute('data-css-special-continued-fragment-with',true);
+            allAncestors[0].style.paddingBottom = (availPaddingHeight-paddingCut);
+        }
+        
+        //
         // note: now we have a collapsed range 
         // located at the split point
         //
@@ -150,6 +201,9 @@ var cssRegions = {
         
         // extract it from the current region
         return r.extractContents();
+        
+        // TODO: do not forget to remove any top p/b/m on cut elements
+        // TODO: deduct any already-used bottom p/b/m
         
     }
 }

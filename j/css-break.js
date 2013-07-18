@@ -33,6 +33,7 @@ var cssBreak = {
     
     areInSameSingleLine: function areInSameSingleLine(element1, element2) {
         return false; // TODO: figure that out...
+        // IDEA: use getClientRects().length == 1? seems like it could fail on mutli-line grouped elements
     },
     
     isHiddenOverflowing: function isHiddenOverflowing(element, elementOverflow) {
@@ -83,10 +84,7 @@ var cssBreak = {
         
         // r has to be a range, and be collapsed
         if(!(r instanceof Range)) return false;
-        if(!r.collapsed) return false;
-        
-        // there are some very specific conditions for breaking
-        // at the edge of an element:
+        if(!(r.collapsed)) return false;
         
         // TODO: work on that
         
@@ -115,6 +113,47 @@ var cssBreak = {
             
             lastAncestor = ancestor;
             ancestor = ancestor.parentNode;
+        }
+        
+        // there are some very specific conditions for breaking
+        // at the edge of an element:
+        
+        if(r.startOffset==0) {
+            
+            // Class 3 breaking point:
+            // ========================
+            // Between the content edge of a block container box 
+            // and the outer edges of its child content (margin 
+            // edges of block-level children or line box edges 
+            // for inline-level children) if there is a (non-zero)
+            // gap between them.
+            
+            var firstChild = r.startContainer.childNodes[0];
+            if(firstChild) {
+                
+                var range = undefined;
+                var firstChildBox = (
+                    firstChild.getBoundingClientRect
+                    ? firstChild.getBoundingClientRect()
+                    : (
+                        range=document.createRange(),
+                        range.selectNode(firstChild),
+                        range.getBoundingClientRect()
+                    )
+                );
+                
+                var parentBox = (
+                    r.startContainer.getBoundingClientRect()
+                );
+                
+                if(firstChildBox.top == parentBox.top) {
+                    return false;
+                }
+                
+            } else {
+                return false;
+            }
+            
         }
         
         // TODO: some more stuff {check the spec}
