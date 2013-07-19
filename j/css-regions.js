@@ -154,7 +154,9 @@ var cssRegions = {
         // actually keep in the first fragment
         //
         
-        // TODO: split bottom-{margin/border/padding} correctly
+        // TODO: avoid top & bottom p/b/m cuttings to use the same variables
+        
+        // split bottom-{margin/border/padding} correctly
         if(r.endOffset == r.endContainer.childNodes.length && r.endContainer !== region) {
             
             // compute how much of the bottom border can actually fit
@@ -207,6 +209,42 @@ var cssRegions = {
         // that one is tricky because this is the next element that
         // could possibly be fragmented to show a bit of his border
         // but we have to check a lot of conditions...
+        if(r.endOffset == 0 && r.endContainer !== region) {
+            
+            // note: the only possibility here is that we 
+            // did split after a padding or a border
+            
+            // compute how much of the top border can actually fit
+            var box = r.endContainer.getBoundingClientRect();
+            var availHeight = (pos.top + sizingH) - pos.top;
+            var endContainerStyle = getComputedStyle(r.endContainer);
+            var availBorderHeight = parseFloat(endContainerStyle.borderTopWidth);
+            var availPaddingHeight = parseFloat(endContainerStyle.paddingTop);
+            var excessHeight = availBorderHeight + availPaddingHeight - availHeight;
+            
+            if(excessHeight > 0) {
+            
+                // start by cutting into the padding
+                var topPaddingCut = excessHeight;
+                if(excessHeight > availPaddingHeight) {
+                    topPaddingCut = availPaddingHeight;
+                    excessHeight -= topPaddingCut;
+                    
+                    // continue by cutting into the border
+                    var topBorderCut = excessHeight;
+                    if(topBorderCut > availBorderHeight) {
+                        topBorderCut = availBorderHeight;
+                        excessHeight -= topBorderCut;
+                    } else {
+                        excessHeight = 0;
+                    }
+                } else {
+                    excessHeight = 0;
+                }
+                
+            }
+            
+        }
         
         // remove bottom-{pbm} from all ancestors involved in the cut
         for(var i=allAncestors.length-1; i>0; i--) {
@@ -219,6 +257,14 @@ var cssRegions = {
         if(typeof(paddingCut)==="number") {
             allAncestors[0].setAttribute('data-css-special-continued-fragment',true);
             allAncestors[0].style.paddingBottom = (availPaddingHeight-paddingCut)+'px';
+        }
+        if(typeof(topBorderCut)==="number") {
+            allAncestors[0].setAttribute('data-css-continued-fragment',true);
+            allAncestors[0].style.borderTopWidth = (availBorderHeight-topBorderCut)+'px';
+        }
+        if(typeof(topPaddingCut)==="number") {
+            allAncestors[0].setAttribute('data-css-special-continued-fragment',true);
+            allAncestors[0].style.paddingTop = (availPaddingHeight-topPaddingCut)+'px';
         }
         
         
@@ -251,6 +297,7 @@ var cssRegions = {
         if(specialNewFragment) {
             specialNewFragment.removeAttribute('data-css-special-continued-fragment')
             specialNewFragment.setAttribute('data-css-starting-fragment',true);
+            
             if(typeof(borderCut)==="number") {
                 specialNewFragment.style.borderBottomWidth = (borderCut)+'px';
             }
@@ -259,7 +306,25 @@ var cssRegions = {
             } else {
                 specialNewFragment.style.paddingBottom = '0px';
             }
+            
+            if(typeof(topBorderCut)==="number") {
+                specialNewFragment.removeAttribute('data-css-starting-fragment')
+                specialNewFragment.setAttribute('data-css-special-starting-fragment',true);
+                specialNewFragment.style.borderTopWidth = (topBorderCut)+'px';
+            }
+            if(typeof(topPaddingCut)==="number") {
+                specialNewFragment.removeAttribute('data-css-starting-fragment')
+                specialNewFragment.setAttribute('data-css-special-starting-fragment',true);
+                specialNewFragment.style.paddingTop = (topPaddingCut)+'px';
+            }
+            
         } else if(typeof(borderCut)==="number") {
+            
+            // TODO: hum... there's an element missing here...
+            try { throw new Error() }
+            catch(ex) { setImmediate(function() { throw ex; }) }
+            
+        } else if(typeof(topPaddingCut)==="number") {
             
             // TODO: hum... there's an element missing here...
             try { throw new Error() }
