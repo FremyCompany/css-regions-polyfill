@@ -189,11 +189,11 @@ var cssRegions = {
             allAncestors[i].setAttribute('data-css-continued-fragment',true); //TODO: this requires some css
         }
         if(typeof(borderCut)==="number") {
-            allAncestors[i].setAttribute('data-css-special-continued-fragment',true);
+            allAncestors[0].setAttribute('data-css-special-continued-fragment',true);
             allAncestors[0].style.borderBottomWidth = (availBorderHeight-borderCut)+'px';
         }
         if(typeof(paddingCut)==="number") {
-            allAncestors[i].setAttribute('data-css-special-continued-fragment',true);
+            allAncestors[0].setAttribute('data-css-special-continued-fragment',true);
             allAncestors[0].style.paddingBottom = (availPaddingHeight-paddingCut)+'px';
         }
         
@@ -225,13 +225,15 @@ var cssRegions = {
         // TODO: deduct any already-used bottom p/b/m
         var specialNewFragment = overflowingContent.querySelector('[data-css-special-continued-fragment]');
         if(specialNewFragment) {
+            specialNewFragment.removeAttribute('data-css-special-continued-fragment')
+            specialNewFragment.setAttribute('data-css-starting-fragment',true);
             if(typeof(borderCut)==="number") {
-                allAncestors[i].setAttribute('data-css-special-starting-fragment',true);
-                allAncestors[0].style.borderBottomWidth = (borderCut)+'px';
+                specialNewFragment.style.borderBottomWidth = (borderCut)+'px';
             }
             if(typeof(paddingCut)==="number") {
-                allAncestors[i].setAttribute('data-css-special-starting-fragment',true);
-                allAncestors[0].style.paddingBottom = (paddingCut);
+                specialNewFragment.style.paddingBottom = (paddingCut);
+            } else {
+                specialNewFragment.style.paddingBottom = '0px';
             }
         } else if(typeof(borderCut)==="number") {
             
