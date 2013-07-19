@@ -282,6 +282,7 @@ Range.prototype.myGetSelectionRect = function() {
         // compute final value
         if(collapseToLeft) {
             return {
+                
                 left: rect.left,
                 right: rect.left,
                 width: 0,
@@ -289,9 +290,11 @@ Range.prototype.myGetSelectionRect = function() {
                 top: rect.top,
                 bottom: rect.bottom,
                 height: rect.height
+                
             }
         } else {
             return {
+                
                 left: rect.right,
                 right: rect.right,
                 width: 0,
@@ -299,6 +302,7 @@ Range.prototype.myGetSelectionRect = function() {
                 top: rect.top,
                 bottom: rect.bottom,
                 height: rect.height
+                
             }
         }
         
@@ -306,4 +310,57 @@ Range.prototype.myGetSelectionRect = function() {
         return rect;
     }
     
+}
+
+// not sure it's needed but still
+if(!window.Element) window.Element=window.HTMLElement;
+
+// make getBCR working on text nodes & stuff
+Node.getBoundingClientRect = function getBoundingClientRect(firstChild) {
+    if (firstChild.getBoundingClientRect) {
+        
+        return firstChild.getBoundingClientRect();
+        
+    } else {
+        
+        var range = document.createRange();
+        range.selectNode(firstChild);
+        
+        return range.getBoundingClientRect();
+        
+    }
+};
+
+// a special version for breaking algorithms
+Range.prototype.myGetExtensionRect = function() {
+    
+    // this function returns the selection rect
+    // but does take care of taking in account 
+    // the bottom-{padding/border} of the previous
+    // sibling element, to detect overflow points
+    // more accurately
+    
+    var rect = this.myGetSelectionRect();
+    var previousSibling = this.endContainer.childNodes[this.endOffset-1];
+    if(previousSibling) {
+        
+        var prevSibRect = Node.getBoundingClientRect(previousSibling);
+        var adjustedBottom = Math.max(rect.bottom,prevSibRect.bottom);
+        return {
+            
+            left: rect.left,
+            right: rect.right,
+            width: rect.width,
+            
+            top: rect.top,
+            bottom: adjustedBottom,
+            height: adjustedBottom - rect.top
+            
+        };
+        
+    } else {
+        
+        return rect;
+        
+    }
 }

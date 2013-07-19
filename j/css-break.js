@@ -3,11 +3,13 @@
 var cssBreak = {
     
     isReplacedElement: function isReplacedElement(element) {
+        if(!(element instanceof Element)) return false;
         var replacedElementTags = /(SVG|MATH|IMG|VIDEO|OBJECT|EMBED|IFRAME|TEXTAREA|BUTTON|INPUT)/; // TODO: more
         return replacedElementTags.test(element.tagName);
     },
     
     isScrollable: function isScrollable(element, elementOverflow) {
+        if(!(element instanceof Element)) return false;
         if(typeof(elementOverflow)=="undefined") elementOverflow = getComputedStyle(element).display;
         
         return (
@@ -18,6 +20,7 @@ var cssBreak = {
     },
     
     isSingleLineOfTextComponent: function(element, elementDisplay, isReplaced) {
+        if(!(element instanceof Element)) return false;
         if(typeof(elementDisplay)=="undefined") elementDisplay = getComputedStyle(element).display;
         if(typeof(isReplaced)=="undefined") isReplaced = this.isReplacedElement(element);
         
@@ -37,6 +40,7 @@ var cssBreak = {
     },
     
     isHiddenOverflowing: function isHiddenOverflowing(element, elementOverflow) {
+        if(!(element instanceof Element)) return false;
         if(typeof(elementOverflow)=="undefined") elementOverflow = getComputedStyle(element).display;
         
         return (
@@ -47,6 +51,7 @@ var cssBreak = {
     },
     
     isMonolithic: function isMonolithic(element) {
+        if(!(element instanceof Element)) return false;
         
         var elementStyle = getComputedStyle(element);
         var elementOverflow = elementStyle.overflow;
@@ -131,15 +136,8 @@ var cssBreak = {
             var firstChild = r.startContainer.childNodes[0];
             if(firstChild) {
                 
-                var range = undefined;
                 var firstChildBox = (
-                    firstChild.getBoundingClientRect
-                    ? firstChild.getBoundingClientRect()
-                    : (
-                        range=document.createRange(),
-                        range.selectNode(firstChild),
-                        range.getBoundingClientRect()
-                    )
+                    Node.getBoundingClientRect(firstChild)
                 );
                 
                 var parentBox = (

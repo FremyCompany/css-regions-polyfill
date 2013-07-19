@@ -86,8 +86,15 @@ var cssRegions = {
         }
         
         // store the current selection rect for fast access
-        var rect = r.myGetSelectionRect();
+        var rect = r.myGetExtensionRect();
         
+        //console.log('start negotiation');
+        //console.dir({
+        //    startContainer: r.startContainer,
+        //    startOffset: r.startOffset,
+        //    browserBCR: r.getBoundingClientRect(),
+        //    computedBCR: rect
+        //});
         
         //
         // note: maybe the text is right-to-left
@@ -96,9 +103,8 @@ var cssRegions = {
         
         // move the end point char by char until it's completely in the region
         while(!(r.endContainer==region && r.endOffset==r.endContainer.childNodes.length) && rect.bottom<=pos.top+sizingH) {
-            r.myMoveOneCharRight(); rect = r.myGetSelectionRect();
+            r.myMoveOneCharRight(); rect = r.myGetExtensionRect();
         }
-        
         
         //
         // note: maybe the text is one line too big
@@ -107,7 +113,7 @@ var cssRegions = {
         
         // move the end point char by char until it's completely in the region
         while(!(r.endContainer==region && r.endOffset==0) && rect.bottom>pos.top+sizingH) {
-            r.myMoveOneCharLeft(); rect = r.myGetSelectionRect();
+            r.myMoveOneCharLeft(); rect = r.myGetExtensionRect();
         }
         
         
@@ -145,11 +151,11 @@ var cssRegions = {
         // note: if we're about to split after the last child of
         // an element which has bottom-{padding/border/margin}, 
         // we need to figure how how much of that p/b/m we can
-        // actually keep for the first fragment
+        // actually keep in the first fragment
         //
         
         // TODO: split bottom-{margin/border/padding} correctly
-        if(r.endOffset == r.endContainer.childNodes.length) {
+        if(r.endOffset == r.endContainer.childNodes.length && r.endContainer !== region) {
             
             // compute how much of the bottom border can actually fit
             var box = r.endContainer.getBoundingClientRect();
@@ -185,7 +191,7 @@ var cssRegions = {
         // but we have to check a lot of conditions...
         
         // remove bottom-{pbm} from all ancestors involved in the cut
-        for(var i=allAncestors.length-1; i; i--) {
+        for(var i=allAncestors.length-1; i>0; i--) {
             allAncestors[i].setAttribute('data-css-continued-fragment',true); //TODO: this requires some css
         }
         if(typeof(borderCut)==="number") {
@@ -215,14 +221,14 @@ var cssRegions = {
         // the fragments cloning algorithm...
         //
         
-        // TODO: do not forget to remove any top p/b/m on cut elements
+        // do not forget to remove any top p/b/m on cut elements
         var newFragments = overflowingContent.querySelectorAll("[data-css-continued-fragment]");
         for(var i=newFragments.length; i--;) { // TODO: optimize by using while loop and a simple qS.
             newFragments[i].removeAttribute('data-css-continued-fragment')
             newFragments[i].setAttribute('data-css-starting-fragment',true); //TODO: this requires some css
         }
         
-        // TODO: deduct any already-used bottom p/b/m
+        // deduct any already-used bottom p/b/m
         var specialNewFragment = overflowingContent.querySelector('[data-css-special-continued-fragment]');
         if(specialNewFragment) {
             specialNewFragment.removeAttribute('data-css-special-continued-fragment')
@@ -238,6 +244,8 @@ var cssRegions = {
         } else if(typeof(borderCut)==="number") {
             
             // TODO: hum... there's an element missing here...
+            try { throw new Error() }
+            catch(ex) { setImmediate(function() { throw ex; }) }
             
         }
         
