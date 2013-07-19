@@ -178,18 +178,25 @@ var cssRegions = {
             
         }
         
+        
+        // TODO: split top-{margin/border/padding} correctly
+        // that one is tricky because this is the next element that
+        // could possibly be fragmented to show a bit of his border
+        // but we have to check a lot of conditions...
+        
         // remove bottom-{pbm} from all ancestors involved in the cut
         for(var i=allAncestors.length-1; i; i--) {
             allAncestors[i].setAttribute('data-css-continued-fragment',true); //TODO: this requires some css
         }
         if(typeof(borderCut)==="number")) {
-            allAncestors[i].setAttribute('data-css-special-continued-fragment-with',true);
-            allAncestors[0].style.borderBottom = (availBorderHeight-borderCut);
+            allAncestors[i].setAttribute('data-css-special-continued-fragment',true);
+            allAncestors[0].style.borderBottom = (availBorderHeight-borderCut)+'px';
         }
         if(typeof(paddingCut)==="number")) {
-            allAncestors[i].setAttribute('data-css-special-continued-fragment-with',true);
-            allAncestors[0].style.paddingBottom = (availPaddingHeight-paddingCut);
+            allAncestors[i].setAttribute('data-css-special-continued-fragment',true);
+            allAncestors[0].style.paddingBottom = (availPaddingHeight-paddingCut)+'px';
         }
+        
         
         //
         // note: now we have a collapsed range 
@@ -200,10 +207,37 @@ var cssRegions = {
         r.setEndAfter(region.lastChild);
         
         // extract it from the current region
-        return r.extractContents();
+        var overflowingContent = r.extractContents();
+        
+        
+        // 
+        // note: now we have to cancel out the artifacts of
+        // the fragments cloning algorithm...
+        //
         
         // TODO: do not forget to remove any top p/b/m on cut elements
+        var newFragments = overflowingContent.querySelectorAll("[data-css-continued-fragment]");
+        for(var i=newFragments.length; i--;) { // TODO: optimize by using while loop and a simple qS.
+            newFragments[i].removeAttribute('data-css-continued-fragment')
+            newFragments[i].setAttribute('data-css-starting-fragment',true); //TODO: this requires some css
+        }
+        
         // TODO: deduct any already-used bottom p/b/m
+        var specialNewFragment = overflowingContent.querySelector('[data-css-special-continued-fragment]');
+        if(specialNewFragment) {
+            if(typeof(borderCut)==="number")) {
+                allAncestors[i].setAttribute('data-css-special-starting-fragment',true);
+                allAncestors[0].style.borderBottom = (borderCut)+'px';
+            }
+            if(typeof(paddingCut)==="number")) {
+                allAncestors[i].setAttribute('data-css-special-starting-fragment',true);
+                allAncestors[0].style.paddingBottom = (paddingCut);
+            }
+        }
+        
+        
+        // we're ready to return our result!
+        return overflowingContent;
         
     }
 }
