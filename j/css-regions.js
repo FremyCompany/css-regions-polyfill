@@ -140,9 +140,9 @@ var cssRegions = {
         // if we end up with nothing being selected, add the first block anyway
         if(r.endContainer===region && r.endOffset===0) {
             
-            // TODO: work on a way to find 
-            // the first real allowed break point
-            r.setEnd(region, 1); r.collapse(false);
+            // find the first allowed break point
+            do { r.myMoveOneCharRight(); } 
+            while(!cssBreak.isPossibleBreakPoint(r))
             
         }
         
