@@ -182,6 +182,24 @@ var cssRegions = {
                 excessHeight = 0;
             }
             
+            
+            // we don't cut borders with radiuses
+            // TODO: accept to cut the content not affected by the radius
+            if(typeof(borderCut)==="number" && borderCut!==0) {
+                
+                // check the presence of a radius:
+                var hasBottonRadius = (
+                    parseInt(endContainerStyle.borderBottomLeftRadius)>0
+                    || parseInt(endContainerStyle.borderBottomRightRadius)>0
+                );
+                
+                if(hasBottomRadius) {
+                    // break before the whole border:
+                    borderCut = availBorderHeight;
+                }
+                
+            }
+            
         }
         
         

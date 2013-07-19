@@ -50,6 +50,48 @@ var cssBreak = {
         
     },
     
+    hasBigRadius: function(element, elementStyle) {
+        if(!(element instanceof Element)) return false;
+        if(typeof(elementOverflow)=="undefined") elementOverflow = getComputedStyle(element).display;
+
+        // if the browser supports radiuses {f### prefixes}
+        if("borderTopLeftRadius" in elementStyle) {
+            
+            var tlRadius = parseFloat(elementStyle.borderTopLeftRadius);
+            var trRadius = parseFloat(elementStyle.borderTopRightRadius);
+            var blRadius = parseFloat(elementStyle.borderBottomLeftRadius);
+            var brRadius = parseFloat(elementStyle.borderBottomRightRadius);
+            
+            // tiny radiuses (<15px) are tolerated anyway
+            if(tlRadius < 15 && trRadius < 15 && blRadius < 15 && brRadius < 15) {
+                return false;
+            }
+            
+            var tWidth = parseFloat(elementStyle.borderTopWidth);
+            var bWidth = parseFloat(elementStyle.borderBottomWidth);
+            var lWidth = parseFloat(elementStyle.borderLeftWidth);
+            var rWidth = parseFloat(elementStyle.borderRightWidth);
+            
+            // make sure the radius itself is contained into the border
+            
+            if(tlRadius > tWidth) return true;
+            if(tlRadius > lWidth) return true;
+            
+            if(trRadius > tWidth) return true;
+            if(trRadius > rWidth) return true;
+            
+            if(blRadius > bWidth) return true;
+            if(blRadius > lWidth) return true;
+            
+            if(brRadius > bWidth) return true;
+            if(brRadius > rWidth) return true;
+            
+        }
+        
+        // all conditions were met
+        return false;
+    }
+    
     isMonolithic: function isMonolithic(element) {
         if(!(element instanceof Element)) return false;
         
@@ -80,8 +122,14 @@ var cssBreak = {
         
         var isHiddenOverflowing = this.isHiddenOverflowing(element, elementOverflow);
         
+        // ADDITION TO THE SPEC:
+        // I don't want to handle the case where 
+        // an element has a border-radius that is bigger
+        // than the border-width to which it belongs
+        var hasBigRadius = this.hasBigRadius(element, elementStyle);
+        
         // all of them are monolithic
-        return isReplaced || isScrollable || isSingleLineOfText || isHiddenOverflowing;
+        return isReplaced || isScrollable || isSingleLineOfText || isHiddenOverflowing || hasBigRadius;
         
     },
     
