@@ -155,8 +155,8 @@ var cssRegions = {
             var box = r.endContainer.getBoundingClientRect();
             var excessHeight = box.bottom - (pos.top + sizingH);
             var endContainerStyle = getComputedStyle(r.endContainer);
-            var availBorderHeight = endContainerStyle.borderBottomWidth;
-            var availPaddingHeight = endContainerStyle.paddingBottom;
+            var availBorderHeight = parseFloat(endContainerStyle.borderBottomWidth);
+            var availPaddingHeight = parseFloat(endContainerStyle.paddingBottom);
             
             // start by cutting into the border
             var borderCut = excessHeight;
@@ -188,11 +188,11 @@ var cssRegions = {
         for(var i=allAncestors.length-1; i; i--) {
             allAncestors[i].setAttribute('data-css-continued-fragment',true); //TODO: this requires some css
         }
-        if(typeof(borderCut)==="number")) {
+        if(typeof(borderCut)==="number") {
             allAncestors[i].setAttribute('data-css-special-continued-fragment',true);
-            allAncestors[0].style.borderBottom = (availBorderHeight-borderCut)+'px';
+            allAncestors[0].style.borderBottomWidth = (availBorderHeight-borderCut)+'px';
         }
-        if(typeof(paddingCut)==="number")) {
+        if(typeof(paddingCut)==="number") {
             allAncestors[i].setAttribute('data-css-special-continued-fragment',true);
             allAncestors[0].style.paddingBottom = (availPaddingHeight-paddingCut)+'px';
         }
@@ -225,14 +225,18 @@ var cssRegions = {
         // TODO: deduct any already-used bottom p/b/m
         var specialNewFragment = overflowingContent.querySelector('[data-css-special-continued-fragment]');
         if(specialNewFragment) {
-            if(typeof(borderCut)==="number")) {
+            if(typeof(borderCut)==="number") {
                 allAncestors[i].setAttribute('data-css-special-starting-fragment',true);
-                allAncestors[0].style.borderBottom = (borderCut)+'px';
+                allAncestors[0].style.borderBottomWidth = (borderCut)+'px';
             }
-            if(typeof(paddingCut)==="number")) {
+            if(typeof(paddingCut)==="number") {
                 allAncestors[i].setAttribute('data-css-special-starting-fragment',true);
                 allAncestors[0].style.paddingBottom = (paddingCut);
             }
+        } else if(typeof(borderCut)==="number") {
+            
+            // TODO: hum... there's an element missing here...
+            
         }
         
         

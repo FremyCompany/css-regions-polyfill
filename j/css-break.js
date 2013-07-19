@@ -18,7 +18,7 @@ var cssBreak = {
     },
     
     isSingleLineOfTextComponent: function(element, elementDisplay, isReplaced) {
-        if(typeof(elementOverflow)=="undefined") elementOverflow = getComputedStyle(element).display;
+        if(typeof(elementDisplay)=="undefined") elementDisplay = getComputedStyle(element).display;
         if(typeof(isReplaced)=="undefined") isReplaced = this.isReplacedElement(element);
         
         return (
