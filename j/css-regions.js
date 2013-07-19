@@ -5,7 +5,7 @@
 ///
 
 var cssRegions = {
-    layoutContent: function(regions, remainingContent) {
+    layoutContent: function(regions, remainingContent, secondCall) {
         
         //
         // this function will iteratively fill all the regions
@@ -40,7 +40,7 @@ var cssRegions = {
             }
             
             // layout the next regions
-            cssRegions.layoutContent(regions, remainingContent); // TODO: use do...while instead of recursion
+            cssRegions.layoutContent(regions, remainingContent, true); // TODO: use do...while instead of recursion
             
         } else {
             
@@ -56,6 +56,9 @@ var cssRegions = {
     },
     
     extractOverflowingContent: function(region) {
+        
+        // make sure empty nodes don't make our life more difficult
+        this.embedTrailingWhiteSpaceNodes(region);
         
         // get the region layout
         var sizingH = region.offsetHeight; // avail size (max-height)
@@ -194,7 +197,7 @@ var cssRegions = {
             if(typeof(borderCut)==="number" && borderCut!==0) {
                 
                 // check the presence of a radius:
-                var hasBottonRadius = (
+                var hasBottomRadius = (
                     parseInt(endContainerStyle.borderBottomLeftRadius)>0
                     || parseInt(endContainerStyle.borderBottomRightRadius)>0
                 );
@@ -343,8 +346,110 @@ var cssRegions = {
         }
         
         
+        // make sure empty nodes are reintroduced
+        this.unembedTrailingWhiteSpaceNodes(region);
+        this.unembedTrailingWhiteSpaceNodes(overflowingContent);
+        
         // we're ready to return our result!
         return overflowingContent;
         
+    },
+    
+    embedTrailingWhiteSpaceNodes: function(fragment) {
+        
+        var onlyWhiteSpace = /^\s*$/;
+        function visit(node) {
+            var child, next;
+            switch (node.nodeType) {
+                case 3: // Text node
+                    
+                    // we only remove nodes at the edges
+                    if (!node.previousSibling) {
+                        
+                        // we only remove nodes if their parent doesn't preserve whitespace
+                        if (getComputedStyle(node.parentNode).whiteSpace.substring(0,3)!=="pre") {
+                            
+                            // only remove pure whitespace nodes
+                            if (onlyWhiteSpace.test(node.nodeValue)) {
+                                node.parentNode.setAttribute('data-whitespace-before',node.nodeValue);
+                                node.parentNode.removeChild(node);
+                            }
+                            
+                        }
+                        
+                        break;
+                    }
+                    
+                    // we only remove nodes at the edges
+                    if (!node.nextSibling) {
+                        
+                        // we only remove nodes if their parent doesn't preserve whitespace
+                        if (getComputedStyle(node.parentNode).whiteSpace.substring(0,3)!=="pre") {
+                            
+                            // only remove pure whitespace nodes
+                            if (onlyWhiteSpace.test(node.nodeValue)) {
+                                node.parentNode.setAttribute('data-whitespace-after',node.nodeValue);
+                                node.parentNode.removeChild(node);
+                            }
+                            
+                        }
+                        
+                        break;
+                    }
+                    
+                    break;
+                case 1: // Element node
+                case 9: // Document node
+                case 11: // Document fragment node
+                    child = node.firstChild;
+                    while (child) {
+                        next = child.nextSibling;
+                        visit(child);
+                        child = next;
+                    }
+                    break;
+            }
+        }
+        
+        visit(fragment);
+        
+    },
+    
+    unembedTrailingWhiteSpaceNodes: function(fragment) {
+        
+        var onlyWhiteSpace = /^\s*$/;
+        function visit(node) {
+            var child, next;
+            switch (node.nodeType) {
+                case 1: // Element node
+                    var txt = "";
+                    if(txt = node.getAttribute('data-whitespace-before')) {
+                        if(node.getAttribute('data-starting-fragment')=='' && node.getAttribute('data-special-starting-fragment','')) {
+                            node.insertBefore(document.createTextNode(txt),node.firstChild);
+                        }
+                        node.removeAttribute('data-whitespace-before')
+                    }
+                    if(txt = node.getAttribute('data-whitespace-after')) {
+                        if(node.getAttribute('data-continued-fragment')=='' && node.getAttribute('data-special-continued-fragment','')) {
+                            node.insertAfter(document.createTextNode(txt),node.lastChild);
+                        }
+                        node.removeAttribute('data-whitespace-after')
+                    }
+                    
+                case 9: // Document node
+                case 11: // Document fragment node
+                    child = node.firstChild;
+                    while (child) {
+                        next = child.nextSibling;
+                        visit(child);
+                        child = next;
+                    }
+                    break;
+            }
+        }
+        
+        visit(fragment);
+        
     }
+    
 }
