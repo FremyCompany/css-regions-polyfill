@@ -123,9 +123,8 @@ var cssRegions = {
         // 
         
         // move the selection before the monolithic ancestors
-        var current = r.endContainer; var allAncestors=[];
+        var current = r.endContainer;
         while(current !== region) {
-            allAncestors.push(current);
             if(cssBreak.isMonolithic(current)) {
                 r.setEndBefore(current);
             }
@@ -138,14 +137,19 @@ var cssRegions = {
         // 
         
         // if we end up with nothing being selected, add the first block anyway
-        if(r.endContainer===region && r.endOffset===0) {
+        if(r.endContainer===region && r.endOffset===0 && r.endOffset!==region.childNodes.length) {
             
             // find the first allowed break point
             do { r.myMoveOneCharRight(); } 
-            while(!cssBreak.isPossibleBreakPoint(r))
+            while(!cssBreak.isPossibleBreakPoint(r,region) && !(r.endContainer===region && r.endOffset===region.childNodes.length))
             
         }
         
+        var current = r.endContainer; var allAncestors=[];
+        while(current !== region) {
+            allAncestors.push(current);
+            current = current.parentNode;
+        }
         
         //
         // note: if we're about to split after the last child of
@@ -247,22 +251,26 @@ var cssRegions = {
         }
         
         // remove bottom-{pbm} from all ancestors involved in the cut
-        for(var i=allAncestors.length-1; i>0; i--) {
+        for(var i=allAncestors.length-1; i>=0; i--) {
             allAncestors[i].setAttribute('data-css-continued-fragment',true); //TODO: this requires some css
         }
         if(typeof(borderCut)==="number") {
+            allAncestors[0].removeAttribute('data-css-continued-fragment');
             allAncestors[0].setAttribute('data-css-special-continued-fragment',true);
             allAncestors[0].style.borderBottomWidth = (availBorderHeight-borderCut)+'px';
         }
         if(typeof(paddingCut)==="number") {
+            allAncestors[0].removeAttribute('data-css-continued-fragment');
             allAncestors[0].setAttribute('data-css-special-continued-fragment',true);
             allAncestors[0].style.paddingBottom = (availPaddingHeight-paddingCut)+'px';
         }
         if(typeof(topBorderCut)==="number") {
+            allAncestors[0].removeAttribute('data-css-continued-fragment');
             allAncestors[0].setAttribute('data-css-continued-fragment',true);
             allAncestors[0].style.borderTopWidth = (availBorderHeight-topBorderCut)+'px';
         }
         if(typeof(topPaddingCut)==="number") {
+            allAncestors[0].removeAttribute('data-css-continued-fragment');
             allAncestors[0].setAttribute('data-css-special-continued-fragment',true);
             allAncestors[0].style.paddingTop = (availPaddingHeight-topPaddingCut)+'px';
         }
@@ -316,6 +324,8 @@ var cssRegions = {
                 specialNewFragment.removeAttribute('data-css-starting-fragment')
                 specialNewFragment.setAttribute('data-css-special-starting-fragment',true);
                 specialNewFragment.style.paddingTop = (topPaddingCut)+'px';
+                specialNewFragment.style.paddingBottom = '0px';
+                specialNewFragment.style.borderBottomWidth = '0px';
             }
             
         } else if(typeof(borderCut)==="number") {

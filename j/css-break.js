@@ -52,7 +52,7 @@ var cssBreak = {
     
     hasBigRadius: function(element, elementStyle) {
         if(!(element instanceof Element)) return false;
-        if(typeof(elementOverflow)=="undefined") elementOverflow = getComputedStyle(element).display;
+        if(typeof(elementStyle)=="undefined") elementStyle = getComputedStyle(element);
 
         // if the browser supports radiuses {f### prefixes}
         if("borderTopLeftRadius" in elementStyle) {
@@ -90,7 +90,7 @@ var cssBreak = {
         
         // all conditions were met
         return false;
-    }
+    },
     
     isMonolithic: function isMonolithic(element) {
         if(!(element instanceof Element)) return false;
