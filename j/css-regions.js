@@ -149,6 +149,7 @@ var cssRegions = {
         }
         
         var current = r.endContainer; var allAncestors=[];
+        if(current.nodeType !== current.ELEMENT_NODE) current=current.parentNode;
         while(current !== region) {
             allAncestors.push(current);
             current = current.parentNode;
