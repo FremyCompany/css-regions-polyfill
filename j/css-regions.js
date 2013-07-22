@@ -55,7 +55,25 @@ var cssRegions = {
         
     },
     
-    extractOverflowingContent: function(region) {
+    getAllLevelPreviousSibling: function(e, region) {
+        if(!e || e==region) return null;
+        
+        // find the nearest ancestor that has a previous sibling
+        while(!e.previousSibling) {
+            
+            // but bubble to the next avail ancestor
+            e = e.parentNode;
+            
+            // dont get over the bar
+            if(!e || e==region) return null;
+            
+        }
+        
+        // return that sibling
+        return e.previousSibling;
+    },
+    
+    extractOverflowingContent: function(region, dontOptimize) {
         
         // make sure empty nodes don't make our life more difficult
         this.embedTrailingWhiteSpaceNodes(region);
@@ -74,7 +92,7 @@ var cssRegions = {
         // 
         
         // get the caret range for the bottom-right of that location
-        var r = document.caretRangeFromPoint(
+        var r = dontOptimize ? document.createRange() : document.caretRangeFromPoint(
             pos.left + sizingW - 1,
             pos.top + sizingH - 1
         );
@@ -85,40 +103,65 @@ var cssRegions = {
             // move back into the region
             r.setStart(region, 0);
             r.setEnd(region, 0);
+            dontOptimize=true;
             
         }
         
-        // store the current selection rect for fast access
-        var rect = r.myGetExtensionRect();
-        
-        //console.log('start negotiation');
-        //console.dir({
-        //    startContainer: r.startContainer,
-        //    startOffset: r.startOffset,
-        //    browserBCR: r.getBoundingClientRect(),
-        //    computedBCR: rect
-        //});
-        
-        //
-        // note: maybe the text is right-to-left
-        // in this case, we can go further than the caret
-        //
-        
-        // move the end point char by char until it's completely in the region
-        while(!(r.endContainer==region && r.endOffset==r.endContainer.childNodes.length) && rect.bottom<=pos.top+sizingH) {
-            r.myMoveOneCharRight(); rect = r.myGetExtensionRect();
-        }
-        
-        //
-        // note: maybe the text is one line too big
-        // in this case, we have to backtrack a little
-        //
-        
-        // move the end point char by char until it's completely in the region
-        while(!(r.endContainer==region && r.endOffset==0) && rect.bottom>pos.top+sizingH) {
-            r.myMoveOneCharLeft(); rect = r.myGetExtensionRect();
-        }
-        
+        // start finding the natural breaking point
+        do {
+            
+            // store the current selection rect for fast access
+            var rect = r.myGetExtensionRect();
+            
+            //console.log('start negotiation');
+            //console.dir({
+            //    startContainer: r.startContainer,
+            //    startOffset: r.startOffset,
+            //    browserBCR: r.getBoundingClientRect(),
+            //    computedBCR: rect
+            //});
+            
+            //
+            // note: maybe the text is right-to-left
+            // in this case, we can go further than the caret
+            //
+            
+            // move the end point char by char until it's completely in the region
+            while(!(r.endContainer==region && r.endOffset==r.endContainer.childNodes.length) && rect.bottom<=pos.top+sizingH) {
+                r.myMoveOneCharRight(); rect = r.myGetExtensionRect();
+            }
+            
+            //
+            // note: maybe the text is one line too big
+            // in this case, we have to backtrack a little
+            //
+            
+            // move the end point char by char until it's completely in the region
+            while(!(r.endContainer==region && r.endOffset==0) && rect.bottom>pos.top+sizingH) {
+                r.myMoveOneCharLeft(); rect = r.myGetExtensionRect();
+            }
+            
+            //
+            // note: if we optimized via hit-testing, this may be wrong
+            // if next condition does not hold, we're fine. 
+            // otherwhise we must restart without optimization...
+            //
+            
+            // if the selected content is really off target
+            var optimizationFailled = false; if(!dontOptimize) {
+                
+                var current = r.endContainer;
+                while(current = this.getAllLevelPreviousSibling(current, region)) {
+                    if(Node.getBoundingClientRect(current).bottom > pos.top + sizingH) {
+                        optimizationFailled=true;
+                        dontOptimize=true;
+                        break;
+                    }
+                }
+                
+            }
+            
+        } while(optimizationFailled) 
         
         // 
         // note: we should not break the content inside monolithic content
@@ -132,6 +175,58 @@ var cssRegions = {
                 r.setEndBefore(current);
             }
             current = current.parentNode;
+        }
+        
+        
+        // 
+        // note: we don't want to break inside a line.
+        // backtrack to end of previous line...
+        // 
+        var first = r.startContainer.childNodes[r.startOffset], current = first; 
+        while((current) && (current = current.previousSibling)) {
+            
+            if(cssBreak.areInSameSingleLine(current,first)) {
+                
+                // optimization: first and current are on the same line
+                first = current;
+
+                if(current instanceof Element) {
+                    
+                    // we don't want to break inside text lines
+                    r.setEndBefore(current);
+                    
+                } else {
+                    
+                    // TODO: get last line via client rects
+                    var lines = Node.getClientRects(current);
+                    
+                    // if the text node did wrap
+                    if(lines.length>1) {
+                        
+                        // move back from the end until we get into previous line
+                        var previousLineBottom = lines[lines.length-2].bottom;
+                        r.setEnd(current, current.nodeValue.length);
+                        while(rect.bottom>previousLineBottom) {
+                            r.myMoveOneCharLeft(); rect = r.myGetExtensionRect();
+                        }
+                        
+                        // TODO: ?move forward to break after this previous line?
+                        //while(rect.bottom<=previousLineBottom) {
+                        //    r.myMoveOneCharRight(); rect = r.myGetExtensionRect();
+                        //}
+                        
+                    } else {
+                        
+                        // we can consider the text node as an element
+                        r.setEndBefore(current);
+                        
+                    }
+                    
+                }
+            } else {
+                break;
+            }
+            
         }
         
         
@@ -428,14 +523,14 @@ var cssRegions = {
                         if(node.getAttribute('data-starting-fragment')=='' && node.getAttribute('data-special-starting-fragment','')) {
                             node.insertBefore(document.createTextNode(txt),node.firstChild);
                         }
-                        node.removeAttribute('data-whitespace-before')
                     }
+                    node.removeAttribute('data-whitespace-before')
                     if(txt = node.getAttribute('data-whitespace-after')) {
                         if(node.getAttribute('data-continued-fragment')=='' && node.getAttribute('data-special-continued-fragment','')) {
                             node.insertAfter(document.createTextNode(txt),node.lastChild);
                         }
-                        node.removeAttribute('data-whitespace-after')
                     }
+                    node.removeAttribute('data-whitespace-after')
                     
                 case 9: // Document node
                 case 11: // Document fragment node

@@ -19,9 +19,11 @@ var cssBreak = {
         
     },
     
-    isSingleLineOfTextComponent: function(element, elementDisplay, isReplaced) {
-        if(!(element instanceof Element)) return false;
-        if(typeof(elementDisplay)=="undefined") elementDisplay = getComputedStyle(element).display;
+    isSingleLineOfTextComponent: function(element, elementStyle, elementDisplay, elementPosition, isReplaced) {
+        if(!(element instanceof Element)) return true;
+        if(typeof(elementStyle)=="undefined") elementStyle = getComputedStyle(element);
+        if(typeof(elementDisplay)=="undefined") elementDisplay = elementStyle.display;
+        if(typeof(elementPosition)=="undefined") elementPosition = elementStyle.position;
         if(typeof(isReplaced)=="undefined") isReplaced = this.isReplacedElement(element);
         
         return (
@@ -30,13 +32,114 @@ var cssBreak = {
             || elementDisplay === "inline-flex"
             || elementDisplay === "inline-grid"
             // TODO: more
+        ) && (
+            elementPosition === "static"
+            || elementPosition === "relative"
+        );
+        
+    },
+    
+    isLineBreakingElement: function(element, elementStyle, elementDisplay, elementPosition) {
+        
+        // TODO: nextSibling break-before?
+        
+        if(!(element instanceof Element)) return false;
+        if(typeof(elementStyle)=="undefined") elementStyle = getComputedStyle(element);
+        if(typeof(elementDisplay)=="undefined") elementDisplay = elementStyle.display;
+        if(typeof(elementPosition)=="undefined") elementPosition = elementStyle.position;
+        
+        return (
+            (
+                // in-flow bock elements
+                (elementDisplay === "block")
+                && !this.isOutOfFlowElement(element, elementStyle, elementDisplay, elementPosition)
+                
+            ) || (
+                
+                // displayed <br> elements
+                element.tagName==="BR" && elementDisplay!=="none"
+                
+            ) // TODO: break-after?
+        );
+    },
+    
+    isOutOfFlowElement: function(element, elementStyle, elementDisplay, elementPosition, elementFloat) {
+        if(!(element instanceof Element)) return false;
+        if(typeof(elementStyle)=="undefined") elementStyle = getComputedStyle(element);
+        if(typeof(elementDisplay)=="undefined") elementDisplay = elementStyle.display;
+        if(typeof(elementPosition)=="undefined") elementPosition = elementStyle.position; 
+        if(typeof(elementFloat)=="undefined") elementFloat = elementStyle.float;
+        
+        return (
+            
+            // positioned elements are out of the flow
+            (elementPosition==="absolute"||elementPosition==="fixed")
+            
+            // floated elements as well
+            || (elementFloat!=="none") 
+            
+            // not sure but let's say hidden elements as well
+            || (elementDisplay==="none")
+            
         );
         
     },
     
     areInSameSingleLine: function areInSameSingleLine(element1, element2) {
-        return false; // TODO: figure that out...
-        // IDEA: use getClientRects().length == 1? seems like it could fail on mutli-line grouped elements
+        
+        // a block element is never on the same line as another element
+        if(this.isLineBreakingElement(element1)) return false;
+        if(this.isLineBreakingElement(element2)) return false;
+        
+        // if the element are not direct sibling, we must use their inner siblings as well
+        if(element1.nextSibling != element2) { 
+            if(element2.nextSibling != element1) throw "I gave up!"; 
+            var t = element1; element1=element2; element2=t;
+        }
+        
+        // if the previous element is out of flow, we may consider it as being part of the current line
+        if(this.isOutOfFlowElement(element1)) return true;
+        
+        // if the current object is not a single line component, return false
+        if(!this.isSingleLineOfTextComponent(element1)) return false;
+        
+        // return true if both elements are have non-overlapping
+        // margin- and position-corrected in-flow bounding rect
+        // and if their relative position is the one of the current
+        // flow (either rtl or ltr)
+        
+        var element1box = Node.getBoundingClientRect(element1);
+        var element2box = Node.getBoundingClientRect(element2);
+        function shift(box,shiftX,shiftY) {
+            return {
+                top: box.top+shiftY,
+                bottom: box.bottom+shiftY,
+                left: box.left+shiftX,
+                right: box.right+shiftX
+            }
+        }
+        
+        if(element1 instanceof Element) {
+            var element1Style = getComputedStyle(element1);
+            element1box = shift(element1box, parseFloat(element1Style.marginLeft), parseFloat(element1Style.marginTop))
+            if(element1Style.position=="relative") {
+                element1box = shift(element1box, parseFloat(element1Style.left), parseFloat(element1Style.top))
+            }
+        }
+        
+        if(element2 instanceof Element) {
+            var element2Style = getComputedStyle(element2);
+            element2box = shift(element2box, parseFloat(element2Style.marginLeft), parseFloat(element2Style.marginTop))
+            if(element2Style.position=="relative") {
+                element2box = shift(element2box, parseFloat(element2Style.left), parseFloat(element2Style.top))
+            }
+        }
+        
+        var firstElement = getComputedStyle(element1.parentNode).direction=="rtl" ? element2box : element1box;
+        var secondElement = getComputedStyle(element1.parentNode).direction=="rtl" ? element1box : element2box;
+        return firstElement.right <= secondElement.left; // TODO: figure that out...
+        
+        // TODO: what about left-to-right + right-aligned text?
     },
     
     isHiddenOverflowing: function isHiddenOverflowing(element, elementOverflow) {
@@ -110,7 +213,7 @@ var cssBreak = {
         
         // - a single line of text content. 
         
-        var isSingleLineOfText = this.isSingleLineOfTextComponent(element, elementDisplay, isReplaced);
+        var isSingleLineOfText = this.isSingleLineOfTextComponent(element, elementStyle, elementDisplay, undefined, isReplaced);
         
         // Such content is considered monolithic: it contains no
         // possible break points. 

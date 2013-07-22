@@ -331,6 +331,22 @@ Node.getBoundingClientRect = function getBoundingClientRect(firstChild) {
     }
 };
 
+// make getCR working on text nodes & stuff
+Node.getClientRects = function getBoundingClientRect(firstChild) {
+    if (firstChild.getBoundingClientRect) {
+        
+        return firstChild.getClientRects();
+        
+    } else {
+        
+        var range = document.createRange();
+        range.selectNode(firstChild);
+        
+        return range.getClientRects();
+        
+    }
+};
+
 // a special version for breaking algorithms
 Range.prototype.myGetExtensionRect = function() {
     
