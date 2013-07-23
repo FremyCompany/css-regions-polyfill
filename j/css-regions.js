@@ -546,6 +546,28 @@ var cssRegions = {
         
         visit(fragment);
         
+    },
+        
+    enablePolyfill: function enablePolyfill() {
+        
+        // 
+        // [1] looks for stylesheets to load
+        // 
+        
+        
+        // 
+        // [2] when stylesheets are loaded, grab region-active selectors
+        // and follow them using the myQuerySelectorLive polyfill
+        // 
+        
+        
+        // 
+        // [3] when any update happens
+        // construct new content and region flow pairs
+        // restart the region layout algorithm for the modified pairs
+        // 
+        
+        
     }
     
 }
