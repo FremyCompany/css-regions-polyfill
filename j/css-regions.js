@@ -553,21 +553,53 @@ var cssRegions = {
         // 
         // [1] looks for stylesheets to load
         // 
-        
+        var ss = document.getElementsByTagName("style");
+        var s = ss[0]; var handler = {};
         
         // 
         // [2] when stylesheets are loaded, grab region-active selectors
         // and follow them using the myQuerySelectorLive polyfill
         // 
-        
+        setImmediate(function() {
+            
+            var rules = cssSyntax.parse(ss[0].textContent).value;
+            for(var i=0; i<rules.length; i++) {
+                
+                // only consider style rules
+                if(rules[i] instanceof cssSyntax.StyleRule) {
+                
+                    // try to see if the current rule is worth watching
+                    var decls = rules[i].value;
+                    for(var j=decls.length-1; j>=0; j--) {
+                        if(decls[j].type=="DECLARATION") {
+                            if((/^flow-(from|into)$/i).test(decls[j].name)) {
+                                cssCascade.startMonitoringRule(rules[i], handler);
+                                break;
+                            }
+                        }
+                    }
+                    
+                } else {
+                    
+                    // TODO: handle @media
+                    
+                }
+                
+            }
+            
+        });
         
         // 
         // [3] when any update happens
         // construct new content and region flow pairs
         // restart the region layout algorithm for the modified pairs
         // 
-        
+        handler.onupdate = function onupdate(element, rule) {
+            console.dir({message:"onupdate",element:element,rule:rule});
+        }
         
     }
     
 }
+    
+window.addEventListener("load", function() {cssRegions.enablePolyfill()});

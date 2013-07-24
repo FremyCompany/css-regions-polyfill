@@ -31,10 +31,28 @@ var cssSyntax = {
     // Note: I'm not yet acting smart enough to actually handle astral characters.
     var maximumallowedcodepoint = 0x10ffff;
     
+    // Add support for token lists (superclass of array)
+    var TokenList = cssSyntax.TokenList = function TokenList() {
+        var array = []; 
+        array.toCSSString=cssSyntax.TokenListToCSSString;
+        return array;
+    }
+    var TokenListToCSSString = cssSyntax.TokenListToCSSString = function TokenListToCSSString(sep) {
+        if(sep) {
+            return this.map(function(o) { return o.toCSSString(); }).join(sep);
+        } else {
+            return (
+                this.map(function(o) { return o.toCSSString(); }).join("/**/")
+                    .replace(/( +\/\*\*\/ *| * | *\/\*\*\/ +)/g," ")
+                    .replace(/(\!|\:|\;|\@|\.|\,|\*|\[|\{|\(|\]|\}|\)|\|)\/\*\*\//g,"$1")
+            );
+        }
+    }
+    
     function tokenize(str, options) {
         if(options == undefined) options = {transformFunctionWhitespace:false, scientificNotation:false};
         var i = -1;
-        var tokens = [];
+        var tokens = new TokenList();
         var state = "data";
         var code;
         var currtoken;
@@ -502,27 +520,33 @@ var cssSyntax = {
     CSSParserToken.prototype.finish = function() { return this; }
     CSSParserToken.prototype.toString = function() { return this.tokenType; }
     CSSParserToken.prototype.toJSON = function() { return this.toString(); }
+    CSSParserToken.prototype.toCSSString = function() { return this.toString(); }
     
     var BadStringToken = cssSyntax.BadStringToken = function BadStringToken() { return this; }
     BadStringToken.prototype = new CSSParserToken;
     BadStringToken.prototype.tokenType = "BADSTRING";
+    BadStringToken.prototype.toCSSString = function() { return "'"; }
     
     var BadURLToken = cssSyntax.BadURLToken = function BadURLToken() { return this; }
     BadURLToken.prototype = new CSSParserToken;
     BadURLToken.prototype.tokenType = "BADURL";
+    BadURLToken.prototype.toCSSString = function() { return "url("; }
     
     var WhitespaceToken = cssSyntax.WhitespaceToken = function WhitespaceToken() { return this; }
     WhitespaceToken.prototype = new CSSParserToken;
     WhitespaceToken.prototype.tokenType = "WHITESPACE";
     WhitespaceToken.prototype.toString = function() { return "WS"; }
+    WhitespaceToken.prototype.toCSSString = function() { return " "; }
     
     var CDOToken = cssSyntax.CDOToken = function CDOToken() { return this; }
     CDOToken.prototype = new CSSParserToken;
     CDOToken.prototype.tokenType = "CDO";
+    CDOToken.prototype.toCSSString = function() { return "<!--"; }
     
     var CDCToken = cssSyntax.CDCToken = function CDCToken() { return this; }
     CDCToken.prototype = new CSSParserToken;
     CDCToken.prototype.tokenType = "CDC";
+    CDOToken.prototype.toCSSString = function() { return "-->"; }
     
     var ColonToken = cssSyntax.ColonToken = function ColonToken() { return this; }
     ColonToken.prototype = new CSSParserToken;
@@ -559,6 +583,7 @@ var cssSyntax = {
     var EOFToken = cssSyntax.EOFToken = function EOFToken() { return this; }
     EOFToken.prototype = new CSSParserToken;
     EOFToken.prototype.tokenType = "EOF";
+    EOFToken.prototype.toCSSString = function() { return ""; }
     
     var DelimToken = cssSyntax.DelimToken = function DelimToken(code) {
         this.value = String.fromCharCode(code);
@@ -567,6 +592,7 @@ var cssSyntax = {
     DelimToken.prototype = new CSSParserToken;
     DelimToken.prototype.tokenType = "DELIM";
     DelimToken.prototype.toString = function() { return "DELIM("+this.value+")"; }
+    DelimToken.prototype.toCSSString = function() { return this.value; }
     
     var StringValuedToken = cssSyntax.StringValuedToken = function StringValuedToken() { return this; }
     StringValuedToken.prototype = new CSSParserToken;
@@ -602,12 +628,13 @@ var cssSyntax = {
     }
     
     var IdentifierToken = cssSyntax.IdentifierToken = function IdentifierToken(val) {
-        this.value = [];
+        this.value = new TokenList();
         this.append(val);
     }
     IdentifierToken.prototype = new StringValuedToken;
     IdentifierToken.prototype.tokenType = "IDENT";
     IdentifierToken.prototype.toString = function() { return "IDENT("+this.value+")"; }
+    IdentifierToken.prototype.toCSSString = function() { return this.value; }
     
     var FunctionToken = cssSyntax.FunctionToken = function FunctionToken(val) {
         // These are always constructed by passing an IdentifierToken
@@ -616,41 +643,46 @@ var cssSyntax = {
     FunctionToken.prototype = new StringValuedToken;
     FunctionToken.prototype.tokenType = "FUNCTION";
     FunctionToken.prototype.toString = function() { return "FUNCTION("+this.value+")"; }
+    FunctionToken.prototype.toCSSString = function() { return this.value+"("; }
     
     var AtKeywordToken = cssSyntax.AtKeywordToken = function AtKeywordToken(val) {
-        this.value = [];
+        this.value = new TokenList();
         this.append(val);
     }
     AtKeywordToken.prototype = new StringValuedToken;
     AtKeywordToken.prototype.tokenType = "AT-KEYWORD";
     AtKeywordToken.prototype.toString = function() { return "AT("+this.value+")"; }
+    AtKeywordToken.prototype.toCSSString = function() { return "@"+this.value; }
     
     var HashToken = cssSyntax.HashToken = function HashToken(val) {
-        this.value = [];
+        this.value = new TokenList();
         this.append(val);
     }
     HashToken.prototype = new StringValuedToken;
     HashToken.prototype.tokenType = "HASH";
     HashToken.prototype.toString = function() { return "HASH("+this.value+")"; }
+    HashToken.prototype.toCSSString = function() { return "#"+this.value; }
     
     var StringToken = cssSyntax.StringToken = function StringToken(val) {
-        this.value = [];
+        this.value = new TokenList();
         this.append(val);
     }
     StringToken.prototype = new StringValuedToken;
     StringToken.prototype.tokenType = "STRING";
-    StringToken.prototype.toString = function() { return "\""+this.value+"\""; }
+    StringToken.prototype.toString = function() { return '"'+this.value+'"'; }
+    StringToken.prototype.toCSSString = function() { return '"'+this.value.replace(/"/g,'\\"')+'"'; } // TODO: improve string serialization?
     
     var URLToken = cssSyntax.URLToken = function URLToken(val) {
-        this.value = [];
+        this.value = new TokenList();
         this.append(val);
     }
     URLToken.prototype = new StringValuedToken;
     URLToken.prototype.tokenType = "URL";
     URLToken.prototype.toString = function() { return "URL("+this.value+")"; }
+    URLToken.prototype.toCSSString = function() { return 'url("'+this.value.replace(/"/g,'\\"')+'")'; } // TODO: improve string serialization?; }
     
     var NumberToken = cssSyntax.NumberToken = function NumberToken(val) {
-        this.value = [];
+        this.value = new TokenList();
         this.append(val);
         this.type = "integer";
     }
@@ -667,6 +699,8 @@ var cssSyntax = {
         if(Math.abs(this.value) % 1 != 0) this.type = "number";
         return this;
     }
+    NumberToken.prototype.toCSSString = function() { return ""+this.value; }
+    
     
     var PercentageToken = cssSyntax.PercentageToken = function PercentageToken(val) {
         // These are always created by passing a NumberToken as val
@@ -677,6 +711,7 @@ var cssSyntax = {
     PercentageToken.prototype = new CSSParserToken;
     PercentageToken.prototype.tokenType = "PERCENTAGE";
     PercentageToken.prototype.toString = function() { return "PERCENTAGE("+this.value+")"; }
+    PercentageToken.prototype.toCSSString = function() { return this.value+"%"; }
     
     var DimensionToken = cssSyntax.DimensionToken = function DimensionToken(val,unit) {
         // These are always created by passing a NumberToken as the val
@@ -689,6 +724,7 @@ var cssSyntax = {
     DimensionToken.prototype = new CSSParserToken;
     DimensionToken.prototype.tokenType = "DIMENSION";
     DimensionToken.prototype.toString = function() { return "DIM("+this.num+","+this.unit+")"; }
+    DimensionToken.prototype.toCSSString = function() { return this.num+this.unit; }
     DimensionToken.prototype.append = function(val) {
         if(val instanceof Array) {
             for(var i = 0; i < val.length; i++) {
@@ -721,6 +757,7 @@ var cssSyntax = {
     }
     UnicodeRangeToken.prototype = new CSSParserToken;
     UnicodeRangeToken.prototype.tokenType = "UNICODE-RANGE";
+    UnicodeRangeToken.prototype.toCSSString = function() { return "¿"; }
     UnicodeRangeToken.prototype.toString = function() {
         if(this.start+1 == this.end)
             return "UNICODE-RANGE("+this.start.toString(16).toUpperCase()+")";
@@ -734,7 +771,6 @@ var cssSyntax = {
     
     
     // Exportation.
-    // TODO: also export the various tokens objects?
     cssSyntax.tokenize = tokenize;
     
 }());
@@ -744,6 +780,7 @@ var cssSyntax = {
 //
 (function() {
     
+    var TokenList = cssSyntax.TokenList;
     function parse(tokens) {
         // FREMY's ADDITION:
         // You can give a string to parse, it will tokenize it for you
@@ -992,7 +1029,7 @@ var cssSyntax = {
     }
     
     var Stylesheet = cssSyntax.Stylesheet = function Stylesheet() {
-        this.value = [];
+        this.value = new TokenList();
         return this;
     }
     Stylesheet.prototype = new CSSParserRule;
@@ -1000,11 +1037,12 @@ var cssSyntax = {
     Stylesheet.prototype.toJSON = function() {
         return {type:'stylesheet', value: this.value.map(function(e){return e.toJSON();})};
     }
+    Stylesheet.prototype.toCSSString = function() { return this.value.toCSSString("\n"); }
     
     var AtRule = cssSyntax.AtRule = function AtRule(name) {
         this.name = name;
-        this.prelude = [];
-        this.value = [];
+        this.prelude = new TokenList();
+        this.value = new TokenList();
         if(name in AtRule.registry)
             this.fillType = AtRule.registry[name];
         return this;
@@ -1017,6 +1055,13 @@ var cssSyntax = {
     }
     AtRule.prototype.toJSON = function() {
         return {type:'at', name:this.name, prelude:this.prelude.map(function(e){return e.toJSON();}), value:this.value.map(function(e){return e.toJSON();})};
+    }
+    AtRule.prototype.toCSSString = function() { 
+        if(this.fillType != '') {
+            return "@" + this.name + " " + this.prelude.toCSSString() + '{' + this.value.toCSSString() + '} '; 
+        } else {
+            return "@" + this.name + " " + this.prelude.toCSSString() + '; '; 
+        }
     }
     AtRule.registry = {
         'import': '',
@@ -1034,8 +1079,8 @@ var cssSyntax = {
     };
     
     var StyleRule = cssSyntax.StyleRule = function StyleRule() {
-        this.selector = [];
-        this.value = [];
+        this.selector = new TokenList();
+        this.value = new TokenList();
         return this;
     }
     StyleRule.prototype = new CSSParserRule;
@@ -1048,10 +1093,12 @@ var cssSyntax = {
     StyleRule.prototype.toJSON = function() {
         return {type:'selector', selector:this.selector.map(function(e){return e.toJSON();}), value:this.value.map(function(e){return e.toJSON();})};
     }
+    StyleRule.prototype.toCSSString = function() { return this.selector.toCSSString() + '{' + this.value.toCSSString() + '} '; }
+
     
     var Declaration = cssSyntax.Declaration = function Declaration(name) {
         this.name = name;
-        this.value = [];
+        this.value = new TokenList();
         return this;
     }
     Declaration.prototype = new CSSParserRule;
@@ -1059,10 +1106,11 @@ var cssSyntax = {
     Declaration.prototype.toJSON = function() {
         return {type:'declaration', name:this.name, value:this.value.map(function(e){return e.toJSON();})};
     }
+    Declaration.prototype.toCSSString = function() { return this.name + ':' + this.value.toCSSString() + '; '; }
     
     var SimpleBlock = cssSyntax.SimpleBlock = function SimpleBlock(type) {
         this.name = type;
-        this.value = [];
+        this.value = new TokenList();
         return this;
     }
     SimpleBlock.prototype = new CSSParserRule;
@@ -1070,10 +1118,25 @@ var cssSyntax = {
     SimpleBlock.prototype.toJSON = function() {
         return {type:'block', name:this.name, value:this.value.map(function(e){return e.toJSON();})};
     }
+    SimpleBlock.prototype.toCSSString = function() {
+        switch(this.name) {
+            case "(":
+                return "(" + this.value.toCSSString() + ")";
+                
+            case "[":
+                return "[" + this.value.toCSSString() + "]";
+                
+            case "{":
+                return "{" + this.value.toCSSString() + "}";
+            
+            default: //best guess
+                return this.name + this.value.toCSSString() + this.name;
+        }
+    }
     
     var Func = cssSyntax.Func = function Func(name) {
         this.name = name;
-        this.value = [];
+        this.value = new TokenList();
         return this;
     }
     Func.prototype = new CSSParserRule;
@@ -1081,9 +1144,12 @@ var cssSyntax = {
     Func.prototype.toJSON = function() {
         return {type:'func', name:this.name, value:this.value.map(function(e){return e.toJSON();})};
     }
+    Func.prototype.toCSSString = function() {
+        return this.name+'('+this.value.toCSSString().slice(0,-1)+')';
+    }
     
     var FuncArg = cssSyntax.FuncArg = function FuncArg() {
-        this.value = [];
+        this.value = new TokenList();
         return this;
     }
     FuncArg.prototype = new CSSParserRule;
@@ -1091,9 +1157,11 @@ var cssSyntax = {
     FuncArg.prototype.toJSON = function() {
         return this.value.map(function(e){return e.toJSON();});
     }
+    FuncArg.prototype.toCSSString = function() {
+        return this.value.toCSSString()+', ';
+    }
     
     // Exportation.
-    // TODO: also export the various rule objects?
     cssSyntax.parse = parse;
 
 }())

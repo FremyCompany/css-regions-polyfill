@@ -1,5 +1,5 @@
 //
-// note: depends on cssSyntax
+// note: depends on cssSyntax and cssSelectors
 //
 
 var cssCascade = {
@@ -57,6 +57,68 @@ var cssCascade = {
         if(numberOfTags>255) numberOfTags=255;
         
         return ((numberOfIDs*256)+numberOfClasses)*256+numberOfTags;
+        
+    },
+    
+    getSpecifiedStyle: function getSpecifiedStyle(element, cssPropertyName) {
+        
+        // find all relevant selectors
+        var bestPriority = 0; var bestValue = "";
+        var rules = element.myMatchedRules || [];
+        for(var i=rules.length-1; i>=0; i--) {
+            
+            // TODO: media queries hook
+            if(rules[i].disabled) continue;
+            
+            // find a relevant declaration
+            var decls = rules[i].value;
+            for(var j=decls.length-1; j>=0; j--) {
+                if(decls[j].type=="DECLARATION") {
+                    if(decls[j].name==cssPropertyName) {
+                        // TODO: only works if selectors containing a "," are deduplicated
+                        var currentPriority = cssCascade.computeSelectorPriorityOf(rules[i].selector);
+                        if(currentPriority >= bestPriority) {
+                            // TODO: doesn't work in case of IMPORTANT declarations
+                            bestPriority = currentPriority;
+                            bestValue = decls[j].value;
+                        }
+                    }
+                }
+            }
+            
+        }
+        
+        // return our best guess...
+        return bestValue;
+        
+    },
+    
+    startMonitoringRule: function startMonitoringRule(rule, handler) {
+        
+        // avoid monitoring rules twice
+        if(!rule.isMonitored) { rule.isMonitored=true } else { return; }
+        
+        // monitor the rules
+        myQuerySelectorLive(rule.selector.toCSSString(), {
+            onadded: function(e) {
+                
+                // add the rule to the matching list of this element
+                (e.myMatchedRules = e.myMatchedRules || []).push(rule); // TODO: does not respect DOM order
+                
+                // generate an update event
+                handler && handler.onupdate && handler.onupdate(e, rule);
+                
+            },
+            onremoved: function(e) {
+                
+                // remove the rule from the matching list of this element
+                if(e.myMatchedRules) e.myMatchedRules.splice(e.myMatchedRules.indexOf(rule), 1);
+                
+                // generate an update event
+                handler && handler.onupdate && handler.onupdate(e, rule);
+                
+            }
+        });
         
     }
     
