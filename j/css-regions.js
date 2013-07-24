@@ -595,7 +595,7 @@ var cssRegions = {
         // restart the region layout algorithm for the modified pairs
         // 
         handler.onupdate = function onupdate(element, rule) {
-            console.dir({message:"onupdate",element:element,rule:rule});
+            console.dir({message:"onupdate",element:element,selector:rule.selector.toCSSString(),rule:rule});
         }
         
     }
