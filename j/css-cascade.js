@@ -63,7 +63,7 @@ var cssCascade = {
     getSpecifiedStyle: function getSpecifiedStyle(element, cssPropertyName) {
         
         // find all relevant selectors
-        var bestPriority = 0; var bestValue = "";
+        var isBestImportant=false; var bestPriority = 0; var bestValue = "";
         var rules = element.myMatchedRules || [];
         for(var i=rules.length-1; i>=0; i--) {
             
@@ -77,10 +77,28 @@ var cssCascade = {
                     if(decls[j].name==cssPropertyName) {
                         // TODO: only works if selectors containing a "," are deduplicated
                         var currentPriority = cssCascade.computeSelectorPriorityOf(rules[i].selector);
-                        if(currentPriority >= bestPriority) {
-                            // TODO: doesn't work in case of IMPORTANT declarations
-                            bestPriority = currentPriority;
-                            bestValue = decls[j].value;
+                        
+                        if(isBestImportant) {
+                            // only an important declaration can beat another important declaration
+                            if(decls[j].important) {
+                                if(currentPriority >= bestPriority) {
+                                    bestPriority = currentPriority;
+                                    bestValue = decls[j].value;
+                                }
+                            }
+                        } else {
+                            // an important declaration beat any non-important declaration
+                            if(decls[j].important) {
+                                isBestImportant = true;
+                                bestPriority = currentPriority;
+                                bestValue = decls[j].value;
+                            } else {
+                                // the selector priority has to be higher otherwise
+                                if(currentPriority >= bestPriority) {
+                                    bestPriority = currentPriority;
+                                    bestValue = decls[j].value;
+                                }
+                            }
                         }
                     }
                 }
