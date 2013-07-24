@@ -116,27 +116,42 @@ var cssCascade = {
         // avoid monitoring rules twice
         if(!rule.isMonitored) { rule.isMonitored=true } else { return; }
         
-        // monitor the rules
-        myQuerySelectorLive(rule.selector.toCSSString(), {
-            onadded: function(e) {
-                
-                // add the rule to the matching list of this element
-                (e.myMatchedRules = e.myMatchedRules || []).push(rule); // TODO: does not respect DOM order
-                
-                // generate an update event
-                handler && handler.onupdate && handler.onupdate(e, rule);
-                
-            },
-            onremoved: function(e) {
-                
-                // remove the rule from the matching list of this element
-                if(e.myMatchedRules) e.myMatchedRules.splice(e.myMatchedRules.indexOf(rule), 1);
-                
-                // generate an update event
-                handler && handler.onupdate && handler.onupdate(e, rule);
-                
+        // split the rule if it has multiple selectors
+        var rules = [];
+        var currentRule = new cssSyntax.StyleRule(); for(var i=0; i<rule.selector.length; i++) {
+            if(rule.selector[i] instanceof cssSyntax.DelimToken && rule.selector[i].value==",") {
+                currentRule.value = rule.value; rules.push(currentRule);
+                currentRule = new cssSyntax.StyleRule(); 
+            } else {
+                currentRule.selector.push(rule.selector[i])
             }
-        });
+        }
+        currentRule.value = rule.value; rules.push(currentRule);
+        
+        // monitor the rules
+        for(var i=0; i<rules.length; i++) {
+            rule = rules[i];
+            myQuerySelectorLive(rule.selector.toCSSString(), {
+                onadded: function(e) {
+                    
+                    // add the rule to the matching list of this element
+                    (e.myMatchedRules = e.myMatchedRules || []).push(rule); // TODO: does not respect DOM order
+                    
+                    // generate an update event
+                    handler && handler.onupdate && handler.onupdate(e, rule);
+                    
+                },
+                onremoved: function(e) {
+                    
+                    // remove the rule from the matching list of this element
+                    if(e.myMatchedRules) e.myMatchedRules.splice(e.myMatchedRules.indexOf(rule), 1);
+                    
+                    // generate an update event
+                    handler && handler.onupdate && handler.onupdate(e, rule);
+                    
+                }
+            });
+        }
         
     }
     
