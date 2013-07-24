@@ -596,10 +596,85 @@ var cssRegions = {
         // 
         handler.onupdate = function onupdate(element, rule) {
             console.dir({message:"onupdate",element:element,selector:rule.selector.toCSSString(),rule:rule});
+            var temp = null;
+            
+            var flowInto = (
+                cssCascade.getSpecifiedStyle(element, "flow-into")
+                .filter(function(t) { return t instanceof cssSyntax.IdentifierToken })
+            );
+            var flowIntoName = flowInto[0] ? flowInto[0].toCSSString().toLowerCase() : ""; if(flowIntoName=="none") {flowIntoName=""}
+            var flowIntoType = flowInto[1] ? flowInto[1].toCSSString().toLowerCase() : ""; if(flowIntoType!="content") {flowIntoName="element"}
+            var flowInto = flowIntoName + " " + flowIntoType;
+            
+            var flowFrom = (
+                cssCascade.getSpecifiedStyle(element, "flow-into")
+                .filter(function(t) { return t instanceof cssSyntax.IdentifierToken })
+            );
+            var flowFromName = flowInto[0] ? flowInto[0].toCSSString().toLowerCase() : ""; if(flowIntoName=="none") {flowIntoName=""}
+            var flowFromType = flowInto[1] ? flowInto[1].toCSSString().toLowerCase() : ""; if(flowIntoType!="content") {flowIntoName="element"}
+            var flowFrom = flowFromName + " " + flowFromType;
+            
+            if(element.cssRegionsLastFlowInto != flowInto || element.cssRegionsLastFlowFrom != flowFrom) {
+                
+                // remove from previous regions
+                var lastFlowFrom = (this.flows[element.cssRegionsLastFlowFromName]);
+                var lastFlowInto = (this.flows[element.cssRegionsLastFlowIntoName]);
+                lastFlowFrom && lastFlowFrom.removeFromContent(element);
+                lastFlowInto && lastFlowInto.removeFromRegions(element);
+                
+                // save data for later
+                element.cssRegionsLastFlowInto = flowInto;
+                element.cssRegionsLastFlowFrom = flowFrom;
+                element.cssRegionsLastFlowIntoName = flowIntoName;
+                element.cssRegionsLastFlowFromName = flowFromName;
+                element.cssRegionsLastFlowIntoType = flowIntoType;
+                element.cssRegionsLastFlowFromType = flowFromType;
+                
+                // add to new regions
+                var lastFlowFrom = (this.flows[flowFromName] = this.flows[flowFromName] || new cssRegions.Flow());
+                var lastFlowInto = (this.flows[flowIntoName] = this.flows[flowIntoName] || new cssRegions.Flow());
+                lastFlowFrom && lastFlowFrom.addToContent(element);
+                lastFlowInto && lastFlowInto.addToRegions(element);
+                
+                
+            }
         }
         
+    },
+    
+    // this array is supposed to contains all the currently existing flows
+    flows: [],
+    
+    // this class contains flow-relative data field
+    Flow: function Flow() {
+        
+        // elements poured into the flow
+        this.content = [];
+        
+        // elements that consume this flow
+        this.regions = [];
     }
     
-}
+};
+    
+cssRegions.Flow.prototype.removeFromContent = function(element) {
+    var index = this.content.indexOf(element);
+    if(index>=0) { this.content.splice(index,1); }
+};
+
+cssRegions.Flow.prototype.removeFromRegions = function(element) {
+    var index = this.regions.indexOf(element);
+    if(index>=0) { this.regions.splice(index,1); }
+};
+
+cssRegions.Flow.prototype.addToContent = function(element) {
+    var index = this.content.indexOf(element);
+    if(index>=0) { this.content.splice(index,1); }
+};
+
+cssRegions.Flow.prototype.addToRegions = function(element) {
+    var index = this.regions.indexOf(element);
+    if(index>=0) { this.regions.splice(index,1); }
+};
     
 window.addEventListener("load", function() {cssRegions.enablePolyfill()});
