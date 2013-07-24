@@ -11,7 +11,7 @@ var cssCascade = {
         var numberOfClasses = 0;
         var numberOfTags = 0;
         
-        // TODO: improve this parser, or find one on the web {fails at :not()}
+        // TODO: improve this parser, or find one on the web
         for(var i = 0; i < selector.length; i++) {
             
             if(selector[i] instanceof cssSyntax.IdentifierToken) {
@@ -63,7 +63,7 @@ var cssCascade = {
     getSpecifiedStyle: function getSpecifiedStyle(element, cssPropertyName) {
         
         // find all relevant selectors
-        var isBestImportant=false; var bestPriority = 0; var bestValue = "";
+        var isBestImportant=false; var bestPriority = 0; var bestValue = new cssSyntax.TokenList();
         var rules = element.myMatchedRules || [];
         for(var i=rules.length-1; i>=0; i--) {
             
