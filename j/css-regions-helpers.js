@@ -202,7 +202,7 @@ var cssRegionsHelpers = {
             var child, next;
             switch (node.nodeType) {
                 case 1: // Element node
-                    var id = node.getAttributeNode('data-css-regions-fragment-source');
+                    var id = node.getAttribute('data-css-regions-fragment-source');
                     node.removeAttribute('data-css-regions-fragment-source');
                     node.setAttribute('data-css-regions-fragment-of', id);
                     
