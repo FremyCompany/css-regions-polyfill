@@ -20,13 +20,15 @@
                 border: 10px solid red;
             }
             
-            [data-css-region=element] {
+            [data-css-region=element], [data-css-regions-fragment-source] {
                 display: none !important;
             }
             
+            /* Actually done via text node emptying + previous rule now
             [data-css-region=content] > * {
                 display: none !important;
             }
+            */
             
             [data-css-region=content] > cssregion {
                 display: inline !important;
