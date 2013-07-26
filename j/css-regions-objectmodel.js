@@ -3,7 +3,7 @@
 // 
 // this class contains flow-relative data field
 // 
-cssRegions.Flow= function Flow() {
+cssRegions.Flow= function NamedFlow() {
     
     // elements poured into the flow
     this.content = this.lastContent = [];
@@ -271,5 +271,18 @@ cssRegions.Flow.prototype.removeEventListeners = function(nodes) {
             delete element.cssRegionsEventStream;
         }
     });
+    
+}
+
+// alias
+cssRegions.NamedFlow = cssRegions.Flow;
+
+
+//
+// this class is a collection of named flows (not an array, sadly)
+//
+cssRegions.NamedFlowCollection = function NamedFlowCollection() {
+    
+    this.length = 0;
     
 }
