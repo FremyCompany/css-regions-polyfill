@@ -19,6 +19,9 @@ var cssRegions = {
         // get the next region
         var region = regions.pop();
         
+        // the region is actually the wrapper inside
+        region = region.cssRegionsWrapper;
+        
         // append the remaining content to the region
         region.innerHTML = '';
         region.appendChild(remainingContent);
@@ -98,9 +101,10 @@ var cssRegions = {
         );
         
         // if the caret is outside the region
-        if(region !== r.endContainer && !region.contains(r.endContainer)) {
+        if(!r || region !== r.endContainer && !region.contains(r.endContainer)) {
             
             // move back into the region
+            r = r || document.createRange();
             r.setStart(region, 0);
             r.setEnd(region, 0);
             dontOptimize=true;
@@ -451,6 +455,173 @@ var cssRegions = {
         
     },
     
+    markNodesAsRegion: function(nodes,fast) {
+        nodes.forEach(function(node) {
+            node.setAttribute('data-css-region',true);
+            node.cssRegionsLastFlowIntoType=="content" && cssRegions.hideTextNodesFromFragmentSource(node);
+            node.cssRegionsWrapper = node.cssRegionsWrapper || node.appendChild(document.createElement("cssregion"));
+        });
+    },
+    
+    unmarkNodesAsRegion: function(nodes,fast) {
+        nodes.forEach(function(node) {
+            node.cssRegionsWrapper && node.removeChild(node.cssRegionsWrapper); delete node.cssRegionsWrapper;
+            node.cssRegionsLastFlowIntoType=="content" && cssRegions.unhideTextNodesFromFragmentSource(node);
+            node.removeAttribute('data-css-region');
+        });
+    },
+    
+    fragmentSourceIndex: 0,
+    markNodesAsFragmentSource: function(nodes) {
+        
+        function visit(node) {
+            var child, next;
+            switch (node.nodeType) {
+                case 1: // Element node
+                    
+                    // mark as fragment source
+                    var id = node.getAttributeNode('data-css-regions-fragment-source');
+                    if(!id) { node.setAttribute('data-css-regions-fragment-source', cssRegions.fragmentSourceIndex++); }
+                    
+                    // expand list values
+                    if(node.tagName=='OL') cssRegions.expandListValues(node);
+                    
+                case 9: // Document node
+                case 11: // Document fragment node
+                    child = node.firstChild;
+                    while (child) {
+                        next = child.nextSibling;
+                        visit(child);
+                        child = next;
+                    }
+                    break;
+            }
+        }
+        
+        nodes.forEach(visit);
+        
+    },
+    
+    expandListValues: function(OL) {
+        var currentValue = OL.getAttribute("start") ? parseInt(OL.getAttribute("start")) : 1;
+        var LI = OL.firstElementChild; var LIV = null;
+        while(LI) {
+            if(LI.tagName==="LI") {
+                if(LIV=LI.getAttributeNode("value")) {
+                    currentValue = parseInt(LIV.nodeValue);
+                    LI.setAttribute('data-css-old-value', currentValue)
+                } else {
+                    LI.setAttribute("value", currentValue);
+                    currentValue = currentValue + 1;
+                }
+            }
+            LI = LI.nextElementSibling;
+        }
+    },
+    
+    unexpandListValues: function(OL) {
+        var LI = OL.firstElementChild; var LIV = null;
+        while(LI) {
+            if(LI.tagName==="LI") {
+                if(LIV=LI.getAttributeNode("data-css-old-value")) {
+                    LI.removeAttributeNode(LIV);
+                } else {
+                    LI.removeAttribute('value');
+                }
+            }
+            LI = LI.nextElementSibling;
+        }
+    },
+    
+    hideTextNodesFromFragmentSource: function(nodes) {
+        
+        function visit(node) {
+            var child, next;
+            switch (node.nodeType) {
+                case 3: // Text node
+                    
+                    // we have to remove their content the hard way...
+                    node.cssRegionsSavedNodeValue = node.nodeValue;
+                    if(afterClone) node.nodeValue = "";
+                    
+                    break;
+                case 1: // Element node
+                case 9: // Document node
+                case 11: // Document fragment node
+                    child = node.firstChild;
+                    while (child) {
+                        next = child.nextSibling;
+                        visit(child);
+                        child = next;
+                    }
+                    break;
+            }
+        }
+        
+        nodes.forEach(visit);
+        
+    },
+        
+    unmarkNodesAsFragmentSource: function(nodes) {
+        
+        function visit(node) {
+            var child, next;
+            switch (node.nodeType) {
+                case 3: // Text node
+                    
+                    // we have to reinstall their content the hard way...
+                    if("cssRegionsSavedNodeValue" in node) {
+                        node.nodeValue = node.cssRegionsSavedNodeValue;
+                        delete node.cssRegionsSavedNodeValue;
+                    }
+                    
+                    break;
+                case 1: // Element node
+                    node.removeAttribute('data-css-regions-fragment-source');
+                    if(node.tagName=="OL") cssRegions.unexpandListValues(node);
+                    
+                case 9: // Document node
+                case 11: // Document fragment node
+                    child = node.firstChild;
+                    while (child) {
+                        next = child.nextSibling;
+                        visit(child);
+                        child = next;
+                    }
+                    break;
+            }
+        }
+        
+        nodes.forEach(visit);
+        
+    },
+    
+    transformFragmentSourceToFragments: function(nodes) {
+        
+        function visit(node) {
+            var child, next;
+            switch (node.nodeType) {
+                case 1: // Element node
+                    var id = node.getAttributeNode('data-css-regions-fragment-source');
+                    node.removeAttribute('data-css-regions-fragment-source');
+                    node.setAttribute('data-css-regions-fragment-of', id);
+                    
+                case 9: // Document node
+                case 11: // Document fragment node
+                    child = node.firstChild;
+                    while (child) {
+                        next = child.nextSibling;
+                        visit(child);
+                        child = next;
+                    }
+                    break;
+            }
+        }
+        
+        nodes.forEach(visit);
+        
+    },
+    
     embedTrailingWhiteSpaceNodes: function(fragment) {
         
         var onlyWhiteSpace = /^\s*$/;
@@ -595,6 +766,11 @@ var cssRegions = {
         // restart the region layout algorithm for the modified pairs
         // 
         handler.onupdate = function onupdate(element, rule) {
+            
+            // let's just ignore fragments
+            if(element.getAttributeNode('data-css-fragment-of')) return;
+            
+            // update the layout
             console.dir({message:"onupdate",element:element,selector:rule.selector.toCSSString(),rule:rule});
             var temp = null;
             
@@ -603,24 +779,23 @@ var cssRegions = {
                 .filter(function(t) { return t instanceof cssSyntax.IdentifierToken })
             );
             var flowIntoName = flowInto[0] ? flowInto[0].toCSSString().toLowerCase() : ""; if(flowIntoName=="none") {flowIntoName=""}
-            var flowIntoType = flowInto[1] ? flowInto[1].toCSSString().toLowerCase() : ""; if(flowIntoType!="content") {flowIntoName="element"}
+            var flowIntoType = flowInto[1] ? flowInto[1].toCSSString().toLowerCase() : ""; if(flowIntoType!="content") {flowIntoType="element"}
             var flowInto = flowIntoName + " " + flowIntoType;
             
             var flowFrom = (
-                cssCascade.getSpecifiedStyle(element, "flow-into")
+                cssCascade.getSpecifiedStyle(element, "flow-from")
                 .filter(function(t) { return t instanceof cssSyntax.IdentifierToken })
             );
-            var flowFromName = flowInto[0] ? flowInto[0].toCSSString().toLowerCase() : ""; if(flowIntoName=="none") {flowIntoName=""}
-            var flowFromType = flowInto[1] ? flowInto[1].toCSSString().toLowerCase() : ""; if(flowIntoType!="content") {flowIntoName="element"}
-            var flowFrom = flowFromName + " " + flowFromType;
+            var flowFromName = flowFrom[0] ? flowFrom[0].toCSSString().toLowerCase() : ""; if(flowFromName=="none") {flowFromName=""}
+            var flowFrom = flowFromName;
             
             if(element.cssRegionsLastFlowInto != flowInto || element.cssRegionsLastFlowFrom != flowFrom) {
                 
                 // remove from previous regions
-                var lastFlowFrom = (this.flows[element.cssRegionsLastFlowFromName]);
-                var lastFlowInto = (this.flows[element.cssRegionsLastFlowIntoName]);
-                lastFlowFrom && lastFlowFrom.removeFromContent(element);
-                lastFlowInto && lastFlowInto.removeFromRegions(element);
+                var lastFlowFrom = (cssRegions.flows[element.cssRegionsLastFlowFromName]);
+                var lastFlowInto = (cssRegions.flows[element.cssRegionsLastFlowIntoName]);
+                lastFlowFrom && lastFlowFrom.removeFromRegions(element);
+                lastFlowInto && lastFlowInto.removeFromContent(element);
                 
                 // save data for later
                 element.cssRegionsLastFlowInto = flowInto;
@@ -628,22 +803,27 @@ var cssRegions = {
                 element.cssRegionsLastFlowIntoName = flowIntoName;
                 element.cssRegionsLastFlowFromName = flowFromName;
                 element.cssRegionsLastFlowIntoType = flowIntoType;
-                element.cssRegionsLastFlowFromType = flowFromType;
                 
                 // add to new regions
-                var lastFlowFrom = (this.flows[flowFromName] = this.flows[flowFromName] || new cssRegions.Flow());
-                var lastFlowInto = (this.flows[flowIntoName] = this.flows[flowIntoName] || new cssRegions.Flow());
-                lastFlowFrom && lastFlowFrom.addToContent(element);
-                lastFlowInto && lastFlowInto.addToRegions(element);
-                
+                if(flowFromName) {
+                    var lastFlowFrom = (cssRegions.flows[flowFromName] = cssRegions.flows[flowFromName] || new cssRegions.Flow());
+                    lastFlowFrom && lastFlowFrom.addToRegions(element);
+                    lastFlowFrom && lastFlowFrom.relayout();
+                }
+                if(flowIntoName) {
+                    var lastFlowInto = (cssRegions.flows[flowIntoName] = cssRegions.flows[flowIntoName] || new cssRegions.Flow());
+                    lastFlowInto && lastFlowInto.addToContent(element);
+                    lastFlowInto && lastFlowInto.relayout();
+                }
                 
             }
+            
         }
         
     },
     
-    // this array is supposed to contains all the currently existing flows
-    flows: [],
+    // this dictionnary is supposed to contains all the currently existing flows
+    flows: Object.create ? Object.create(null) : {},
     
     // this class contains flow-relative data field
     Flow: function Flow() {
@@ -658,23 +838,157 @@ var cssRegions = {
 };
     
 cssRegions.Flow.prototype.removeFromContent = function(element) {
+    
+    // TODO: clean up stuff
+    if(element.cssRegionsEventStream) {
+        element.cssRegionsEventStream.disconnect();
+    }
+    
+    // remove reference
     var index = this.content.indexOf(element);
     if(index>=0) { this.content.splice(index,1); }
+    
 };
 
 cssRegions.Flow.prototype.removeFromRegions = function(element) {
+    
+    // TODO: clean up stuff
+    
+    // remove reference
     var index = this.regions.indexOf(element);
     if(index>=0) { this.regions.splice(index,1); }
+    
 };
 
 cssRegions.Flow.prototype.addToContent = function(element) {
-    var index = this.content.indexOf(element);
-    if(index>=0) { this.content.splice(index,1); }
+    
+    // walk the tree to find an element inside the content chain
+    var content = this.content;
+    var treeWalker = document.createTreeWalker(
+        document.documentElement,
+        NodeFilter.SHOW_ELEMENT,
+        { 
+            acceptNode: function(node) { 
+                return content.indexOf(node) >= 0 ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT; 
+            }
+        },
+        false
+    ); 
+    
+    // which by the way has to be after the considered element
+    treeWalker.currentNode = element;
+    
+    // if we find such node
+    if(treeWalker.nextNode()) {
+        
+        // insert the element at his current location
+        content.splice(content.indexOf(treeWalker.currentNode),0,element);
+        
+    } else {
+        
+        // add the new element to the end of the array
+        content.push(element);
+        
+    }
+
 };
 
 cssRegions.Flow.prototype.addToRegions = function(element) {
-    var index = this.regions.indexOf(element);
-    if(index>=0) { this.regions.splice(index,1); }
+    
+    // walk the tree to find an element inside the region chain
+    var regions = this.regions;
+    var treeWalker = document.createTreeWalker(
+        document.documentElement,
+        NodeFilter.SHOW_ELEMENT,
+        { 
+            acceptNode: function(node) { 
+                return regions.indexOf(node) >= 0 ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT; 
+            } 
+        },
+        false
+    );
+    
+    // which by the way has to be after the considered element
+    treeWalker.currentNode = element;
+    
+    // if we find such node
+    if(treeWalker.nextNode()) {
+        
+        // insert the element at his current location
+        regions.splice(this.regions.indexOf(treeWalker.currentNode),0,element);
+        
+    } else {
+        
+        // add the new element to the end of the array
+        regions.push(element);
+    }
+    
 };
+
+cssRegions.Flow.prototype.generateContentFragment = function() {
+    var fragment = document.createDocumentFragment(); var This=this;
+    var update = function(stream) {
+        stream.schedule(update); This.relayout();
+    }
+
+    // add copies of all due content
+    for(var i=0; i<this.content.length; i++) {
+        var element = this.content[i];
+        
+        // depending on the requested behavior
+        if(element.cssRegionsLastFlowIntoType=="element") {
+            
+            // add the element
+            fragment.appendChild(element.cloneNode(true));
+            
+        } else {
+            
+            // add current children
+            var el = element.firstChild; while(el) {
+                fragment.appendChild(el.cloneNode(true));
+                el = el.nextSibling;
+            }
+            
+        }
+        
+        // watch out for changes
+        if(!element.cssRegionsEventStream) {
+            element.cssRegionsEventStream = new myDOMUpdateEventStream({target: element});
+            element.cssRegionsEventStream.schedule(update);
+        }
+    }
+    return fragment;
+}
+
+cssRegions.Flow.prototype.relayout = function() {
+    var This = this; 
+    
+    // batch relayout queries
+    if(This.relayoutScheduled) { return; }
+    This.relayoutScheduled = true;
+    requestAnimationFrame(function(){
+        
+        // cleanup previous layout
+        cssRegions.unmarkNodesAsRegion(This.lastRegions);
+        cssRegions.unmarkNodesAsFragmentSource(This.lastContent);
+        
+        // empty all the regions
+        cssRegions.markNodesAsRegion(This.regions);
+        
+        // create a list of all the regions
+        var regionStack = This.regions.slice(0).reverse();
+        
+        // create a list of the content
+        var contentFragment = This.generateContentFragment();
+        
+        // layout this stuff
+        cssRegions.layoutContent(regionStack, contentFragment);
+        
+        // mark layout has being done
+        This.relayoutScheduled = false;
+        
+    });
+    
+}
     
 window.addEventListener("load", function() {cssRegions.enablePolyfill()});

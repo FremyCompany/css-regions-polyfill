@@ -3,7 +3,7 @@
     <head>
         <title>CSS Regions - polyfill test - inline breaking</title>
         <style>
-            html { overflow-y: scroll; }
+            html { overflow-y: scroll; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; }
             #region1 {
                 background: yellow; color: red;
                 max-height: 150px;
@@ -18,6 +18,18 @@
             }
             #regions {
                 border: 10px solid red;
+            }
+            
+            [data-css-region=element] {
+                display: none !important;
+            }
+            
+            [data-css-region=content] > * {
+                display: none !important;
+            }
+            
+            [data-css-region=content] > cssregion {
+                display: inline !important;
             }
             
             [data-css-special-continued-fragment] { 
@@ -64,9 +76,19 @@
                 flow-into: page-content content !important;
             }
             
+            #region3, #regions > div {
+                flow-from: page-content;
+            }
+            
+            #region3 + #region1 {
+                border-top: solid black 200px;
+            }
+            
         </style>
     </head>
-    <body>
+    <body 
+        onclick="var c=document.getElementById('content'); c.appendChild(c.firstElementChild.cloneNode());"
+        oncontextmenu="var c=document.getElementById('regions'); c.appendChild(c.firstElementChild.cloneNode()); return false;">
         <div id='content' style='display: none'>
             <div style="background: lime; margin: 25px; padding-bottom: 200px; display: inline-block;">Some content</div>
             <div style="background: lime; margin: 25px; padding-bottom: 200px; display: inline-block;">Some content</div>
@@ -96,24 +118,5 @@
         <script src="j/css-selectors.js"></script>
         <script src="j/css-break.js"></script>
         <script src="j/css-regions.js"></script>
-        <script>
-            
-            window.onload = function() {
-                
-                var contentRange = document.createRange();
-                contentRange.selectNodeContents(document.getElementById("content"));
-                
-                cssRegions.layoutContent(
-                    [
-                        document.getElementById("region3"),
-                        document.getElementById("region2"),
-                        document.getElementById("region1"),
-                    ],
-                    contentRange.cloneContents()
-                );
-                
-            }
-            
-        </script>
     </body>
 </html>

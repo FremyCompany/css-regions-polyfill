@@ -404,13 +404,13 @@ window.myQuerySelectorLive = function(selector, handler, root) {
 			} else if (el2 && /*el1 is after el2*/(!el1||(el2.compareDocumentPosition(el1) & (1|2|8|32))===0)) {
 				
 				// INSERT: raise onadded, pop new elements
-				try { handler.onadded && handler.onadded(el2); } catch(ex) {}
+				try { handler.onadded && handler.onadded(el2); } catch(ex) { setImmediate(function() {throw ex})}
 				el2 = newElms.pop();
 				
 			} else {
 			
 				// DELETE: raise onremoved, pop old elements
-				try { handler.onremoved && handler.onremoved(el1); } catch(ex) {}
+				try { handler.onremoved && handler.onremoved(el1); } catch(ex) { setImmediate(function() {throw ex})}
 				el1 = oldElms.pop();
 				
 			}
