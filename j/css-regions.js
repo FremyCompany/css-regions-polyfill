@@ -53,7 +53,7 @@ var cssRegions = {
         } else {
             
             // TODO: support region-fragment: break
-            if(false) {
+            if(cssCascade.getSpecifiedStyle(region.cssRegionHost,"region-fragment").toCSSString().trim().toLowerCase()=="break") {
                 this.extractOverflowingContent(region);
             }
             
@@ -475,7 +475,7 @@ var cssRegions = {
                     var decls = rules[i].value;
                     for(var j=decls.length-1; j>=0; j--) {
                         if(decls[j].type=="DECLARATION") {
-                            if((/^flow-(from|into)$/i).test(decls[j].name)) {
+                            if((/^(flow-(from|into)|region-fragment)$/i).test(decls[j].name)) {
                                 cssCascade.startMonitoringRule(rules[i], handler);
                                 break;
                             }
