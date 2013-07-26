@@ -60,6 +60,24 @@ var cssRegions = {
         }
         
         // TODO: support 'regionOverset' and region events
+        document.getNamedFlows = function() {
+            
+            var c = new cssRegions.NamedFlowCollection(); var flows = cssRegions.flows;
+            for(var flowName in cssRegions.flows) {
+                
+                if(Object.prototype.hasOwnProperty.call(flows, flowName)) {
+                    
+                    // only active flows can be included
+                    if(flows[flowName].content.length!=0 && flows[flowName].regions.length!=0) {
+                        c[c.length++] = c[flowName] = flows[flowName];
+                    }
+                    
+                }
+                
+            }
+            return c;
+            
+        }
         
     },
     
