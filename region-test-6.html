@@ -20,7 +20,7 @@
                 border: 10px solid red;
             }
             
-            [data-css-region=element], [data-css-regions-fragment-source] {
+            [data-css-region] > *, [data-css-regions-fragment-source] {
                 display: none !important;
             }
             
@@ -30,7 +30,7 @@
             }
             */
             
-            [data-css-region=content] > cssregion {
+            [data-css-region] > cssregion:last-of-type {
                 display: inline !important;
             }
             
@@ -82,7 +82,7 @@
                 flow-from: page-content;
             }
             
-            #region3 + #region1 {
+            #region3 ~ #region1 {
                 border-top: solid black 200px;
             }
             
@@ -91,7 +91,7 @@
     <body 
         onclick="var c=document.getElementById('content'); c.appendChild(c.firstElementChild.cloneNode());"
         oncontextmenu="var c=document.getElementById('regions'); c.appendChild(c.firstElementChild.cloneNode()); return false;">
-        <div id='content' style='display: none'>
+        <div id='content'>
             <div style="background: lime; margin: 25px; padding-bottom: 200px; display: inline-block;">Some content</div>
             <div style="background: lime; margin: 25px; padding-bottom: 200px; display: inline-block;">Some content</div>
             <div style="background: lime; margin: 25px; padding-bottom: 200px; display: inline-block;">Some content</div>
@@ -104,6 +104,7 @@
             <div style="background: lime; margin: 25px; padding-bottom: 200px; display: inline-block;">Some content</div>
             <div style="background: lime; margin: 25px; padding-bottom: 200px; display: inline-block;">Some content</div>
             <div style="background: lime; margin: 25px; padding-bottom: 200px; display: inline-block;">Some content</div>
+            END OF CONTENT
         </div>
         
         <div id="regions">
@@ -119,6 +120,8 @@
         <script src="j/css-cascade.js"></script>
         <script src="j/css-selectors.js"></script>
         <script src="j/css-break.js"></script>
+        <script src="j/css-regions-helpers.js"></script>
         <script src="j/css-regions.js"></script>
+        <script src="j/css-regions-flow.js"></script>
     </body>
 </html>
