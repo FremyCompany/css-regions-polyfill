@@ -20,7 +20,12 @@ var cssRegions = {
         var region = regions.pop();
         
         // the region is actually the wrapper inside
-        region = region.cssRegionsWrapper;
+        if(region.cssRegionsWrapper) {
+            region.cssRegionsWrapper.cssRegionsHost = region;
+            region = region.cssRegionsWrapper;
+        } else {
+            region.cssRegionHost = region;
+        }
         
         // append the remaining content to the region
         region.innerHTML = '';
@@ -30,7 +35,7 @@ var cssRegions = {
         if(regions.length !== 0) {
             
             // check if there was an overflow
-            if(region.scrollHeight != region.offsetHeight) {
+            if(region.cssRegionHost.scrollHeight != region.cssRegionHost.offsetHeight) {
                 
                 // the remaining content is what was overflowing
                 remainingContent = this.extractOverflowingContent(region);
@@ -82,9 +87,9 @@ var cssRegions = {
         this.embedTrailingWhiteSpaceNodes(region);
         
         // get the region layout
-        var sizingH = region.offsetHeight; // avail size (max-height)
-        var sizingW = region.offsetWidth; // avail size (max-width)
-        var pos = region.getBoundingClientRect(); // avail size?
+        var sizingH = region.cssRegionHost.offsetHeight; // avail size (max-height)
+        var sizingW = region.cssRegionHost.offsetWidth; // avail size (max-width)
+        var pos = region.cssRegionHost.getBoundingClientRect(); // avail size?
         pos = {top: pos.top, bottom: pos.bottom, left: pos.left, right: pos.right};
         
         
@@ -103,12 +108,21 @@ var cssRegions = {
         // if the caret is outside the region
         if(!r || region !== r.endContainer && !region.contains(r.endContainer)) {
             
-            // move back into the region
-            r = r || document.createRange();
-            r.setStart(region, 0);
-            r.setEnd(region, 0);
-            dontOptimize=true;
-            
+            // if the caret is after the region wrapper but inside the host...
+            if(r && r.endContainer === region.cssRegionHost && r.endOffset==r.endContainer.childNodes.length) {
+                
+                // move back at the end of the region, actually
+                r.setEnd(region, region.childNodes.length);
+                
+            } else {
+                
+                // move back into the region
+                r = r || document.createRange();
+                r.setStart(region, 0);
+                r.setEnd(region, 0);
+                dontOptimize=true;
+                
+            }
         }
         
         // start finding the natural breaking point
@@ -842,6 +856,7 @@ cssRegions.Flow.prototype.removeFromContent = function(element) {
     // TODO: clean up stuff
     if(element.cssRegionsEventStream) {
         element.cssRegionsEventStream.disconnect();
+        delete element.cssRegionsEventStream;
     }
     
     // remove reference
@@ -853,6 +868,10 @@ cssRegions.Flow.prototype.removeFromContent = function(element) {
 cssRegions.Flow.prototype.removeFromRegions = function(element) {
     
     // TODO: clean up stuff
+    if(element.cssRegionsEventStream) {
+        element.cssRegionsEventStream.disconnect();
+        delete element.cssRegionsEventStream;
+    }
     
     // remove reference
     var index = this.regions.indexOf(element);
@@ -969,8 +988,8 @@ cssRegions.Flow.prototype.relayout = function() {
     requestAnimationFrame(function(){
         
         // cleanup previous layout
-        cssRegions.unmarkNodesAsRegion(This.lastRegions);
-        cssRegions.unmarkNodesAsFragmentSource(This.lastContent);
+        cssRegions.unmarkNodesAsRegion(This.lastRegions); This.lastRegions = This.regions.slice(0);
+        cssRegions.unmarkNodesAsFragmentSource(This.lastContent); This.lastContent = This.content.slice(0);
         
         // empty all the regions
         cssRegions.markNodesAsRegion(This.regions);
