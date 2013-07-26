@@ -3,7 +3,19 @@
 // 
 // this class contains flow-relative data field
 // 
-cssRegions.Flow= function NamedFlow() {
+cssRegions.Flow= function NamedFlow(name) {
+    
+    // TODO: force immediate relayout if someone ask the overset properties
+    // and the layout has been deemed wrong (still isn't a proof of correctness but okay)
+    
+    // define the flow name
+    this.name = name; Object.defineProperty(this, "name", {get: function() { return name; }});
+    
+    // define the overset status
+    this.overset = false;
+    
+    // define the first empty region
+    this.firstEmptyRegionIndex = -1;
     
     // elements poured into the flow
     this.content = this.lastContent = [];
@@ -229,7 +241,17 @@ cssRegions.Flow.prototype.relayout = function() {
         //
         
         // layout this stuff
-        cssRegions.layoutContent(regionStack, contentFragment);
+        This.overset = cssRegions.layoutContent(regionStack, contentFragment);
+        This.firstEmptyRegionIndex = This.regions.length-1; while(This.regions[This.firstEmptyRegionIndex]) {
+            if(This.regions[This.firstEmptyRegionIndex].cssRegionsWrapper.firstChild) {
+                if((++This.firstEmptyRegionIndex)==This.regions.length) {
+                    This.firstEmptyRegionIndex = -1;
+                }
+                break;
+            } else {
+                This.firstEmptyRegionIndex--; 
+            }
+        }
         
         
         
@@ -277,6 +299,35 @@ cssRegions.Flow.prototype.removeEventListeners = function(nodes) {
 // alias
 cssRegions.NamedFlow = cssRegions.Flow;
 
+// return a disconnected array of the content of a NamedFlow
+cssRegions.NamedFlow.prototype.getContent = function getContent() {
+    return this.content.slice(0)
+}
+
+// return a disconnected array of the content of a NamedFlow
+cssRegions.NamedFlow.prototype.getContent = function getContent() {
+    return this.content.slice(0)
+}
+
+cssRegions.NamedFlow.prototype.getRegionsByContent = function getRegionsByContent(node) {
+    var regions = [];
+    var fragments = document.querySelectorAll('[data-css-regions-fragment-of="'+node.getAttribute('data-css-regions-fragment-source')+'"]');
+    for (var i=0; i<fragments.length; i++) {
+        
+        var current=fragments[i]; do {
+            
+            if(current.getAttribute('data-css-region')) {
+                regions.push(current); break;
+            }
+            
+        } while(current=current.parentNode);
+        
+    }
+    
+    return regions;
+}
+
+
 
 //
 // this class is a collection of named flows (not an array, sadly)
@@ -284,5 +335,39 @@ cssRegions.NamedFlow = cssRegions.Flow;
 cssRegions.NamedFlowCollection = function NamedFlowCollection() {
     
     this.length = 0;
+    
+}
+
+
+//
+// this helper creates the required methods on top of the DOM {ie: public exports}
+//
+cssRegions.enablePolyfillObjectModel = function() {
+    
+    //
+    // DOCUMENT INTERFACE
+    //
+    
+    //
+    // returns a static list of active named flows
+    //
+    document.getNamedFlows = function() {
+            
+        var c = new cssRegions.NamedFlowCollection(); var flows = cssRegions.flows;
+        for(var flowName in cssRegions.flows) {
+            
+            if(Object.prototype.hasOwnProperty.call(flows, flowName)) {
+                
+                // only active flows can be included
+                if(flows[flowName].content.length!=0 && flows[flowName].regions.length!=0) {
+                    c[c.length++] = c[flowName] = flows[flowName];
+                }
+                
+            }
+            
+        }
+        return c;
+        
+    }
     
 }

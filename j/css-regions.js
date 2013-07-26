@@ -6,6 +6,7 @@
 
 var cssRegions = {
     layoutContent: function(regions, remainingContent, secondCall) {
+        // TODO: support 'regionOverset' and region events
         
         //
         // this function will iteratively fill all the regions
@@ -48,34 +49,23 @@ var cssRegions = {
             }
             
             // layout the next regions
-            cssRegions.layoutContent(regions, remainingContent, true); // TODO: use do...while instead of recursion
+            // WE LET THE NEXT REGION DECIDE WHAT TO RETURN
+            return cssRegions.layoutContent(regions, remainingContent, true); // TODO: use do...while instead of recursion
             
         } else {
             
-            // TODO: support region-fragment: break
+            // support region-fragment: break
             if(cssCascade.getSpecifiedStyle(region.cssRegionHost,"region-fragment").toCSSString().trim().toLowerCase()=="break") {
-                this.extractOverflowingContent(region);
-            }
-            
-        }
-        
-        // TODO: support 'regionOverset' and region events
-        document.getNamedFlows = function() {
-            
-            var c = new cssRegions.NamedFlowCollection(); var flows = cssRegions.flows;
-            for(var flowName in cssRegions.flows) {
                 
-                if(Object.prototype.hasOwnProperty.call(flows, flowName)) {
-                    
-                    // only active flows can be included
-                    if(flows[flowName].content.length!=0 && flows[flowName].regions.length!=0) {
-                        c[c.length++] = c[flowName] = flows[flowName];
-                    }
-                    
-                }
+                // WE RETURN TRUE IF WE DID OVERFLOW
+                return (this.extractOverflowingContent(region).hasChildNodes());
+                
+            } else {
+                
+                // WE RETURN FALSE IF WE DIDN'T OVERFLOW
+                return false;
                 
             }
-            return c;
             
         }
         
@@ -569,6 +559,13 @@ var cssRegions = {
             }
             
         }
+        
+        
+        //
+        // Perform the OM exports
+        //
+        cssRegions.enablePolyfillObjectModel();
+
         
     },
     
