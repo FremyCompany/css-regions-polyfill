@@ -473,30 +473,8 @@ var cssRegions = {
         // 
         setImmediate(function() {
             
-            var rules = cssSyntax.parse(ss[0].textContent).value;
-            for(var i=0; i<rules.length; i++) {
-                
-                // only consider style rules
-                if(rules[i] instanceof cssSyntax.StyleRule) {
-                
-                    // try to see if the current rule is worth watching
-                    var decls = rules[i].value;
-                    for(var j=decls.length-1; j>=0; j--) {
-                        if(decls[j].type=="DECLARATION") {
-                            if((/^(flow-(from|into)|region-fragment)$/i).test(decls[j].name)) {
-                                cssCascade.startMonitoringRule(rules[i], handler);
-                                break;
-                            }
-                        }
-                    }
-                    
-                } else {
-                    
-                    // TODO: handle @media
-                    
-                }
-                
-            }
+            cssCascade.loadStyleSheet(ss[0].textContent);
+            cssCascade.startMonitoringProperty(/^(flow-(from|into)|region-fragment)$/i, handler);
             
         });
         
@@ -565,6 +543,18 @@ var cssRegions = {
         // Perform the OM exports
         //
         cssRegions.enablePolyfillObjectModel();
+        
+        //
+        // make sure to update the region layout when image loaded
+        //
+        window.addEventListener("load", 
+            function() { 
+                var flows = document.getNamedFlows();
+                for(var i=0; i<flows.length; i++) {
+                    flows[i].relayout();
+                }
+            }
+        );
 
         
     },
@@ -573,5 +563,3 @@ var cssRegions = {
     flows: Object.create ? Object.create(null) : {}
     
 };
-    
-window.addEventListener("load", function() {cssRegions.enablePolyfill()});

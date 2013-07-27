@@ -60,11 +60,19 @@ var cssCascade = {
         
     },
     
+    findAllMatchingRules: function findAllMatchingRules(element) {
+        return []; // TODO: walk the whole stylesheet...
+    },
+    
     getSpecifiedStyle: function getSpecifiedStyle(element, cssPropertyName) {
         
-        // find all relevant selectors
+        // find all relevant style rules
         var isBestImportant=false; var bestPriority = 0; var bestValue = new cssSyntax.TokenList();
-        var rules = element.myMatchedRules || [];
+        var rules = (
+            cssCascade.monitoredProperties.some(function(reg) { return reg.test(cssPropertyName) })
+            ? element.myMatchedRules || []
+            : cssCascade.findAllMatchingRules(element)
+        );
         for(var i=rules.length-1; i>=0; i--) {
             
             // TODO: media queries hook
@@ -111,6 +119,86 @@ var cssCascade = {
         
     },
     
+    stylesheets: [],
+    loadStyleSheet: function loadStyleSheet(cssText) {
+        
+        // TODO: load only one, load in order
+        var rules = cssSyntax.parse(cssText).value;
+        cssCascade.stylesheets.push(rules);
+        
+    },
+    
+    monitoredProperties: [],
+    monitoredPropertiesHandlers: Object.create ? Object.create(null) : {},
+    startMonitoringProperty: function startMonitoringProperty(propertyRegExp, handler) {
+        
+        var temp = cssCascade.monitoredProperties.push(propertyRegExp);
+        var temp = cssCascade.monitoredPropertiesHandlers[propertyRegExp] = 
+            cssCascade.monitoredPropertiesHandlers[propertyRegExp] || [];
+        temp.push(handler)
+        
+        for(var s=0; s<cssCascade.stylesheets.length; s++) {
+            
+            var rules = cssCascade.stylesheets[s];
+            for(var i=0; i<rules.length; i++) {
+                
+                // only consider style rules
+                if(rules[i] instanceof cssSyntax.StyleRule) {
+                    
+                    // try to see if the current rule is worth watching
+                    var decls = rules[i].value;
+                    for(var j=decls.length-1; j>=0; j--) {
+                        if(decls[j].type=="DECLARATION") {
+                            if(propertyRegExp.test(decls[j].name)) {
+                                
+                                // if we found some, start monitoring
+                                cssCascade.startMonitoringRule(rules[i], {
+                                    onupdate: function(element, rule) {
+                                        
+                                        // we need to find all regexps that matches
+                                        var mpr = cssCascade.monitoredProperties;
+                                        for(var k=mpr.length; k--;) {
+                                            var reg = mpr[k];
+                                            
+                                            var decls = rule.value;
+                                            for(var j=decls.length-1; j>=0; j--) {
+                                                if(decls[j].type=="DECLARATION") {
+                                                    if(reg.test(decls[j].name)) {
+                                                        
+                                                        // call all handlers waiting for this
+                                                        var hs = cssCascade.monitoredPropertiesHandlers[reg];
+                                                        for(var hi=hs.length; hi--;) {
+                                                            hs[hi].onupdate(element,rule);
+                                                        };
+                                                        
+                                                        // don't call twice
+                                                        break;
+                                                        
+                                                    }
+                                                }
+                                            }
+                                            
+                                        };
+                                        
+                                    }
+                                });
+                                break;
+                                
+                            }
+                        }
+                    }
+                    
+                } else {
+                    
+                    // TODO: handle @media
+                    
+                }
+                
+            }
+            
+        }
+    },
+    
     startMonitoringRule: function startMonitoringRule(rule, handler) {
         
         // avoid monitoring rules twice
@@ -135,7 +223,7 @@ var cssCascade = {
                 onadded: function(e) {
                     
                     // add the rule to the matching list of this element
-                    (e.myMatchedRules = e.myMatchedRules || []).push(rule); // TODO: does not respect DOM order
+                    (e.myMatchedRules = e.myMatchedRules || []).push(rule); // TODO: does not respect priority order
                     
                     // generate an update event
                     handler && handler.onupdate && handler.onupdate(e, rule);

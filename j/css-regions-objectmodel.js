@@ -371,3 +371,5 @@ cssRegions.enablePolyfillObjectModel = function() {
     }
     
 }
+
+cssRegions.enablePolyfill();
