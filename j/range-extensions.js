@@ -162,7 +162,7 @@ Range.prototype.myMoveOneCharRight = function() {
             // enter the next sibling from its start
             r.setStartBefore(nextSibling.firstChild);
             
-        } else if(nextSibling && nextSibling.nodeType==nextSibling.TEXT_NODE) { // todo: lookup value
+        } else if(nextSibling && nextSibling.nodeType==nextSibling.TEXT_NODE && nextSibling.nodeValue!='') { // todo: lookup value
             
             // enter the next text node from its start
             r.setStart(nextSibling, 0);
@@ -177,6 +177,9 @@ Range.prototype.myMoveOneCharRight = function() {
     } else {
         r.setStartAfter(r.endContainer);
     }
+    
+    // shouldn't be needed but who knows...
+    r.setEnd(r.startContainer, r.startOffset);
     
 }
 

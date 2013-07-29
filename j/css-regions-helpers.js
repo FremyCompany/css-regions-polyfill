@@ -29,8 +29,8 @@ var cssRegionsHelpers = {
     //
     markNodesAsRegion: function(nodes,fast) {
         nodes.forEach(function(node) {
-            node.setAttribute('data-css-region',node.cssRegionsLastFlowIntoType);
-            node.cssRegionsLastFlowIntoType=="content" && cssRegionsHelpers.hideTextNodesFromFragmentSource(node);
+            node.setAttribute('data-css-region',node.cssRegionsLastFlowFromName);
+            cssRegionsHelpers.hideTextNodesFromFragmentSource([node]);
             node.cssRegionsWrapper = node.cssRegionsWrapper || node.appendChild(document.createElement("cssregion"));
         });
     },
@@ -41,7 +41,7 @@ var cssRegionsHelpers = {
     unmarkNodesAsRegion: function(nodes,fast) {
         nodes.forEach(function(node) {
             node.cssRegionsWrapper && node.removeChild(node.cssRegionsWrapper); delete node.cssRegionsWrapper;
-            node.cssRegionsLastFlowIntoType=="content" && cssRegionsHelpers.unhideTextNodesFromFragmentSource(node);
+            cssRegionsHelpers.unhideTextNodesFromFragmentSource([node]);
             node.removeAttribute('data-css-region');
         });
     },
@@ -124,9 +124,10 @@ var cssRegionsHelpers = {
     //
     //
     //
+    listOfTextNodesForIE: [],
     hideTextNodesFromFragmentSource: function(nodes) {
         
-        function visit(node) {
+        function visit(node,k) {
             var child, next;
             switch (node.nodeType) {
                 case 3: // Text node
@@ -135,17 +136,63 @@ var cssRegionsHelpers = {
                     node.cssRegionsSavedNodeValue = node.nodeValue;
                     node.nodeValue = "";
                     
+                    // HACK: OTHERWISE IE GC THE TEXTNODE AND RETURNS YOU
+                    // A FRESH TEXTNODE THE NEXT TIME WHERE YOUR EXPANDO
+                    // IS NOWHERE TO BE SEEN!
+                    if(navigator.userAgent.indexOf('MSIE')>0 || navigator.userAgent.indexOf("Trident")>0) {
+                        if(cssRegionsHelpers.listOfTextNodesForIE.indexOf(node)==-1) {
+                            cssRegionsHelpers.listOfTextNodesForIE.push(node);
+                        }
+                    }
+                    
                     break;
                     
                 case 1: // Element node
-                    if(node.cssRegionsLastFlowIntoType=="element") return;
+                    if(typeof(k)=="undefined") return;
                     
                 case 9: // Document node
                 case 11: // Document fragment node                    
                     child = node.firstChild;
                     while (child) {
                         next = child.nextSibling;
-                        if(node.cssRegionsLastFlowIntoType=="content") visit(child);
+                        visit(child);
+                        child = next;
+                    }
+                    break;
+            }
+        }
+        
+        nodes.forEach(visit);
+        
+    },
+    
+    //
+    //
+    //
+    unhideTextNodesFromFragmentSource: function(nodes) {
+        
+        function visit(node) {
+            var child, next;
+            switch (node.nodeType) {
+                case 3: // Text node
+                    
+                    // we have to remove their content the hard way...
+                    if("cssRegionsSavedNodeValue" in node) {
+                        node.nodeValue = node.cssRegionsSavedNodeValue;
+                        delete node.cssRegionsSavedNodeValue;
+                    }
+                    
+                    break;
+                    
+                case 1: // Element node
+                    if(typeof(k)=="undefined") return;
+                    
+                case 9: // Document node
+                case 11: // Document fragment node                    
+                    child = node.firstChild;
+                    while (child) {
+                        next = child.nextSibling;
+                        visit(child);
                         child = next;
                     }
                     break;

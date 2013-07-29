@@ -103,7 +103,7 @@ var cssRegions = {
         }
         
         // if the caret is outside the region
-        if(!r || region !== r.endContainer && !region.contains(r.endContainer)) {
+        if(!r || (region !== r.endContainer && !region.contains(r.endContainer))) {
             
             // if the caret is after the region wrapper but inside the host...
             if(r && r.endContainer === region.cssRegionHost && r.endOffset==r.endContainer.childNodes.length) {
@@ -194,6 +194,12 @@ var cssRegions = {
             current = current.parentNode;
         }
         
+        // if the selection is not in the region anymore, add the whole region
+        if(!r || (region !== r.endContainer && !region.contains(r.endContainer))) {
+            console.dir(r.cloneRange()); debugger;
+            r.setStart(region,region.childNodes.length);
+            r.setEnd(region,region.childNodes.length);
+        }
         
         // 
         // note: we don't want to break inside a line.
@@ -205,6 +211,8 @@ var cssRegions = {
             if(cssBreak.areInSameSingleLine(current,first)) {
                 
                 // optimization: first and current are on the same line
+                // so if next and current are not the same line, it will still be
+                // the same line the "first" element is in
                 first = current;
                 
                 if(current instanceof Element) {
@@ -227,6 +235,13 @@ var cssRegions = {
                             r.myMoveOneCharLeft(); rect = r.myGetExtensionRect();
                         }
                         
+                        // make sure we didn't exit the text node by mistake
+                        if(r.endContainer!==current) {
+                            // if we did, there's something wrong about the text node
+                            // we can consider the text node as an element
+                            debugger; r.setEndBefore(current);
+                        }
+                        
                         // TODO: ?move forward to break after this previous line?
                         //while(rect.bottom<=previousLineBottom) {
                         //    r.myMoveOneCharRight(); rect = r.myGetExtensionRect();
@@ -247,6 +262,14 @@ var cssRegions = {
         }
         
         
+        // if the selection is not in the region anymore, add the whole region
+        if(!r || (region !== r.endContainer && !region.contains(r.endContainer))) {
+            console.dir(r.cloneRange()); debugger;
+            r.setStart(region,region.childNodes.length);
+            r.setEnd(region,region.childNodes.length);
+        }
+        
+        
         // 
         // note: the css-break spec says that a region should not be emtpy
         // 
@@ -255,9 +278,16 @@ var cssRegions = {
         if(r.endContainer===region && r.endOffset===0 && r.endOffset!==region.childNodes.length) {
             
             // find the first allowed break point
-            do { r.myMoveOneCharRight(); } 
+            do { console.dir(r.cloneRange()); r.myMoveOneCharRight(); }
             while(!cssBreak.isPossibleBreakPoint(r,region) && !(r.endContainer===region && r.endOffset===region.childNodes.length))
             
+        }
+        
+        // if the selection is not in the region anymore, add the whole region
+        if(!r || region !== r.endContainer && !region.contains(r.endContainer)) {
+            console.dir(r.cloneRange()); debugger;
+            r.setStart(region,region.childNodes.length);
+            r.setEnd(region,region.childNodes.length);
         }
         
         var current = r.endContainer; var allAncestors=[];

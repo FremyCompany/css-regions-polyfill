@@ -169,7 +169,7 @@ cssRegions.Flow.prototype.generateContentFragment = function() {
 }
 
 cssRegions.Flow.prototype.relayout = function() {
-    var This = this; debugger;
+    var This = this;
     
     // batch relayout queries
     if(This.relayoutScheduled) { return; }

@@ -246,7 +246,7 @@ var cssBreak = {
         
         // no ancestor up to the region has to be monolithic
         var ancestor = r.startContainer;
-        while(ancestor !== region) {
+        while(ancestor && ancestor !== region) {
             if(cssBreak.isMonolithic(ancestor)) {
                 return false;
             }
@@ -257,7 +257,7 @@ var cssBreak = {
         // that are actually on the same line (in which case you can't break)
         var ancestor = r.startContainer; 
         var lastAncestor = r.startContainer.childNodes[r.startOffset];
-        while(lastAncestor !== region) {
+        while(ancestor && lastAncestor !== region) {
             if(lastAncestor && lastAncestor.previousSibling) {
                 // TODO: check what happens with empty text nodes
                 
