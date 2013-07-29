@@ -68,7 +68,7 @@ var cssBreak = {
         if(typeof(elementStyle)=="undefined") elementStyle = getComputedStyle(element);
         if(typeof(elementDisplay)=="undefined") elementDisplay = elementStyle.display;
         if(typeof(elementPosition)=="undefined") elementPosition = elementStyle.position; 
-        if(typeof(elementFloat)=="undefined") elementFloat = elementStyle.float;
+        if(typeof(elementFloat)=="undefined") elementFloat = elementStyle.float || element.styleFloat || element.cssFloat;
         
         return (
             
