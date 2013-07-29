@@ -245,13 +245,21 @@ if("MutationObserver" in window) {
 
 		// flag that says whether the event is still observered or not
 		var scheduled = false;
+        
+        // configuration of the observer
+		if(options) {
+			var target = "target" in options ? options.target : document.documentElement;
+		} else {
+			var target = document.documentElement;
+		}
 		
 		// handle the synchronous nature of mutation events
 		var yieldEvent=null;
 		var yieldEventDelayed = function() {
-			if(scheduled) return;
+			if(scheduled || !yieldEventDelayed) return;
 			document.removeEventListener("DOMContentLoaded", yieldEventDelayed, false);
-			document.removeEventListener("DOMSubtreeModified", yieldEventDelayed, false);
+			document.removeEventListener("DOMContentLoaded", yieldEventDelayed, false);
+			target.removeEventListener("DOMSubtreeModified", yieldEventDelayed, false);
 			scheduled = requestAnimationFrame(yieldEvent);
 		}
 		
@@ -261,16 +269,16 @@ if("MutationObserver" in window) {
 			function connect(newYieldEvent) {
 				yieldEvent=newYieldEvent;
 				document.addEventListener("DOMContentLoaded", yieldEventDelayed, false);
-				document.addEventListener("DOMSubtreeModified", yieldEventDelayed, false);
+				target.addEventListener("DOMSubtreeModified", yieldEventDelayed, false);
 			},
 			function disconnect() { 
 				document.removeEventListener("DOMContentLoaded", yieldEventDelayed, false);
-				document.removeEventListener("DOMSubtreeModified", yieldEventDelayed, false);
+				target.removeEventListener("DOMSubtreeModified", yieldEventDelayed, false);
 				cancelAnimationFrame(scheduled); yieldEventDelayed=null; yieldEvent=null; scheduled=false;
 			},
 			function reconnect(newYieldEvent) { 
 				yieldEvent=newYieldEvent; scheduled=false;
-				document.addEventListener("DOMSubtreeModified", yieldEventDelayed, false);
+				target.addEventListener("DOMSubtreeModified", yieldEventDelayed, false);
 			}
 		);
 		

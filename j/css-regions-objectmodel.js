@@ -26,7 +26,7 @@ cssRegions.Flow= function NamedFlow(name) {
     // this function is used to work with dom event streams
     var This=this; This.update = function(stream) {
         stream.schedule(This.update); This.relayout();
-    }
+    };
 }
     
 cssRegions.Flow.prototype.removeFromContent = function(element) {
@@ -58,10 +58,8 @@ cssRegions.Flow.prototype.addToContent = function(element) {
     var treeWalker = document.createTreeWalker(
         document.documentElement,
         NodeFilter.SHOW_ELEMENT,
-        { 
-            acceptNode: function(node) { 
-                return content.indexOf(node) >= 0 ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT; 
-            }
+        function(node) { 
+            return content.indexOf(node) >= 0 ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT; 
         },
         false
     ); 
@@ -91,10 +89,8 @@ cssRegions.Flow.prototype.addToRegions = function(element) {
     var treeWalker = document.createTreeWalker(
         document.documentElement,
         NodeFilter.SHOW_ELEMENT,
-        { 
-            acceptNode: function(node) { 
-                return regions.indexOf(node) >= 0 ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT; 
-            } 
+        function(node) { 
+            return regions.indexOf(node) >= 0 ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT; 
         },
         false
     );
@@ -173,7 +169,7 @@ cssRegions.Flow.prototype.generateContentFragment = function() {
 }
 
 cssRegions.Flow.prototype.relayout = function() {
-    var This = this; 
+    var This = this; debugger;
     
     // batch relayout queries
     if(This.relayoutScheduled) { return; }
@@ -260,8 +256,16 @@ cssRegions.Flow.prototype.relayout = function() {
         //
         
         // make sure regions update are taken in consideration
-        This.addEventListeners(This.content);
-        This.addEventListeners(This.regions);
+        if(window.MutationObserver) {
+            This.addEventListeners(This.content);
+            This.addEventListeners(This.regions);
+        } else {
+            // the other browsers don't get this as acurately
+            // but that shouldn't be that of an issue for 99% of the cases
+            setImmediate(function() {
+                This.addEventListeners(This.content);
+            });
+        }
         
         
         

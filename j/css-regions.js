@@ -90,10 +90,17 @@ var cssRegions = {
         // 
         
         // get the caret range for the bottom-right of that location
-        var r = dontOptimize ? document.createRange() : document.caretRangeFromPoint(
-            pos.left + sizingW - 1,
-            pos.top + sizingH - 1
-        );
+        try {
+            var r = dontOptimize ? document.createRange() : document.caretRangeFromPoint(
+                pos.left + sizingW - 1,
+                pos.top + sizingH - 1
+            );
+        } catch (ex) {
+            try {
+                console.error(ex.message);
+                console.dir(ex);
+            } catch (ex) {}
+        }
         
         // if the caret is outside the region
         if(!r || region !== r.endContainer && !region.contains(r.endContainer)) {
@@ -161,6 +168,8 @@ var cssRegions = {
                 var current = r.endContainer;
                 while(current = cssRegionsHelpers.getAllLevelPreviousSibling(current, region)) {
                     if(Node.getBoundingClientRect(current).bottom > pos.top + sizingH) {
+                        r.setStart(region,0);
+                        r.setEnd(region,0);
                         optimizationFailled=true;
                         dontOptimize=true;
                         break;

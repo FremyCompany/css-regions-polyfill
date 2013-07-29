@@ -90,8 +90,8 @@
         </style>
     </head>
     <body 
-        onclick="var c=document.getElementById('content'); c.appendChild(c.firstElementChild.cloneNode());"
-        oncontextmenu="var c=document.getElementById('regions'); c.appendChild(c.firstElementChild.cloneNode()); return false;">
+        onclick="var c=document.getElementById('content'); c.appendChild(c.firstElementChild.cloneNode(true));"
+        oncontextmenu="var c=document.getElementById('regions'); c.appendChild(c.firstElementChild.cloneNode(true)); return false;">
         <div id='content'>
             <div style="background: lime; margin: 25px; padding-bottom: 200px; display: inline-block;">Some content</div>
             <div style="background: lime; margin: 25px; padding-bottom: 200px; display: inline-block;">Some content</div>
