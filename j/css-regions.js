@@ -278,7 +278,25 @@ var cssRegions = {
         if(r.endContainer===region && r.endOffset===0 && r.endOffset!==region.childNodes.length) {
             
             // find the first allowed break point
-            do { console.dir(r.cloneRange()); r.myMoveOneCharRight(); }
+            do {
+                
+                console.dir(r.cloneRange()); 
+                
+                // move positions one-by-one
+                r.myMoveOneCharRight(); 
+                
+                // but skip long islands of monolithic elements
+                var current = r.endContainer;
+                while(current && current !== region) {
+                    if(cssBreak.isMonolithic(current)) {
+                        r.setStartAfter(current);
+                        r.setEndAfter(current);
+                    }
+                    current = current.parentNode;
+                }
+                
+            }
+            // do that until we reach a possible break point, or the end of the element
             while(!cssBreak.isPossibleBreakPoint(r,region) && !(r.endContainer===region && r.endOffset===region.childNodes.length))
             
         }
