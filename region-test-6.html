@@ -21,56 +21,6 @@
                 border: 10px solid red;
             }
             
-            cssregion, [data-css-region] > *, [data-css-regions-fragment-source] {
-                display: none !important;
-            }
-            
-            /* Actually done via text node emptying + previous rule now
-            [data-css-region=content] > * {
-                display: none !important;
-            }
-            */
-            
-            [data-css-region] > cssregion:last-of-type {
-                display: inline !important;
-            }
-            
-            [data-css-special-continued-fragment] { 
-                margin-bottom: 0px !important;
-                border-bottom-left-radius: 0px !important;
-                border-bottom-right-radius: 0px !important;
-            }
-            
-            [data-css-continued-fragment] { 
-                margin-bottom: 0px !important;
-                padding-bottom: 0px !important;
-                border-bottom: none !important;
-                border-bottom-left-radius: 0px !important;
-                border-bottom-right-radius: 0px !important;
-            }
-            
-            [data-css-continued-fragment]::after {
-                content: "" !important;
-                display: none !important;
-            }
-            
-            [data-css-special-starting-fragment] { 
-                margin-top: 0px !important;
-            }
-            
-            [data-css-starting-fragment] { 
-                margin-top: 0px !important;
-                padding-top: 0px !important;
-                border-top: none !important;
-                border-top-left-radius: 0px !important;
-                border-top-right-radius: 0px !important;
-            }
-            
-            [data-css-starting-fragment]::before {
-                content: "" !important;
-                display: none !important;
-            }
-            
             div#content {
                 flow-into: page content;
             }
@@ -88,6 +38,7 @@
             }
             
         </style>
+        <link rel="stylesheet" href="s/css-regions.css" data-TODO="remove this" />
     </head>
     <body 
         onclick="var c=document.getElementById('content'); c.appendChild(c.firstElementChild.cloneNode(true));"

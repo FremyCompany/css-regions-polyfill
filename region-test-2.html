@@ -7,54 +7,23 @@
             #region1 {
                 background: yellow; color: red;
                 max-height: 100px;
+                flow-from: page-content;
             }
             #region2 {
                 background: yellow; color: red;
                 max-height: 100px;
+                flow-from: page-content;
             }
             #region3 {
                 background: yellow; color: red;
                 max-height: 100px;
+                flow-fron: page-content;
             }
             
-            [data-css-special-continued-fragment] { 
-                margin-bottom: 0px !important;
-            }
-            
-            [data-css-continued-fragment] { 
-                margin-bottom: 0px !important;
-                padding-bottom: 0px !important;
-                border-bottom: none !important;
-                border-bottom-left-radius: 0px !important;
-                border-bottom-right-radius: 0px !important;
-            }
-            
-            [data-css-continued-fragment]::after {
-                content: "" !important;
-                display: none !important;
-            }
-            
-            [data-css-special-starting-fragment] { 
-                margin-top: 0px !important;
-            }
-            
-            [data-css-starting-fragment] { 
-                margin-top: 0px !important;
-                padding-top: 0px !important;
-                border-top: none !important;
-                border-top-left-radius: 0px !important;
-                border-top-right-radius: 0px !important;
-            }
-            
-            [data-css-starting-fragment]::before {
-                content: "" !important;
-                display: none !important;
-            }
+            #content { flow-into: page-content content; }
             
         </style>
-        <script>
-            
-        </script>
+        <link rel="stylesheet" href="s/css-regions.css" data-TODO="remove this" />
     </head>
     <body>
         <div id='content' style='display: none'>
@@ -68,26 +37,12 @@
         <div id="region3"></div>
         
         <script src="j/range-extensions.js"></script>
+        <script src="j/css-syntax.js"></script>
+        <script src="j/css-cascade.js"></script>
+        <script src="j/css-selectors.js"></script>
         <script src="j/css-break.js"></script>
+        <script src="j/css-regions-helpers.js"></script>
         <script src="j/css-regions.js"></script>
-        <script>
-            
-            window.onload = function() {
-                
-                var contentRange = document.createRange();
-                contentRange.selectNodeContents(document.getElementById("content"));
-                
-                cssRegions.layoutContent(
-                    [
-                        document.getElementById("region3"),
-                        document.getElementById("region2"),
-                        document.getElementById("region1"),
-                    ],
-                    contentRange.cloneContents()
-                );
-                
-            }
-            
-        </script>
+        <script src="j/css-regions-objectmodel.js"></script>
     </body>
 </html>
