@@ -439,6 +439,16 @@ cssRegions.enablePolyfillObjectModel = function() {
     }
     
     //
+    // returns a live object for any named flow
+    //
+    document.getNamedFlow = function(flowName) {
+            
+        var flows = cssRegions.flows;
+        return (flows[flowName] || (flows[flowName]=new cssRegions.NamedFlow(flowName)));
+        
+    }
+    
+    //
     // ELEMENT INTERFACE
     //    
     Object.defineProperties(
