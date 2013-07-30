@@ -600,7 +600,7 @@ var cssRegions = {
         handler.onupdate = function onupdate(element, rule) {
             
             // let's just ignore fragments
-            if(element.getAttributeNode('data-css-fragment-of')) return;
+            if(element.getAttributeNode('data-css-regions-fragment-of')) return;
             
             // log some message in the console for debug
             console.dir({message:"onupdate",element:element,selector:rule.selector.toCSSString(),rule:rule});
