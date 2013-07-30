@@ -374,6 +374,18 @@ cssRegions.enablePolyfillObjectModel = function() {
         
     }
     
+    //
+    // ELEMENT INTERFACE
+    //
+    Object.defineProperty(Element.prototype, "regionOverset", {
+        get: function() {
+            return this._regionOverset || 'fit';
+        },
+        set: function(value) {
+            this._regionOverset = value;
+        }
+    });
+    
 }
 
 cssRegions.enablePolyfill();

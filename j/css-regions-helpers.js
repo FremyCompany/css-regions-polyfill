@@ -29,6 +29,7 @@ var cssRegionsHelpers = {
     //
     markNodesAsRegion: function(nodes,fast) {
         nodes.forEach(function(node) {
+            node.regionOverset = 'empty';
             node.setAttribute('data-css-region',node.cssRegionsLastFlowFromName);
             cssRegionsHelpers.hideTextNodesFromFragmentSource([node]);
             node.cssRegionsWrapper = node.cssRegionsWrapper || node.appendChild(document.createElement("cssregion"));
@@ -40,6 +41,7 @@ var cssRegionsHelpers = {
     //
     unmarkNodesAsRegion: function(nodes,fast) {
         nodes.forEach(function(node) {
+            node.regionOverset = 'fit';
             node.cssRegionsWrapper && node.removeChild(node.cssRegionsWrapper); delete node.cssRegionsWrapper;
             cssRegionsHelpers.unhideTextNodesFromFragmentSource([node]);
             node.removeAttribute('data-css-region');
