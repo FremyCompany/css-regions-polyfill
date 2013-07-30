@@ -272,7 +272,8 @@ var cssRegionsHelpers = {
     },
     
     //
-    //
+    // removes some invisible text nodes from the tree
+    // (useful if you don't want to face browser bugs when dealing with them)
     //
     embedTrailingWhiteSpaceNodes: function(fragment) {
         
@@ -335,7 +336,7 @@ var cssRegionsHelpers = {
     },
     
     //
-    //
+    // recover the previously removed invisible text nodes
     //
     unembedTrailingWhiteSpaceNodes: function(fragment) {
         
