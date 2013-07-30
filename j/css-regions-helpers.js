@@ -3,7 +3,7 @@
 var cssRegionsHelpers = {
     
     //
-    // get the previous sibling of the element
+    // returns the previous sibling of the element
     // or the previous sibling of its nearest ancestor that has one
     //
     getAllLevelPreviousSibling: function(e, region) {
@@ -25,7 +25,7 @@ var cssRegionsHelpers = {
     },
     
     //
-    //
+    // prepares the element to become a css region
     //
     markNodesAsRegion: function(nodes,fast) {
         nodes.forEach(function(node) {
@@ -36,7 +36,7 @@ var cssRegionsHelpers = {
     },
     
     //
-    //
+    // prepares the element to return to its normal css life
     //
     unmarkNodesAsRegion: function(nodes,fast) {
         nodes.forEach(function(node) {
@@ -47,7 +47,7 @@ var cssRegionsHelpers = {
     },
     
     //
-    //
+    // prepares the element for cloning (mainly give them an ID)
     //
     fragmentSourceIndex: 0,
     markNodesAsFragmentSource: function(nodes,ignoreRoot) {
@@ -85,7 +85,7 @@ var cssRegionsHelpers = {
     },
     
     //
-    //
+    // computes the "value" attribute of every LI element out there
     //
     expandListValues: function(OL) {
         var currentValue = OL.getAttribute("start") ? parseInt(OL.getAttribute("start")) : 1;
@@ -105,7 +105,7 @@ var cssRegionsHelpers = {
     },
     
     //
-    //
+    // reverts to automatic computation of the value of LI elements
     //
     unexpandListValues: function(OL) {
         var LI = OL.firstElementChild; var LIV = null;
@@ -122,7 +122,7 @@ var cssRegionsHelpers = {
     },
     
     //
-    //
+    // makes empty text nodes which cannot get "display: none" applied to them
     //
     listOfTextNodesForIE: [],
     hideTextNodesFromFragmentSource: function(nodes) {
@@ -136,7 +136,7 @@ var cssRegionsHelpers = {
                     node.cssRegionsSavedNodeValue = node.nodeValue;
                     node.nodeValue = "";
                     
-                    // HACK: OTHERWISE IE GC THE TEXTNODE AND RETURNS YOU
+                    // HACK: OTHERWISE IE WILL GC THE TEXTNODE AND RETURNS YOU
                     // A FRESH TEXTNODE THE NEXT TIME WHERE YOUR EXPANDO
                     // IS NOWHERE TO BE SEEN!
                     if(navigator.userAgent.indexOf('MSIE')>0 || navigator.userAgent.indexOf("Trident")>0) {
@@ -167,7 +167,7 @@ var cssRegionsHelpers = {
     },
     
     //
-    //
+    // makes emptied text nodes visible again
     //
     unhideTextNodesFromFragmentSource: function(nodes) {
         
@@ -204,7 +204,7 @@ var cssRegionsHelpers = {
     },
     
     //
-    //
+    // prepares the content elements to return to ther normal css life
     //
     unmarkNodesAsFragmentSource: function(nodes) {
         
@@ -241,7 +241,7 @@ var cssRegionsHelpers = {
     },
     
     //
-    //
+    // marks cloned content as fragment instead of as fragment source (basically)
     //
     transformFragmentSourceToFragments: function(nodes) {
         

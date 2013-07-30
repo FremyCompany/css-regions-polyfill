@@ -5,12 +5,36 @@
 ///
 
 var cssRegions = {
+    
+    
+    //
+    // this function is at the heart of the region polyfill
+    // it will iteratively fill a list of regions until no
+    // content or no region is left
+    //
+    // the before-overflow size of a region is determined by
+    // adding all content to it and comparing his offsetHeight
+    // and his scrollHeight
+    //
+    // when this is done, we use dom ranges to detect the point
+    // where the content exceed this box and we split the fragment
+    // at that point.
+    //
+    // when splitting inside an element, the borders, paddings and
+    // generated content must be tied to the right fragments which
+    // require some code
+    //
+    // this functions returns whether some content was still remaining
+    // when the flow when the last region was filled. please not this
+    // can only happen if this last region has "region-fragment" set
+    // to break, otherwhise all the content will automatically overflow
+    // this last region.
+    //
     layoutContent: function(regions, remainingContent, secondCall) {
-        // TODO: support 'regionOverset' and region events
         
         //
         // this function will iteratively fill all the regions
-        // when we reach the last region, we put accept overflow
+        // when we reach the last region, we return the overset status
         //
         
         // validate args
@@ -20,7 +44,8 @@ var cssRegions = {
         // get the next region
         var region = regions.pop();
         
-        // the region is actually the wrapper inside
+        // the polyfill actually use a <cssregion> wrapper
+        // we need to link this wrapper and the actual region
         if(region.cssRegionsWrapper) {
             region.cssRegionsWrapper.cssRegionHost = region;
             region = region.cssRegionsWrapper;
@@ -28,8 +53,19 @@ var cssRegions = {
             region.cssRegionHost = region;
         }
         
-        // append the remaining content to the region
+        // empty the region
         region.innerHTML = '';
+        
+        // avoid doing the layout of empty regions
+        if(!remainingContent.hasChildNodes()) {
+            
+            region.cssRegionHost.regionOverset = 'empty';
+            cssRegions.layoutContent(regions, remainingContent);
+            return false;
+            
+        }
+        
+        // append the remaining content to the region
         region.appendChild(remainingContent);
         
         // check if we have more regions to process
@@ -46,6 +82,13 @@ var cssRegions = {
                 // there's nothing more to insert
                 remainingContent = document.createDocumentFragment();
                 
+            }
+            
+            // if any content didn't fit
+            if(remainingContent.hasChildNodes()) {
+                region.cssRegionHost.regionOverset = 'overset';
+            } else {
+                region.cssRegionHost.regionOverset = 'fit';
             }
             
             // layout the next regions
@@ -71,6 +114,18 @@ var cssRegions = {
         
     },
     
+    //
+    // this function returns a document fragment containing the content
+    // that didn't fit in a particular <cssregion> element.
+    //
+    // in the simplest cases, we can just use hit-targeting to get very
+    // close the the natural breaking point. for mostly textual flows,
+    // this works perfectly, for the others, we may need some tweaks.
+    //
+    // there's a code detecting whether this hit-target optimization
+    // did possibly fail, in which case we return to a setup where we
+    // start from scratch.
+    //
     extractOverflowingContent: function(region, dontOptimize) {
         
         // make sure empty nodes don't make our life more difficult
@@ -162,7 +217,7 @@ var cssRegions = {
             // otherwhise we must restart without optimization...
             //
             
-            // if the selected content is really off target
+            // if the selected content is possibly off-target
             var optimizationFailled = false; if(!dontOptimize) {
                 
                 var current = r.endContainer;
@@ -225,7 +280,7 @@ var cssRegions = {
                     // TODO: get last line via client rects
                     var lines = Node.getClientRects(current);
                     
-                    // if the text node did wrap
+                    // if the text node did wrap into multiple lines
                     if(lines.length>1) {
                         
                         // move back from the end until we get into previous line
@@ -238,14 +293,9 @@ var cssRegions = {
                         // make sure we didn't exit the text node by mistake
                         if(r.endContainer!==current) {
                             // if we did, there's something wrong about the text node
-                            // we can consider the text node as an element
-                            debugger; r.setEndBefore(current);
+                            // but we can consider the text node as an element instead
+                            r.setEndBefore(current); // debugger; 
                         }
-                        
-                        // TODO: ?move forward to break after this previous line?
-                        //while(rect.bottom<=previousLineBottom) {
-                        //    r.myMoveOneCharRight(); rect = r.myGetExtensionRect();
-                        //}
                         
                     } else {
                         
@@ -256,11 +306,14 @@ var cssRegions = {
                     
                 }
             } else {
+                
+                // if the two elements are not on the same line, 
+                // then we just found a line break!
                 break;
+                
             }
             
         }
-        
         
         // if the selection is not in the region anymore, add the whole region
         if(!r || (region !== r.endContainer && !region.contains(r.endContainer))) {
@@ -282,10 +335,11 @@ var cssRegions = {
                 
                 //console.dir(r.cloneRange()); 
                 
-                // move positions one-by-one
+                // move the position char-by-char
                 r.myMoveOneCharRight(); 
                 
                 // but skip long islands of monolithic elements
+                // since we know we cannot break inside them anyway
                 var current = r.endContainer;
                 while(current && current !== region) {
                     if(cssBreak.isMonolithic(current)) {
@@ -308,6 +362,7 @@ var cssRegions = {
             r.setEnd(region,region.childNodes.length);
         }
         
+        // we're almost done! now, let's collect the ancestors to make some splitting postprocessing
         var current = r.endContainer; var allAncestors=[];
         if(current.nodeType !== current.ELEMENT_NODE) current=current.parentNode;
         while(current !== region) {
@@ -320,9 +375,10 @@ var cssRegions = {
         // an element which has bottom-{padding/border/margin}, 
         // we need to figure how how much of that p/b/m we can
         // actually keep in the first fragment
+        // 
+        // TODO: avoid top & bottom p/b/m cuttings to use the 
+        // same variables names, it's ugly
         //
-        
-        // TODO: avoid top & bottom p/b/m cuttings to use the same variables
         
         // split bottom-{margin/border/padding} correctly
         if(r.endOffset == r.endContainer.childNodes.length && r.endContainer !== region) {
@@ -373,14 +429,15 @@ var cssRegions = {
         }
         
         
-        // TODO: split top-{margin/border/padding} correctly
-        // that one is tricky because this is the next element that
-        // could possibly be fragmented to show a bit of his border
-        // but we have to check a lot of conditions...
+        // split top-{margin/border/padding} correctly
         if(r.endOffset == 0 && r.endContainer !== region) {
             
             // note: the only possibility here is that we 
-            // did split after a padding or a border
+            // did split after a padding or a border.
+            // 
+            // it can only happen if the border/padding is 
+            // too big to fit the region but is actually 
+            // the first break we could find!
             
             // compute how much of the top border can actually fit
             var box = r.endContainer.getBoundingClientRect();
@@ -441,7 +498,7 @@ var cssRegions = {
         
         
         //
-        // note: now we have a collapsed range 
+        // note: at this point we have a collapsed range 
         // located at the split point
         //
         
@@ -459,9 +516,9 @@ var cssRegions = {
         
         // do not forget to remove any top p/b/m on cut elements
         var newFragments = overflowingContent.querySelectorAll("[data-css-continued-fragment]");
-        for(var i=newFragments.length; i--;) { // TODO: optimize by using while loop and a simple qS.
+        for(var i=newFragments.length; i--;) { // TODO: optimize by using while loop and a simple matchesSelector.
             newFragments[i].removeAttribute('data-css-continued-fragment')
-            newFragments[i].setAttribute('data-css-starting-fragment',true); //TODO: this requires some css
+            newFragments[i].setAttribute('data-css-starting-fragment',true);
         }
         
         // deduct any already-used bottom p/b/m
@@ -545,10 +602,13 @@ var cssRegions = {
             // let's just ignore fragments
             if(element.getAttributeNode('data-css-fragment-of')) return;
             
-            // update the layout
+            // log some message in the console for debug
             console.dir({message:"onupdate",element:element,selector:rule.selector.toCSSString(),rule:rule});
             var temp = null;
             
+            //
+            // compute the value of region properties
+            //
             var flowInto = (
                 cssCascade.getSpecifiedStyle(element, "flow-into")
                 .filter(function(t) { return t instanceof cssSyntax.IdentifierToken })
@@ -564,22 +624,32 @@ var cssRegions = {
             var flowFromName = flowFrom[0] ? flowFrom[0].toCSSString().toLowerCase() : ""; if(flowFromName=="none") {flowFromName=""}
             var flowFrom = flowFromName;
             
+            //
+            // if the value of any property did change...
+            //
             if(element.cssRegionsLastFlowInto != flowInto || element.cssRegionsLastFlowFrom != flowFrom) {
                 
-                // remove from previous regions
+                // remove the element from previous regions
                 var lastFlowFrom = (cssRegions.flows[element.cssRegionsLastFlowFromName]);
                 var lastFlowInto = (cssRegions.flows[element.cssRegionsLastFlowIntoName]);
                 lastFlowFrom && lastFlowFrom.removeFromRegions(element);
                 lastFlowInto && lastFlowInto.removeFromContent(element);
                 
-                // save data for later
+                // relayout those regions 
+                // (it's async so it will wait for us
+                // to add the element back if needed)
+                lastFlowFrom && lastFlowFrom.relayout();
+                lastFlowInto && lastFlowInto.relayout();
+                
+                // save some property values for later
                 element.cssRegionsLastFlowInto = flowInto;
                 element.cssRegionsLastFlowFrom = flowFrom;
                 element.cssRegionsLastFlowIntoName = flowIntoName;
                 element.cssRegionsLastFlowFromName = flowFromName;
                 element.cssRegionsLastFlowIntoType = flowIntoType;
                 
-                // add to new regions
+                // add the element to new regions
+                // and relayout those regions, if deemed necessary
                 if(flowFromName) {
                     var lastFlowFrom = (cssRegions.flows[flowFromName] = cssRegions.flows[flowFromName] || new cssRegions.Flow(flowFromName));
                     lastFlowFrom && lastFlowFrom.addToRegions(element);
@@ -602,7 +672,7 @@ var cssRegions = {
         cssRegions.enablePolyfillObjectModel();
         
         //
-        // make sure to update the region layout when image loaded
+        // make sure to update the region layout when all images loaded
         //
         window.addEventListener("load", 
             function() { 
@@ -612,7 +682,6 @@ var cssRegions = {
                 }
             }
         );
-
         
     },
     

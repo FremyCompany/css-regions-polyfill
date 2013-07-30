@@ -2,15 +2,22 @@
 
 var cssBreak = {
     
+    //
+    // returns true if an element is replaced 
+    // (can't be broken because considered as an image in css layout)
+    // 
     isReplacedElement: function isReplacedElement(element) {
         if(!(element instanceof Element)) return false;
-        var replacedElementTags = /(SVG|MATH|IMG|VIDEO|OBJECT|EMBED|IFRAME|TEXTAREA|BUTTON|INPUT)/; // TODO: more
+        var replacedElementTags = /^(SVG|MATH|IMG|VIDEO|OBJECT|EMBED|IFRAME|TEXTAREA|BUTTON|INPUT)$/; // TODO: more
         return replacedElementTags.test(element.tagName);
     },
     
+    // 
+    // returns true if an element has a scrollbar or act on overflowing content
+    // 
     isScrollable: function isScrollable(element, elementOverflow) {
         if(!(element instanceof Element)) return false;
-        if(typeof(elementOverflow)=="undefined") elementOverflow = getComputedStyle(element).display;
+        if(typeof(elementOverflow)=="undefined") elementOverflow = getComputedStyle(element).overflow;
         
         return (
             elementOverflow !== "visible"
@@ -19,6 +26,10 @@ var cssBreak = {
         
     },
     
+    // 
+    // returns true if the element is part of an inline flow
+    // TextNodes definitely qualify, but also inline-block elements
+    // 
     isSingleLineOfTextComponent: function(element, elementStyle, elementDisplay, elementPosition, isReplaced) {
         if(!(element instanceof Element)) return true;
         if(typeof(elementStyle)=="undefined") elementStyle = getComputedStyle(element);
@@ -39,6 +50,10 @@ var cssBreak = {
         
     },
     
+    // 
+    // returns true if the element breaks the inline flow
+    // (the case of block elements, mostly)
+    // 
     isLineBreakingElement: function(element, elementStyle, elementDisplay, elementPosition) {
         
         // TODO: nextSibling break-before?
@@ -63,6 +78,10 @@ var cssBreak = {
         );
     },
     
+    // 
+    // returns true if the element is outside any block/inline flow
+    // (this the case of absolutely positioned elements, and floats)
+    // 
     isOutOfFlowElement: function(element, elementStyle, elementDisplay, elementPosition, elementFloat) {
         if(!(element instanceof Element)) return false;
         if(typeof(elementStyle)=="undefined") elementStyle = getComputedStyle(element);
@@ -85,7 +104,15 @@ var cssBreak = {
         
     },
     
+    // 
+    // returns true if two sibling elements are in the same text line
+    // (this function is not perfect, work with it with care)
+    // 
     areInSameSingleLine: function areInSameSingleLine(element1, element2) {
+        
+        //
+        // look for obvious reasons why it wouldn't be the case
+        //
         
         // a block element is never on the same line as another element
         if(this.isLineBreakingElement(element1)) return false;
@@ -103,11 +130,9 @@ var cssBreak = {
         // if the current object is not a single line component, return false
         if(!this.isSingleLineOfTextComponent(element1)) return false;
         
-        // return true if both elements are have non-overlapping
-        // margin- and position-corrected in-flow bounding rect
-        // and if their relative position is the one of the current
-        // flow (either rtl or ltr)
-        
+        // 
+        // compute the in-flow bounding rect of the two elements
+        // 
         var element1box = Node.getBoundingClientRect(element1);
         var element2box = Node.getBoundingClientRect(element2);
         function shift(box,shiftX,shiftY) {
@@ -119,6 +144,7 @@ var cssBreak = {
             }
         }
         
+        // we only need to shift elements
         if(element1 instanceof Element) {
             var element1Style = getComputedStyle(element1);
             element1box = shift(element1box, parseFloat(element1Style.marginLeft), parseFloat(element1Style.marginTop))
@@ -127,6 +153,7 @@ var cssBreak = {
             }
         }
         
+        // we only need to shift elements
         if(element2 instanceof Element) {
             var element2Style = getComputedStyle(element2);
             element2box = shift(element2box, parseFloat(element2Style.marginLeft), parseFloat(element2Style.marginTop))
@@ -135,13 +162,25 @@ var cssBreak = {
             }
         }
         
+        // order the nodes so that they are in left-to-right order
+        // (this means invert their order in the case of right-to-left flow)
         var firstElement = getComputedStyle(element1.parentNode).direction=="rtl" ? element2box : element1box;
         var secondElement = getComputedStyle(element1.parentNode).direction=="rtl" ? element1box : element2box;
-        return firstElement.right <= secondElement.left; // TODO: figure that out...
+        
+        // return true if both elements are have non-overlapping
+        // margin- and position-corrected in-flow bounding rect
+        // and if their relative position is the one of the current
+        // flow (either rtl or ltr)
+        return firstElement.right <= secondElement.left;
         
         // TODO: what about left-to-right + right-aligned text?
+        // I should probably takes care of vertical position in this case to solve ambiguities
+        
     },
     
+    //
+    // returns true if the element has "overflow: hidden" set on it, and actually overflows
+    //
     isHiddenOverflowing: function isHiddenOverflowing(element, elementOverflow) {
         if(!(element instanceof Element)) return false;
         if(typeof(elementOverflow)=="undefined") elementOverflow = getComputedStyle(element).display;
@@ -153,6 +192,9 @@ var cssBreak = {
         
     },
     
+    //
+    // returns true if the element has a border-radius that impacts his layout
+    //
     hasBigRadius: function(element, elementStyle) {
         if(!(element instanceof Element)) return false;
         if(typeof(elementStyle)=="undefined") elementStyle = getComputedStyle(element);
@@ -195,6 +237,10 @@ var cssBreak = {
         return false;
     },
     
+    //
+    // returns true if the element is unbreakable according to the spec
+    // (and some of the expected limitations of HTML/CSS)
+    //
     isMonolithic: function isMonolithic(element) {
         if(!(element instanceof Element)) return false;
         
@@ -236,6 +282,10 @@ var cssBreak = {
         
     },
     
+    // 
+    // returns true if "r" is a collapsed range located at a possible break point for "region"
+    // (this function does all the magic for you, but you may want to avoid using it too much)
+    // 
     isPossibleBreakPoint: function isPossibleBreakPoint(r, region) {
         
         // r has to be a range, and be collapsed
@@ -259,7 +309,6 @@ var cssBreak = {
         var lastAncestor = r.startContainer.childNodes[r.startOffset];
         while(ancestor && lastAncestor !== region) {
             if(lastAncestor && lastAncestor.previousSibling) {
-                // TODO: check what happens with empty text nodes
                 
                 if(this.areInSameSingleLine(lastAncestor, lastAncestor.previousSibling)) {
                     return false;
