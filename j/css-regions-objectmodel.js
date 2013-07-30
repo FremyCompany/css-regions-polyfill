@@ -23,6 +23,12 @@ cssRegions.Flow= function NamedFlow(name) {
     // elements that consume this flow
     this.regions = this.lastRegions = [];
     
+    // event handlers
+    this.eventListeners = {
+        "regionfragmentchange": [],
+        "regionoversetchange": [],
+    };
+    
     // this function is used to work with dom event streams
     var This=this; This.update = function(stream) {
         stream.schedule(This.update); This.relayout();
@@ -32,7 +38,7 @@ cssRegions.Flow= function NamedFlow(name) {
 cssRegions.Flow.prototype.removeFromContent = function(element) {
     
     // TODO: clean up stuff
-    this.removeEventListeners(element);
+    this.removeEventListenersOf(element);
     
     // remove reference
     var index = this.content.indexOf(element);
@@ -43,7 +49,7 @@ cssRegions.Flow.prototype.removeFromContent = function(element) {
 cssRegions.Flow.prototype.removeFromRegions = function(element) {
     
     // TODO: clean up stuff
-    this.removeEventListeners(element);
+    this.removeEventListenersOf(element);
     
     // remove reference
     var index = this.regions.indexOf(element);
@@ -189,8 +195,8 @@ cssRegions.Flow.prototype.relayout = function() {
         //
         
         // remove the listeners from everything
-        This.removeEventListeners(This.lastRegions);
-        This.removeEventListeners(This.lastContent);
+        This.removeEventListenersOf(This.lastRegions);
+        This.removeEventListenersOf(This.lastContent);
 
         
         
@@ -257,16 +263,28 @@ cssRegions.Flow.prototype.relayout = function() {
         
         // make sure regions update are taken in consideration
         if(window.MutationObserver) {
-            This.addEventListeners(This.content);
-            This.addEventListeners(This.regions);
+            This.addEventListenersTo(This.content);
+            This.addEventListenersTo(This.regions);
         } else {
             // the other browsers don't get this as acurately
             // but that shouldn't be that of an issue for 99% of the cases
             setImmediate(function() {
-                This.addEventListeners(This.content);
+                This.addEventListenersTo(This.content);
             });
         }
         
+        
+        
+        //
+        // STEP 7: FIRE SOME EVENTS
+        //
+        requestAnimationFrame(function() {
+            
+            // TODO: only fire when necessary but...
+            This.dispatchEvent('regionfragmentchange');
+            This.dispatchEvent('regionoversetchange');
+            
+        });
         
         
         // mark layout has being done
@@ -276,7 +294,7 @@ cssRegions.Flow.prototype.relayout = function() {
     
 }
 
-cssRegions.Flow.prototype.addEventListeners = function(nodes) {
+cssRegions.Flow.prototype.addEventListenersTo = function(nodes) {
     var This=this; if(nodes instanceof Element) { nodes=[nodes] }
     
     nodes.forEach(function(element) {
@@ -288,7 +306,7 @@ cssRegions.Flow.prototype.addEventListeners = function(nodes) {
     
 }
 
-cssRegions.Flow.prototype.removeEventListeners = function(nodes) {
+cssRegions.Flow.prototype.removeEventListenersOf = function(nodes) {
     var This=this; if(nodes instanceof Element) { nodes=[nodes] }
     
     nodes.forEach(function(element) {
@@ -298,6 +316,52 @@ cssRegions.Flow.prototype.removeEventListeners = function(nodes) {
         }
     });
     
+}
+
+cssRegions.Flow.prototype.addEventListener = function(eventType,f) {
+    var ls = (this.eventListeners[eventType] || (this.eventListeners[eventType]=[]));
+    if(ls.indexOf(f)==-1) {
+        ls.push(f);
+    }
+}
+
+cssRegions.Flow.prototype.removeEventListener = function(eventType,f) {
+    var ls = (this.eventListeners[eventType] || (this.eventListeners[eventType]=[])), i;
+    if((i=ls.indexOf(f))==-1) {
+        ls.splice(i,1);
+    }
+}
+
+cssRegions.Flow.prototype.dispatchEvent = function(event_or_type) {
+    
+    var event = event_or_type;
+    function setUpTarget(e,v) {
+        Object.defineProperty(e,"target",{get:function() {return v}});
+    }
+    
+    // try to set the target
+    if(typeof(event)=="object") {
+        try { setUpTarget(event,this); } catch(ex) {}
+        
+    } else if(typeof(event)=="string") {
+        event = document.createEvent("CustomEvent");
+        event.initCustomEvent(event_or_type, /*canBubble:*/ true, /*cancelable:*/ false, /*detail:*/this);
+        try { setUpTarget(event,this); } catch(ex) {}
+        
+    } else {
+        throw new Error("dispatchEvent expect an Event object or a string containing the event type");
+    }
+    
+    var ls = (this.eventListeners[event.type] || (this.eventListeners[event.type]=[]));
+    for(var i=ls.length; i--;) {
+        try { 
+            ls[i](event);
+        } catch(ex) {
+            setImmediate(function() { throw ex; });
+        }
+    }
+    
+    return event.isDefaultPrevented;
 }
 
 // alias
@@ -376,15 +440,37 @@ cssRegions.enablePolyfillObjectModel = function() {
     
     //
     // ELEMENT INTERFACE
-    //
-    Object.defineProperty(Element.prototype, "regionOverset", {
-        get: function() {
-            return this._regionOverset || 'fit';
-        },
-        set: function(value) {
-            this._regionOverset = value;
+    //    
+    Object.defineProperties(
+        Element.prototype,
+        {
+            "regionOverset": {
+                get: function() {
+                    return this._regionOverset || 'fit';
+                },
+                set: function(value) {
+                    this._regionOverset = value;
+                }
+            },
+            "getRegionFlowRanges": {
+                value: function getRegionFlowRanges() {
+                    return null; // TODO: can we implement that? I think we can't (properly).
+                }
+            },
+            "getComputedRegionStyle": {
+                value: function getComputedRegionStyle(element,pseudo) {
+                    // TODO: only works while we don't relayout
+                    // TODO: only works properly for elements actually in the region
+                    var fragment = document.querySelector('[data-css-regions-fragment-of="'+element.getAttribute('data-css-regions-fragment-source')+'"]');
+                    if(pseudo) {
+                        return getComputedStyle(fragment||element);
+                    } else {
+                        return getComputedStyle(fragment||element, pseudo);
+                    }
+                }
+            }
         }
-    });
+    )
     
 }
 
