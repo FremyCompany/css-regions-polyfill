@@ -280,7 +280,7 @@ var cssRegions = {
             // find the first allowed break point
             do {
                 
-                console.dir(r.cloneRange()); 
+                //console.dir(r.cloneRange()); 
                 
                 // move positions one-by-one
                 r.myMoveOneCharRight(); 
@@ -581,12 +581,12 @@ var cssRegions = {
                 
                 // add to new regions
                 if(flowFromName) {
-                    var lastFlowFrom = (cssRegions.flows[flowFromName] = cssRegions.flows[flowFromName] || new cssRegions.Flow());
+                    var lastFlowFrom = (cssRegions.flows[flowFromName] = cssRegions.flows[flowFromName] || new cssRegions.Flow(flowFromName));
                     lastFlowFrom && lastFlowFrom.addToRegions(element);
                     lastFlowFrom && lastFlowFrom.relayout();
                 }
                 if(flowIntoName) {
-                    var lastFlowInto = (cssRegions.flows[flowIntoName] = cssRegions.flows[flowIntoName] || new cssRegions.Flow());
+                    var lastFlowInto = (cssRegions.flows[flowIntoName] = cssRegions.flows[flowIntoName] || new cssRegions.Flow(flowIntoName));
                     lastFlowInto && lastFlowInto.addToContent(element);
                     lastFlowInto && lastFlowInto.relayout();
                 }

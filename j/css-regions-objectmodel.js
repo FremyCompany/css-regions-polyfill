@@ -181,7 +181,7 @@ cssRegions.Flow.prototype.relayout = function() {
         // drawings I made before attempting to understand
         // this stuff. If you don't have them, ask me.
         //
-        
+        console.log("starting a new relayout for "+This.name);
         
         
         //
