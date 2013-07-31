@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+    <head>
+        <title>CSS Regions - polyfill test - events</title>
+        <style>
+            
+            #region {
+                flow-from: abc;
+                -webkit-flow-from: abc;
+            }
+            
+        </style>
+    </head>
+    <body>
+        
+        <div id="region"></div>
+        <script>
+            
+            var testCase = 3;
+            switch(testCase) {
+                
+                case 1:
+                    var last = performance.now()
+                    document.webkitGetNamedFlows().namedItem('abc').addEventListener("regiontfragmentchange", function() {
+                        // do nothing
+                    });
+                    console.log(-last+(last=performance.now()));
+                break;
+                
+                case 2:
+                    window.onload = function() {
+                        var last = performance.now()
+                        document.webkitGetNamedFlows().namedItem('abc').addEventListener("regiontfragmentchange", function() {
+                            // do nothing
+                        });
+                        console.log(-last+(last=performance.now()));
+                    }
+                break;
+                
+                case 3:
+                    window.onload = function() {
+                        requestAnimationFrame(function() {
+                            var last = performance.now()
+                            document.webkitGetNamedFlows().namedItem('abc').addEventListener("regiontfragmentchange", function() {
+                                // do nothing
+                            });
+                            console.log(-last+(last=performance.now()));
+                        })
+                    }
+                break;
+            }
+            
+        </script>
+    </body>
+</html>
