@@ -96,61 +96,69 @@ var cssCascade = {
     
     getSpecifiedStyle: function getSpecifiedStyle(element, cssPropertyName) {
         
-        // TODO: what if important rules override that?
-        if(bestValue = element.style.getPropertyValue(cssPropertyName)) {
-            return cssSyntax.parse("*{a:"+bestValue+"}").value[0].value[0].value;
-        }
-        
-        // find all relevant style rules
-        var isBestImportant=false; var bestPriority = 0; var bestValue = new cssSyntax.TokenList();
-        var rules = (
-            cssPropertyName in cssCascade.monitoredProperties
-            ? element.myMatchedRules || []
-            : cssCascade.findAllMatchingRules(element)
-        );
-        for(var i=rules.length; i--; ) {
+        // give IE a thumbs up for this!
+        if(element.currentStyle && element.currentStyle.getPropertyValue) {
+            return element.currentStyle.getPropertyValue(cssPropertyName);
+        } else {
             
-            // TODO: media queries hook
-            if(rules[i].disabled) continue;
+            // first, let's try inline style as it's fast and generally accurate
+            // TODO: what if important rules override that?
+            if(bestValue = element.style.getPropertyValue(cssPropertyName)) {
+                return cssSyntax.parse("*{a:"+bestValue+"}").value[0].value[0].value;
+            }
             
-            // find a relevant declaration
-            var decls = rules[i].value;
-            for(var j=decls.length-1; j>=0; j--) {
-                if(decls[j].type=="DECLARATION") {
-                    if(decls[j].name==cssPropertyName) {
-                        // TODO: only works if selectors containing a "," are deduplicated
-                        var currentPriority = cssCascade.computeSelectorPriorityOf(rules[i].selector);
-                        
-                        if(isBestImportant) {
-                            // only an important declaration can beat another important declaration
-                            if(decls[j].important) {
-                                if(currentPriority >= bestPriority) {
-                                    bestPriority = currentPriority;
-                                    bestValue = decls[j].value;
+            // find all relevant style rules
+            var isBestImportant=false; var bestPriority = 0; var bestValue = new cssSyntax.TokenList();
+            var rules = (
+                cssPropertyName in cssCascade.monitoredProperties
+                ? element.myMatchedRules || []
+                : cssCascade.findAllMatchingRules(element)
+            );
+            for(var i=rules.length; i--; ) {
+                
+                // TODO: media queries hook
+                if(rules[i].disabled) continue;
+                
+                // find a relevant declaration
+                var decls = rules[i].value;
+                for(var j=decls.length-1; j>=0; j--) {
+                    if(decls[j].type=="DECLARATION") {
+                        if(decls[j].name==cssPropertyName) {
+                            // TODO: only works if selectors containing a "," are deduplicated
+                            var currentPriority = cssCascade.computeSelectorPriorityOf(rules[i].selector);
+                            
+                            if(isBestImportant) {
+                                // only an important declaration can beat another important declaration
+                                if(decls[j].important) {
+                                    if(currentPriority >= bestPriority) {
+                                        bestPriority = currentPriority;
+                                        bestValue = decls[j].value;
+                                    }
                                 }
-                            }
-                        } else {
-                            // an important declaration beat any non-important declaration
-                            if(decls[j].important) {
-                                isBestImportant = true;
-                                bestPriority = currentPriority;
-                                bestValue = decls[j].value;
                             } else {
-                                // the selector priority has to be higher otherwise
-                                if(currentPriority >= bestPriority) {
+                                // an important declaration beat any non-important declaration
+                                if(decls[j].important) {
+                                    isBestImportant = true;
                                     bestPriority = currentPriority;
                                     bestValue = decls[j].value;
+                                } else {
+                                    // the selector priority has to be higher otherwise
+                                    if(currentPriority >= bestPriority) {
+                                        bestPriority = currentPriority;
+                                        bestValue = decls[j].value;
+                                    }
                                 }
                             }
                         }
                     }
                 }
+                
             }
             
+            // return our best guess...
+            return bestValue;
+            
         }
-        
-        // return our best guess...
-        return bestValue;
         
     },
     
