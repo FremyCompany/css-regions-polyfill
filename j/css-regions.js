@@ -604,8 +604,8 @@ var cssRegions = {
         // 
         setImmediate(function() {
             
-            cssCascade.loadStyleSheet(ss[0].textContent);
-            cssCascade.startMonitoringProperty(/^(flow-(from|into)|region-fragment)$/i, handler);
+            //cssCascade.loadStyleSheet(ss[0].textContent);
+            cssCascade.startMonitoringProperties(["flow-into","flow-from","region-fragment"], handler);
             
         });
         

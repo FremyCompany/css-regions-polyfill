@@ -69,7 +69,7 @@ var cssCascade = {
         // find all relevant style rules
         var isBestImportant=false; var bestPriority = 0; var bestValue = new cssSyntax.TokenList();
         var rules = (
-            cssCascade.monitoredProperties.some(function(reg) { return reg.test(cssPropertyName) })
+            cssPropertyName in cssCascade.monitoredProperties
             ? element.myMatchedRules || []
             : cssCascade.findAllMatchingRules(element)
         );
@@ -120,86 +120,139 @@ var cssCascade = {
     },
     
     stylesheets: [],
-    loadStyleSheet: function loadStyleSheet(cssText) {
+    loadStyleSheet: function loadStyleSheet(cssText,i) {
         
         // TODO: load only one, load in order
+        
+        // parse the stylesheet content
         var rules = cssSyntax.parse(cssText).value;
-        cssCascade.stylesheets.push(rules);
+        
+        // add the stylesheet into the object model
+        if(typeof(i)!=="undefined") { cssCascade.stylesheets[i]=rules; } 
+        else { i=cssCascade.stylesheets.push(rules);}
+        
+        // make sure to monitor the required rules
+        cssCascade.startMonitoringStylesheet(rules)
         
     },
     
-    monitoredProperties: [],
-    monitoredPropertiesHandlers: Object.create ? Object.create(null) : {},
-    startMonitoringProperty: function startMonitoringProperty(propertyRegExp, handler) {
+    loadAllStyleSheets: function loadAllStyleSheets() {
         
-        var temp = cssCascade.monitoredProperties.push(propertyRegExp);
-        var temp = cssCascade.monitoredPropertiesHandlers[propertyRegExp] = 
-            cssCascade.monitoredPropertiesHandlers[propertyRegExp] || [];
-        temp.push(handler)
-        
-        for(var s=0; s<cssCascade.stylesheets.length; s++) {
+        // for all stylesheets in the <head> tag...
+        var head = document.head || document.documentElement;
+        var stylesheets = head.querySelectorAll('style:not([data-no-css-polyfill]), link[rel=stylesheet]:not([data-no-css-polyfill])');
+        for(var i = this.stylesheets.length = stylesheets.length; i--;) {
             
-            var rules = cssCascade.stylesheets[s];
-            for(var i=0; i<rules.length; i++) {
+            // 
+            // load the stylesheet
+            // 
+            var stylesheet = stylesheets[i];
+            if(stylesheet.tagName=='LINK') {
                 
-                // only consider style rules
-                if(rules[i] instanceof cssSyntax.StyleRule) {
+                // oh, no, we have to download it...
+                try {
                     
-                    // try to see if the current rule is worth watching
-                    var decls = rules[i].value;
-                    for(var j=decls.length-1; j>=0; j--) {
-                        if(decls[j].type=="DECLARATION") {
-                            if(propertyRegExp.test(decls[j].name)) {
-                                
-                                // if we found some, start monitoring
-                                cssCascade.startMonitoringRule(rules[i], {
-                                    onupdate: function(element, rule) {
-                                        
-                                        // we need to find all regexps that matches
-                                        var mpr = cssCascade.monitoredProperties;
-                                        for(var k=mpr.length; k--;) {
-                                            var reg = mpr[k];
-                                            
-                                            var decls = rule.value;
-                                            for(var j=decls.length-1; j>=0; j--) {
-                                                if(decls[j].type=="DECLARATION") {
-                                                    if(reg.test(decls[j].name)) {
-                                                        
-                                                        // call all handlers waiting for this
-                                                        var hs = cssCascade.monitoredPropertiesHandlers[reg];
-                                                        for(var hi=hs.length; hi--;) {
-                                                            hs[hi].onupdate(element,rule);
-                                                        };
-                                                        
-                                                        // don't call twice
-                                                        break;
-                                                        
-                                                    }
-                                                }
-                                            }
-                                            
-                                        };
-                                        
-                                    }
-                                });
-                                break;
-                                
-                            }
+                    // dummy value in-between
+                    cssCascade.stylesheets[i] = new cssSyntax.TokenList();
+                    
+                    //
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('GET',stylesheet.href,true); xhr.ruleIndex = i;
+                    xhr.onreadystatechange = function() {
+                        if(this.readyState==4 && this.status==200) {
+                            this.loadStyleSheet(this.responseText,this.ruleIndex)
                         }
-                    }
+                    };
+                    xhr.send();
                     
-                } else {
-                    
-                    // TODO: handle @media
-                    
-                }
+                } catch(ex) {}
+                
+            } else {
+                
+                // oh, cool, we just have to parse the content!
+                this.loadStyleSheet(stylesheet.textContent,i);
                 
             }
             
         }
     },
     
-    startMonitoringRule: function startMonitoringRule(rule, handler) {
+    monitoredProperties: Object.create ? Object.create(null) : {},
+    monitoredPropertiesHandler: {
+        onupdate: function(element, rule) {
+            
+            // we need to find all regexps that matches
+            var mps = cssCascade.monitoredProperties;
+            var decls = rule.value;
+            for(var j=decls.length-1; j>=0; j--) {
+                if(decls[j].type=="DECLARATION") {
+                    if(decls[j].name in mps) {
+                        
+                        // call all handlers waiting for this
+                        var hs = mps[decls[j].name];
+                        for(var hi=hs.length; hi--;) {
+                            hs[hi].onupdate(element,rule);
+                        };
+                        
+                        // don't call twice
+                        break;
+                        
+                    }
+                }
+            }
+            
+        }
+    },
+    
+    startMonitoringProperties: function startMonitoringProperties(properties, handler) {
+        
+        for(var i=properties.length; i--; ) {
+            var property = properties[i];
+            var handlers = (
+                cssCascade.monitoredProperties[property]
+                || (cssCascade.monitoredProperties[property] = [])
+            );
+            handlers.push(handler)
+        }
+        
+        for(var s=0; s<cssCascade.stylesheets.length; s++) {
+            var currentStylesheet = cssCascade.stylesheets[s];
+            cssCascade.startMonitoringStylesheet(currentStylesheet);
+        }
+        
+    },
+        
+    startMonitoringStylesheet: function startMonitoringStylesheet(rules) {
+        for(var i=0; i<rules.length; i++) {
+            
+            // only consider style rules
+            if(rules[i] instanceof cssSyntax.StyleRule) {
+                
+                // try to see if the current rule is worth watching
+                // for that, let's see if we can find a declaration we should watch
+                var decls = rules[i].value;
+                for(var j=decls.length-1; j>=0; j--) {
+                    if(decls[j].type=="DECLARATION") {
+                        if(decls[j].name in cssCascade.monitoredProperties) {
+                            
+                            // if we found some, start monitoring
+                            cssCascade.startMonitoringRule(rules[i]);
+                            break;
+                            
+                        }
+                    }
+                }
+                
+            } else {
+                
+                // TODO: handle @media
+                
+            }
+            
+        }
+    },
+    
+    startMonitoringRule: function startMonitoringRule(rule) {
         
         // avoid monitoring rules twice
         if(!rule.isMonitored) { rule.isMonitored=true } else { return; }
@@ -226,7 +279,7 @@ var cssCascade = {
                     (e.myMatchedRules = e.myMatchedRules || []).push(rule); // TODO: does not respect priority order
                     
                     // generate an update event
-                    handler && handler.onupdate && handler.onupdate(e, rule);
+                    cssCascade.monitoredPropertiesHandler.onupdate(e, rule);
                     
                 },
                 onremoved: function(e) {
@@ -235,7 +288,7 @@ var cssCascade = {
                     if(e.myMatchedRules) e.myMatchedRules.splice(e.myMatchedRules.indexOf(rule), 1);
                     
                     // generate an update event
-                    handler && handler.onupdate && handler.onupdate(e, rule);
+                    cssCascade.monitoredPropertiesHandler.onupdate(e, rule);
                     
                 }
             });
@@ -244,3 +297,5 @@ var cssCascade = {
     }
     
 };
+
+cssCascade.loadAllStyleSheets();
