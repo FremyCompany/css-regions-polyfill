@@ -59,6 +59,9 @@ var cssRegions = {
         // avoid doing the layout of empty regions
         if(!remainingContent.hasChildNodes()) {
             
+            region.cssRegionsLastOffsetHeight = region.offsetHeight;
+            region.cssRegionsLastOffsetWidth = region.offsetWidth;
+            
             region.cssRegionHost.regionOverset = 'empty';
             cssRegions.layoutContent(regions, remainingContent);
             return false;
@@ -91,6 +94,10 @@ var cssRegions = {
                 region.cssRegionHost.regionOverset = 'fit';
             }
             
+            // update flags
+            region.cssRegionHost.cssRegionsLastOffsetHeight = region.cssRegionHost.offsetHeight;
+            region.cssRegionHost.cssRegionsLastOffsetWidth = region.cssRegionHost.offsetWidth;
+            
             // layout the next regions
             // WE LET THE NEXT REGION DECIDE WHAT TO RETURN
             return cssRegions.layoutContent(regions, remainingContent, true); // TODO: use do...while instead of recursion
@@ -101,9 +108,19 @@ var cssRegions = {
             if(cssCascade.getSpecifiedStyle(region.cssRegionHost,"region-fragment").toCSSString().trim().toLowerCase()=="break") {
                 
                 // WE RETURN TRUE IF WE DID OVERFLOW
-                return (this.extractOverflowingContent(region).hasChildNodes());
+                var didOverflow = (this.extractOverflowingContent(region).hasChildNodes());
+                
+                // update flags
+                region.cssRegionHost.cssRegionsLastOffsetHeight = region.cssRegionHost.offsetHeight;
+                region.cssRegionHost.cssRegionsLastOffsetWidth = region.cssRegionHost.offsetWidth;
+                
+                return didOverflow;
                 
             } else {
+                
+                // update flags
+                region.cssRegionHost.cssRegionsLastOffsetHeight = region.cssRegionHost.offsetHeight;
+                region.cssRegionHost.cssRegionsLastOffsetWidth = region.cssRegionHost.offsetWidth;
                 
                 // WE RETURN FALSE IF WE DIDN'T OVERFLOW
                 return false;
@@ -680,6 +697,18 @@ var cssRegions = {
                 for(var i=0; i<flows.length; i++) {
                     flows[i].relayout();
                 }
+            }
+        );
+        
+        // 
+        // make sure we react to window resizes
+        //
+        window.addEventListener("resize",
+            function() {
+               var flows = document.getNamedFlows();
+                for(var i=0; i<flows.length; i++) {
+                    flows[i].relayoutIfSizeChanged();
+                } 
             }
         );
         

@@ -295,6 +295,22 @@ cssRegions.Flow.prototype.relayout = function() {
     
 }
 
+cssRegions.Flow.prototype.relayoutIfSizeChanged = function() {
+    
+    // go through all regions
+    // and see if any did change of size
+    var rs = this.regions;     
+    for(var i=rs.length; i--; ) {
+        if(
+            rs[i].offsetHeight !== rs[i].cssRegionsLastOffsetHeight
+            || rs[i].offsetWidth !== rs[i].cssRegionsLastOffsetWidth
+        ) {
+            this.relayout(); return;
+        }
+    }
+    
+}
+
 cssRegions.Flow.prototype.addEventListenersTo = function(nodes) {
     var This=this; if(nodes instanceof Element) { nodes=[nodes] }
     
