@@ -61,7 +61,37 @@ var cssCascade = {
     },
     
     findAllMatchingRules: function findAllMatchingRules(element) {
-        return []; // TODO: walk the whole stylesheet...
+        
+        var results = [];
+        
+         // walk the whole stylesheet...
+        for(var s=cssCascade.stylesheets.length; s--; ) {
+            var rules = cssCascade.stylesheets[s];
+            for(var r = rules.length; r--; ) {
+                var rule = rules[r]; 
+                
+                // TODO: media queries hook
+                if(rule.disabled) continue;
+                
+                // consider each selector independtly
+                var subrules = rule.subRules || cssCascade.splitRule(rule);
+                for(var sr = subrules.length; sr--; ) {
+                    
+                    var isMatching = false;
+                    if(element.matchesSelector) isMatching=element.matchesSelector(subrules[sr].selector.toCSSString())
+                    else if(element.oMatchesSelector) isMatching=element.oMatchesSelector(subrules[sr].selector.toCSSString())
+                    else if(element.msMatchesSelector) isMatching=element.msMatchesSelector(subrules[sr].selector.toCSSString())
+                    else if(element.mozMatchesSelector) isMatching=element.mozMatchesSelector(subrules[sr].selector.toCSSString())
+                    else if(element.webkitMatchesSelector) isMatching=element.webkitMatchesSelector(subrules[sr].selector.toCSSString())
+                    else { throw "wft u no element.matchesSelector?" }
+                    
+                    if(isMatching) { results.push(subrules[sr]); }
+                    
+                }
+            }
+        }
+        
+        return results;
     },
     
     getSpecifiedStyle: function getSpecifiedStyle(element, cssPropertyName) {
@@ -73,7 +103,7 @@ var cssCascade = {
             ? element.myMatchedRules || []
             : cssCascade.findAllMatchingRules(element)
         );
-        for(var i=rules.length-1; i>=0; i--) {
+        for(var i=rules.length; i--; ) {
             
             // TODO: media queries hook
             if(rules[i].disabled) continue;
@@ -252,13 +282,15 @@ var cssCascade = {
         }
     },
     
-    startMonitoringRule: function startMonitoringRule(rule) {
+    // 
+    // splits a rule if it has multiple selectors
+    // 
+    splitRule: function splitRule(rule) {
         
-        // avoid monitoring rules twice
-        if(!rule.isMonitored) { rule.isMonitored=true } else { return; }
-        
-        // split the rule if it has multiple selectors
+        // create an array for all the subrules
         var rules = [];
+        
+        // fill the array
         var currentRule = new cssSyntax.StyleRule(); for(var i=0; i<rule.selector.length; i++) {
             if(rule.selector[i] instanceof cssSyntax.DelimToken && rule.selector[i].value==",") {
                 currentRule.value = rule.value; rules.push(currentRule);
@@ -268,6 +300,22 @@ var cssCascade = {
             }
         }
         currentRule.value = rule.value; rules.push(currentRule);
+        
+        // save the result of the split as subrules
+        return rule.subRules = rules;
+        
+    },
+    
+    // 
+    // ask the css-selector implementation to notify changes for the rules
+    // 
+    startMonitoringRule: function startMonitoringRule(rule) {
+        
+        // avoid monitoring rules twice
+        if(!rule.isMonitored) { rule.isMonitored=true } else { return; }
+        
+        // split the rule if it has multiple selectors
+        var rules = rule.subRules || cssCascade.splitRule(rule);
         
         // monitor the rules
         for(var i=0; i<rules.length; i++) {
