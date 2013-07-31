@@ -373,5 +373,41 @@ var cssRegionsHelpers = {
         
         visit(fragment);
         
+    },
+    
+    ///
+    /// walk the two trees the same way, and copy all the styles
+    /// BEWARE: if the DOMs are different, funny things will happen
+    ///
+    copyStyle: function(root1, root2) {
+        
+        function visit(node1, node2) {
+            var child1, next1, child2, next2;
+            switch (node1.nodeType) {
+                case 1: // Element node
+                    var properties = ['color'];
+                    for(var p=properties.length; p--; ) {
+                        
+                        node2.style.setProperty(properties[p], cssCascade.getSpecifiedStyle(node1, properties[p]).toCSSString())
+                        
+                    }
+                    
+                case 9: // Document node
+                case 11: // Document fragment node
+                    child1 = node1.firstChild;
+                    child2 = node2.firstChild;
+                    while (child1) {
+                        next1 = child1.nextSibling;
+                        next2 = child2.nextSibling;
+                        visit(child1, child2);
+                        child1 = next1;
+                        child2 = next2;
+                    }
+                    break;
+            }
+        }
+        
+        visit(root1, root2);
+        
     }
 }

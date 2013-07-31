@@ -141,11 +141,20 @@ cssRegions.Flow.prototype.generateContentFragment = function() {
             // add the element
             fragment.appendChild(element.cloneNode(true));
             
+            // clone the style
+            cssRegionsHelpers.copyStyle(element, fragment.lastChild);
+            
         } else {
             
             // add current children
             var el = element.firstChild; while(el) {
+                
+                // add the element
                 fragment.appendChild(el.cloneNode(true));
+                
+                // clone the style
+                cssRegionsHelpers.copyStyle(el, fragment.lastChild);
+                
                 el = el.nextSibling;
             }
             
