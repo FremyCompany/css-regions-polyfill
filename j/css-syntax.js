@@ -41,13 +41,13 @@ var cssSyntax = {
         if(sep) {
             return this.map(function(o) { return o.toCSSString(); }).join(sep);
         } else {
-            return (
+            return this.asCSSString || (this.asCSSString = (
                 this.map(function(o) { return o.toCSSString(); }).join("/**/")
                     .replace(/( +\/\*\*\/ *| * | *\/\*\*\/ +)/g," ")
                     .replace(/( +\/\*\*\/ *| * | *\/\*\*\/ +)/g," ")
                     .replace(/(\!|\:|\;|\@|\.|\,|\*|\=|\&|\\|\/|\<|\>|\[|\{|\(|\]|\}|\)|\|)\/\*\*\//g,"$1")
                     .replace(/\/\*\*\/(\!|\:|\;|\@|\.|\,|\*|\=|\&|\\|\/|\<|\>|\[|\{|\(|\]|\}|\)|\|)/g,"$1")
-            );
+            ));
         }
     }
     

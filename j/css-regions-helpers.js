@@ -375,6 +375,17 @@ var cssRegionsHelpers = {
         
     },
     
+    allCSSProperties: null,
+    getAllCSSProperties: function getAllCSSProperties() {
+        
+        var s = getComputedStyle(document.body); var ps = new Array(s.length);
+        for(var i=s.length; i--; ) {
+            ps[i] = s[i];
+        }
+        return this.allCSSProperties = ps;
+        
+    },
+    
     ///
     /// walk the two trees the same way, and copy all the styles
     /// BEWARE: if the DOMs are different, funny things will happen
@@ -385,10 +396,18 @@ var cssRegionsHelpers = {
             var child1, next1, child2, next2;
             switch (node1.nodeType) {
                 case 1: // Element node
-                    var properties = ['color','background-color'];
+                    
+                    // firstly, setup a cache of all css properties on the element
+                    var matchedRules = cssCascade.findAllMatchingRules(node1)
+                    
+                    //
+                    var properties = cssRegionsHelpers.allCSSProperties || cssRegionsHelpers.getAllCSSProperties();
                     for(var p=properties.length; p--; ) {
                         
-                        node2.style.setProperty(properties[p], cssCascade.getSpecifiedStyle(node1, properties[p]).toCSSString())
+                        var cssValue = cssCascade.getSpecifiedStyle(node1, properties[p], matchedRules);
+                        if(cssValue && cssValue.length) {
+                            node2.style.setProperty(properties[p], cssValue.toCSSString());
+                        }
                         
                     }
                     

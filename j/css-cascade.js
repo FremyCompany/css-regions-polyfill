@@ -62,9 +62,10 @@ var cssCascade = {
     
     findAllMatchingRules: function findAllMatchingRules(element) {
         
+        // let's look for new results if needed...
         var results = [];
         
-         // walk the whole stylesheet...
+        // walk the whole stylesheet...
         for(var s=cssCascade.stylesheets.length; s--; ) {
             var rules = cssCascade.stylesheets[s];
             for(var r = rules.length; r--; ) {
@@ -94,7 +95,7 @@ var cssCascade = {
         return results;
     },
     
-    getSpecifiedStyle: function getSpecifiedStyle(element, cssPropertyName) {
+    getSpecifiedStyle: function getSpecifiedStyle(element, cssPropertyName, matchedRules) {
         
         // give IE a thumbs up for this!
         if(element.currentStyle && element.currentStyle.getPropertyValue) {
@@ -109,7 +110,7 @@ var cssCascade = {
             
             // find all relevant style rules
             var isBestImportant=false; var bestPriority = 0; var bestValue = new cssSyntax.TokenList();
-            var rules = (
+            var rules = matchedRules || (
                 cssPropertyName in cssCascade.monitoredProperties
                 ? element.myMatchedRules || []
                 : cssCascade.findAllMatchingRules(element)
