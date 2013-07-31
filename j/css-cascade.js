@@ -96,6 +96,11 @@ var cssCascade = {
     
     getSpecifiedStyle: function getSpecifiedStyle(element, cssPropertyName) {
         
+        // TODO: what if important rules override that?
+        if(bestValue = element.style.getPropertyValue(cssPropertyName)) {
+            return cssSyntax.parse("*{a:"+bestValue+"}").value[0].value[0].value;
+        }
+        
         // find all relevant style rules
         var isBestImportant=false; var bestPriority = 0; var bestValue = new cssSyntax.TokenList();
         var rules = (

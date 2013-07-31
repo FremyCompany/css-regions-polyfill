@@ -385,7 +385,7 @@ var cssRegionsHelpers = {
             var child1, next1, child2, next2;
             switch (node1.nodeType) {
                 case 1: // Element node
-                    var properties = ['color'];
+                    var properties = ['color','background-color'];
                     for(var p=properties.length; p--; ) {
                         
                         node2.style.setProperty(properties[p], cssCascade.getSpecifiedStyle(node1, properties[p]).toCSSString())
