@@ -1,2 +1,9 @@
 
 .DS_Store
+
+package.json
+
+grunt.js
+
+node_modules/
+
