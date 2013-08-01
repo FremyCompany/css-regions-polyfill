@@ -3,9 +3,8 @@
 /*********************************************************/
 
 /* hide content that shouldn't be displayed */
-cssregion, 
-[data-css-region] > *, 
-[data-css-regions-fragment-source] {
+cssregion,  
+[data-css-regions-fragment-source]:not([data-css-regions-cloning]) {
     display: none !important;
 }
 

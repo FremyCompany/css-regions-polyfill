@@ -98,8 +98,9 @@ var cssCascade = {
     getSpecifiedStyle: function getSpecifiedStyle(element, cssPropertyName, matchedRules) {
         
         // give IE a thumbs up for this!
-        if(element.currentStyle && element.currentStyle.getPropertyValue) {
-            return element.currentStyle.getPropertyValue(cssPropertyName);
+        if(element.currentStyle) {
+            var bestValue = element.currentStyle[cssPropertyName];
+            return bestValue ? cssSyntax.parse("*{a:"+bestValue+"}").value[0].value[0].value : new cssSyntax.TokenList();
         } else {
             
             // first, let's try inline style as it's fast and generally accurate

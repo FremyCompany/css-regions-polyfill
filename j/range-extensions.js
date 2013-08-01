@@ -317,6 +317,7 @@ Range.prototype.myGetSelectionRect = function() {
 
 // not sure it's needed but still
 if(!window.Element) window.Element=window.HTMLElement;
+if(!window.Node) window.Node = {};
 
 // make getBCR working on text nodes & stuff
 Node.getBoundingClientRect = function getBoundingClientRect(firstChild) {
@@ -335,7 +336,7 @@ Node.getBoundingClientRect = function getBoundingClientRect(firstChild) {
 };
 
 // make getCR working on text nodes & stuff
-Node.getClientRects = function getBoundingClientRect(firstChild) {
+Node.getClientRects = function getClientRects(firstChild) {
     if (firstChild.getBoundingClientRect) {
         
         return firstChild.getClientRects();
@@ -349,6 +350,16 @@ Node.getClientRects = function getBoundingClientRect(firstChild) {
         
     }
 };
+
+// fix for IE (contains fails for text nodes...)
+Node.contains = function contains(parentNode,node) {
+    if(node.nodeType != 1) {
+        if(!node.parentNode) return false;
+        return node.parentNode==parentNode || parentNode.contains(node.parentNode);
+    } else {
+        return parentNode.contains(node);
+    }
+}
 
 // a special version for breaking algorithms
 Range.prototype.myGetExtensionRect = function() {

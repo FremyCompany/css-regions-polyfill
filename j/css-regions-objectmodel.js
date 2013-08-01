@@ -189,7 +189,14 @@ cssRegions.Flow.prototype.relayout = function() {
     // batch relayout queries
     if(This.relayoutScheduled) { return; }
     This.relayoutScheduled = true;
-    requestAnimationFrame(function(){
+    requestAnimationFrame(function() { This._relayout() });
+    
+}
+
+cssRegions.Flow.prototype._relayout = function(){
+    var This=this;
+    
+    try {
         
         //
         // note: it is recommended to look at the beautiful 
@@ -300,8 +307,17 @@ cssRegions.Flow.prototype.relayout = function() {
         // mark layout has being done
         This.relayoutScheduled = false;
         
-    });
-    
+    } catch(ex) {
+        
+        // sometimes IE fails for no valid reason 
+        // (other than the page is still loading)
+        setImmediate(function() { throw ex; });
+
+        // but we cannot accept to fail, so we need to try again
+        // until we finish a complete layout pass...
+        requestAnimationFrame(function() { This._relayout() });
+        
+    }
 }
 
 cssRegions.Flow.prototype.relayoutIfSizeChanged = function() {

@@ -67,6 +67,8 @@ var cssRegionsHelpers = {
                         
                     }
                     
+                    node.setAttribute('data-css-regions-cloning', true);
+                    
                     // expand list values
                     if(node.tagName=='OL') cssRegionsHelpers.expandListValues(node);
                     
@@ -150,6 +152,7 @@ var cssRegionsHelpers = {
                     break;
                     
                 case 1: // Element node
+                    node.removeAttribute('data-css-regions-cloning');
                     if(typeof(k)=="undefined") return;
                     
                 case 9: // Document node
@@ -253,6 +256,7 @@ var cssRegionsHelpers = {
                 case 1: // Element node
                     var id = node.getAttribute('data-css-regions-fragment-source');
                     node.removeAttribute('data-css-regions-fragment-source');
+                    node.removeAttribute('data-css-regions-cloning');
                     node.setAttribute('data-css-regions-fragment-of', id);
                     
                 case 9: // Document node

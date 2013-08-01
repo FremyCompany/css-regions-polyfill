@@ -175,7 +175,7 @@ var cssRegions = {
         }
         
         // if the caret is outside the region
-        if(!r || (region !== r.endContainer && !region.contains(r.endContainer))) {
+        if(!r || (region !== r.endContainer && !Node.contains(region,r.endContainer))) {
             
             // if the caret is after the region wrapper but inside the host...
             if(r && r.endContainer === region.cssRegionHost && r.endOffset==r.endContainer.childNodes.length) {
@@ -267,7 +267,7 @@ var cssRegions = {
         }
         
         // if the selection is not in the region anymore, add the whole region
-        if(!r || (region !== r.endContainer && !region.contains(r.endContainer))) {
+        if(!r || (region !== r.endContainer && !Node.contains(region,r.endContainer))) {
             console.dir(r.cloneRange()); debugger;
             r.setStart(region,region.childNodes.length);
             r.setEnd(region,region.childNodes.length);
@@ -333,7 +333,7 @@ var cssRegions = {
         }
         
         // if the selection is not in the region anymore, add the whole region
-        if(!r || (region !== r.endContainer && !region.contains(r.endContainer))) {
+        if(!r || (region !== r.endContainer && !Node.contains(region,r.endContainer))) {
             console.dir(r.cloneRange()); debugger;
             r.setStart(region,region.childNodes.length);
             r.setEnd(region,region.childNodes.length);
@@ -373,7 +373,7 @@ var cssRegions = {
         }
         
         // if the selection is not in the region anymore, add the whole region
-        if(!r || region !== r.endContainer && !region.contains(r.endContainer)) {
+        if(!r || region !== r.endContainer && !Node.contains(region,r.endContainer)) {
             console.dir(r.cloneRange()); debugger;
             r.setStart(region,region.childNodes.length);
             r.setEnd(region,region.childNodes.length);
