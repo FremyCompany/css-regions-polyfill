@@ -71,6 +71,7 @@ var cssRegionsHelpers = {
                     
                     // expand list values
                     if(node.tagName=='OL') cssRegionsHelpers.expandListValues(node);
+                    if(typeof(k)!="undefined" && node.tagName=="LI") cssRegionsHelpers.expandListValues(node.parentNode);
                     
                 case 9: // Document node
                 case 11: // Document fragment node
@@ -92,7 +93,9 @@ var cssRegionsHelpers = {
     // computes the "value" attribute of every LI element out there
     //
     expandListValues: function(OL) {
+        if(OL.getAttribute("data-css-old-start")) return;
         var currentValue = OL.getAttribute("start") ? parseInt(OL.getAttribute("start")) : 1;
+        OL.setAttribute("data-css-old-start", currentValue);
         var LI = OL.firstElementChild; var LIV = null;
         while(LI) {
             if(LI.tagName==="LI") {
@@ -112,6 +115,7 @@ var cssRegionsHelpers = {
     // reverts to automatic computation of the value of LI elements
     //
     unexpandListValues: function(OL) {
+        OL.removeAttribute("data-css-old-start");
         var LI = OL.firstElementChild; var LIV = null;
         while(LI) {
             if(LI.tagName==="LI") {
@@ -136,16 +140,18 @@ var cssRegionsHelpers = {
             switch (node.nodeType) {
                 case 3: // Text node
                     
-                    // we have to remove their content the hard way...
-                    node.cssRegionsSavedNodeValue = node.nodeValue;
-                    node.nodeValue = "";
-                    
-                    // HACK: OTHERWISE IE WILL GC THE TEXTNODE AND RETURNS YOU
-                    // A FRESH TEXTNODE THE NEXT TIME WHERE YOUR EXPANDO
-                    // IS NOWHERE TO BE SEEN!
-                    if(navigator.userAgent.indexOf('MSIE')>0 || navigator.userAgent.indexOf("Trident")>0) {
-                        if(cssRegionsHelpers.listOfTextNodesForIE.indexOf(node)==-1) {
-                            cssRegionsHelpers.listOfTextNodesForIE.push(node);
+                    if(!node.parentNode.getAttribute('data-css-regions-fragment-source')) {
+                        // we have to remove their content the hard way...
+                        node.cssRegionsSavedNodeValue = node.nodeValue;
+                        node.nodeValue = "";
+                        
+                        // HACK: OTHERWISE IE WILL GC THE TEXTNODE AND RETURNS YOU
+                        // A FRESH TEXTNODE THE NEXT TIME WHERE YOUR EXPANDO
+                        // IS NOWHERE TO BE SEEN!
+                        if(navigator.userAgent.indexOf('MSIE')>0 || navigator.userAgent.indexOf("Trident")>0) {
+                            if(cssRegionsHelpers.listOfTextNodesForIE.indexOf(node)==-1) {
+                                cssRegionsHelpers.listOfTextNodesForIE.push(node);
+                            }
                         }
                     }
                     
@@ -213,7 +219,7 @@ var cssRegionsHelpers = {
     //
     unmarkNodesAsFragmentSource: function(nodes) {
         
-        function visit(node) {
+        function visit(node,k) {
             var child, next;
             switch (node.nodeType) {
                 case 3: // Text node
@@ -228,6 +234,7 @@ var cssRegionsHelpers = {
                 case 1: // Element node
                     node.removeAttribute('data-css-regions-fragment-source');
                     if(node.tagName=="OL") cssRegionsHelpers.unexpandListValues(node);
+                    if(typeof(k)!="undefined" && node.tagName=="LI") cssRegionsHelpers.expandListValues(node.parentNode);
                     
                 case 9: // Document node
                 case 11: // Document fragment node
@@ -396,21 +403,27 @@ var cssRegionsHelpers = {
     ///
     copyStyle: function(root1, root2) {
         
-        function visit(node1, node2) {
+        function visit(node1, node2, isRoot) {
             var child1, next1, child2, next2;
             switch (node1.nodeType) {
                 case 1: // Element node
                     
                     // firstly, setup a cache of all css properties on the element
-                    var matchedRules = cssCascade.findAllMatchingRules(node1)
+                    var matchedRules = node1.curentStyle ? null : cssCascade.findAllMatchingRules(node1)
                     
-                    //
+                    // and computed the value of all css properties
                     var properties = cssRegionsHelpers.allCSSProperties || cssRegionsHelpers.getAllCSSProperties();
                     for(var p=properties.length; p--; ) {
                         
                         var cssValue = cssCascade.getSpecifiedStyle(node1, properties[p], matchedRules);
                         if(cssValue && cssValue.length) {
                             node2.style.setProperty(properties[p], cssValue.toCSSString());
+                        } else if(isRoot) {
+                            
+                            // NOTE: the root will be detached from its parent
+                            // Therefore, we have to inherit styles from it (oh no!)
+                            node2.style.setProperty(properties[p], getComputedStyle(node1).getPropertyValue(properties[p]))
+                            
                         }
                         
                     }
@@ -430,7 +443,7 @@ var cssRegionsHelpers = {
             }
         }
         
-        visit(root1, root2);
+        visit(root1, root2, true);
         
     }
 }

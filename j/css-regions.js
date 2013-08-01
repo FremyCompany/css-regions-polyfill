@@ -592,104 +592,101 @@ var cssRegions = {
         
     enablePolyfill: function enablePolyfill() {
         
-        // 
-        // [1] looks for stylesheets to load
-        // 
-        var ss = document.getElementsByTagName("style");
-        var s = ss[0]; var handler = {};
+        //
+        // [0] insert necessary css
+        //
+        var s = document.createElement('style');
+        s.setAttribute("data-css-no-polyfill", true);
+        s.textContent = "cssregion,[data-css-regions-fragment-source]:not([data-css-regions-cloning]){display:none !important}[data-css-region]>cssregion:last-of-type{display:inline !important}[data-css-special-continued-fragment]{margin-bottom:0 !important;border-bottom-left-radius:0 !important;border-bottom-right-radius:0 !important}[data-css-continued-fragment]{margin-bottom:0 !important;padding-bottom:0 !important;border-bottom:none !important;border-bottom-left-radius:0 !important;border-bottom-right-radius:0 !important}[data-css-continued-fragment]::after{content:none !important;display:none !important}[data-css-special-starting-fragment]{margin-top:0 !important}[data-css-starting-fragment]{margin-top:0 !important;padding-top:0 !important;border-top:none !important;border-top-left-radius:0 !important;border-top-right-radius:0 !important}[data-css-starting-fragment]::before{content:none !important;display:none !important}";
+        var head = document.head || document.getElementsByTagName('head')[0];
+        head.appendChild(s);
         
         // 
-        // [2] when stylesheets are loaded, grab region-active selectors
-        // and follow them using the myQuerySelectorLive polyfill
-        // 
-        setImmediate(function() {
-            
-            //cssCascade.loadStyleSheet(ss[0].textContent);
-            cssCascade.startMonitoringProperties(["flow-into","flow-from","region-fragment"], handler);
-            
-        });
-        
-        // 
-        // [3] when any update happens
+        // [1] when any update happens:
         // construct new content and region flow pairs
         // restart the region layout algorithm for the modified pairs
         // 
-        handler.onupdate = function onupdate(element, rule) {
-            
-            // let's just ignore fragments
-            if(element.getAttributeNode('data-css-regions-fragment-of')) return;
-            
-            // log some message in the console for debug
-            console.dir({message:"onupdate",element:element,selector:rule.selector.toCSSString(),rule:rule});
-            var temp = null;
-            
-            //
-            // compute the value of region properties
-            //
-            var flowInto = (
-                cssCascade.getSpecifiedStyle(element, "flow-into")
-                .filter(function(t) { return t instanceof cssSyntax.IdentifierToken })
-            );
-            var flowIntoName = flowInto[0] ? flowInto[0].toCSSString().toLowerCase() : ""; if(flowIntoName=="none") {flowIntoName=""}
-            var flowIntoType = flowInto[1] ? flowInto[1].toCSSString().toLowerCase() : ""; if(flowIntoType!="content") {flowIntoType="element"}
-            var flowInto = flowIntoName + " " + flowIntoType;
-            
-            var flowFrom = (
-                cssCascade.getSpecifiedStyle(element, "flow-from")
-                .filter(function(t) { return t instanceof cssSyntax.IdentifierToken })
-            );
-            var flowFromName = flowFrom[0] ? flowFrom[0].toCSSString().toLowerCase() : ""; if(flowFromName=="none") {flowFromName=""}
-            var flowFrom = flowFromName;
-            
-            //
-            // if the value of any property did change...
-            //
-            if(element.cssRegionsLastFlowInto != flowInto || element.cssRegionsLastFlowFrom != flowFrom) {
-                
-                // remove the element from previous regions
-                var lastFlowFrom = (cssRegions.flows[element.cssRegionsLastFlowFromName]);
-                var lastFlowInto = (cssRegions.flows[element.cssRegionsLastFlowIntoName]);
-                lastFlowFrom && lastFlowFrom.removeFromRegions(element);
-                lastFlowInto && lastFlowInto.removeFromContent(element);
-                
-                // relayout those regions 
-                // (it's async so it will wait for us
-                // to add the element back if needed)
-                lastFlowFrom && lastFlowFrom.relayout();
-                lastFlowInto && lastFlowInto.relayout();
-                
-                // save some property values for later
-                element.cssRegionsLastFlowInto = flowInto;
-                element.cssRegionsLastFlowFrom = flowFrom;
-                element.cssRegionsLastFlowIntoName = flowIntoName;
-                element.cssRegionsLastFlowFromName = flowFromName;
-                element.cssRegionsLastFlowIntoType = flowIntoType;
-                
-                // add the element to new regions
-                // and relayout those regions, if deemed necessary
-                if(flowFromName) {
-                    var lastFlowFrom = (cssRegions.flows[flowFromName] = cssRegions.flows[flowFromName] || new cssRegions.Flow(flowFromName));
-                    lastFlowFrom && lastFlowFrom.addToRegions(element);
-                    lastFlowFrom && lastFlowFrom.relayout();
+        cssCascade.startMonitoringProperties(
+            ["flow-into","flow-from","region-fragment"], 
+            {
+                onupdate: function onupdate(element, rule) {
+                    
+                    // let's just ignore fragments
+                    if(element.getAttributeNode('data-css-regions-fragment-of')) return;
+                    
+                    // log some message in the console for debug
+                    console.dir({message:"onupdate",element:element,selector:rule.selector.toCSSString(),rule:rule});
+                    var temp = null;
+                    
+                    //
+                    // compute the value of region properties
+                    //
+                    var flowInto = (
+                        cssCascade.getSpecifiedStyle(element, "flow-into")
+                        .filter(function(t) { return t instanceof cssSyntax.IdentifierToken })
+                    );
+                    var flowIntoName = flowInto[0] ? flowInto[0].toCSSString().toLowerCase() : ""; if(flowIntoName=="none") {flowIntoName=""}
+                    var flowIntoType = flowInto[1] ? flowInto[1].toCSSString().toLowerCase() : ""; if(flowIntoType!="content") {flowIntoType="element"}
+                    var flowInto = flowIntoName + " " + flowIntoType;
+                    
+                    var flowFrom = (
+                        cssCascade.getSpecifiedStyle(element, "flow-from")
+                        .filter(function(t) { return t instanceof cssSyntax.IdentifierToken })
+                    );
+                    var flowFromName = flowFrom[0] ? flowFrom[0].toCSSString().toLowerCase() : ""; if(flowFromName=="none") {flowFromName=""}
+                    var flowFrom = flowFromName;
+                    
+                    //
+                    // if the value of any property did change...
+                    //
+                    if(element.cssRegionsLastFlowInto != flowInto || element.cssRegionsLastFlowFrom != flowFrom) {
+                        
+                        // remove the element from previous regions
+                        var lastFlowFrom = (cssRegions.flows[element.cssRegionsLastFlowFromName]);
+                        var lastFlowInto = (cssRegions.flows[element.cssRegionsLastFlowIntoName]);
+                        lastFlowFrom && lastFlowFrom.removeFromRegions(element);
+                        lastFlowInto && lastFlowInto.removeFromContent(element);
+                        
+                        // relayout those regions 
+                        // (it's async so it will wait for us
+                        // to add the element back if needed)
+                        lastFlowFrom && lastFlowFrom.relayout();
+                        lastFlowInto && lastFlowInto.relayout();
+                        
+                        // save some property values for later
+                        element.cssRegionsLastFlowInto = flowInto;
+                        element.cssRegionsLastFlowFrom = flowFrom;
+                        element.cssRegionsLastFlowIntoName = flowIntoName;
+                        element.cssRegionsLastFlowFromName = flowFromName;
+                        element.cssRegionsLastFlowIntoType = flowIntoType;
+                        
+                        // add the element to new regions
+                        // and relayout those regions, if deemed necessary
+                        if(flowFromName) {
+                            var lastFlowFrom = (cssRegions.flows[flowFromName] = cssRegions.flows[flowFromName] || new cssRegions.Flow(flowFromName));
+                            lastFlowFrom && lastFlowFrom.addToRegions(element);
+                            lastFlowFrom && lastFlowFrom.relayout();
+                        }
+                        if(flowIntoName) {
+                            var lastFlowInto = (cssRegions.flows[flowIntoName] = cssRegions.flows[flowIntoName] || new cssRegions.Flow(flowIntoName));
+                            lastFlowInto && lastFlowInto.addToContent(element);
+                            lastFlowInto && lastFlowInto.relayout();
+                        }
+                        
+                    }
+                    
                 }
-                if(flowIntoName) {
-                    var lastFlowInto = (cssRegions.flows[flowIntoName] = cssRegions.flows[flowIntoName] || new cssRegions.Flow(flowIntoName));
-                    lastFlowInto && lastFlowInto.addToContent(element);
-                    lastFlowInto && lastFlowInto.relayout();
-                }
-                
             }
-            
-        }
+        );
         
         
         //
-        // Perform the OM exports
+        // [2] perform the OM exports
         //
         cssRegions.enablePolyfillObjectModel();
         
         //
-        // make sure to update the region layout when all images loaded
+        // [3] make sure to update the region layout when all images loaded
         //
         window.addEventListener("load", 
             function() { 
@@ -701,7 +698,7 @@ var cssRegions = {
         );
         
         // 
-        // make sure we react to window resizes
+        // [4] make sure we react to window resizes
         //
         window.addEventListener("resize",
             function() {

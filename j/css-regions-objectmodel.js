@@ -128,7 +128,7 @@ cssRegions.Flow.prototype.generateContentFragment = function() {
         // 
         // STEP 1: IDENTIFY FRAGMENT SOURCES AS SUCH
         //
-        cssRegionsHelpers.markNodesAsFragmentSource([element], true);
+        cssRegionsHelpers.markNodesAsFragmentSource([element], element.cssRegionsLastFlowIntoType=="content");
         
         
         //
@@ -160,14 +160,12 @@ cssRegions.Flow.prototype.generateContentFragment = function() {
             
         }
         
-        
-        //
-        // STEP 3: HIDE TEXT NODES IN FRAGMENT SOURCES
-        //
-        cssRegionsHelpers.hideTextNodesFromFragmentSource(this.content);
-        
     }
     
+    //
+    // STEP 3: HIDE TEXT NODES IN FRAGMENT SOURCES
+    //
+    cssRegionsHelpers.hideTextNodesFromFragmentSource(this.content);
     
     //
     // STEP 4: CONVERT CLONED FRAGMENT SOURCES INTO TRUE FRAGMENTS
