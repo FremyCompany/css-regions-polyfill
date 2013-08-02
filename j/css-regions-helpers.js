@@ -418,11 +418,18 @@ var cssRegionsHelpers = {
                         var cssValue = cssCascade.getSpecifiedStyle(node1, properties[p], matchedRules);
                         if(cssValue && cssValue.length) {
                             node2.style.setProperty(properties[p], cssValue.toCSSString());
-                        } else if(isRoot) {
+                        } else if(isRoot && properties[p][0] != '-') {
                             
                             // NOTE: the root will be detached from its parent
                             // Therefore, we have to inherit styles from it (oh no!)
-                            node2.style.setProperty(properties[p], getComputedStyle(node1).getPropertyValue(properties[p]))
+                            
+                            var style = getComputedStyle(node1).getPropertyValue(properties[p]);
+                            var parentStyle = getComputedStyle(node1.parentNode).getPropertyValue(properties[p]);
+                            var defaultStyle = getComputedStyle(document.body).getPropertyValue(properties[p]);
+                            
+                            if(style == parentStyle && style != defaultStyle) {
+                                node2.style.setProperty(properties[p], style)
+                            }
                             
                         }
                         

@@ -1543,7 +1543,7 @@ var cssSyntax = {
         return {type:'func', name:this.name, value:this.value.map(function(e){return e.toJSON();})};
     }
     Func.prototype.toCSSString = function() {
-        return this.name+'('+this.value.toCSSString().slice(0,-1)+')';
+        return this.name+'('+this.value.toCSSString().slice(0,-2)+')';
     }
     
     var FuncArg = cssSyntax.FuncArg = function FuncArg() {
@@ -1645,12 +1645,14 @@ var cssCascade = {
                 for(var sr = subrules.length; sr--; ) {
                     
                     var isMatching = false;
-                    if(element.matchesSelector) isMatching=element.matchesSelector(subrules[sr].selector.toCSSString())
-                    else if(element.oMatchesSelector) isMatching=element.oMatchesSelector(subrules[sr].selector.toCSSString())
-                    else if(element.msMatchesSelector) isMatching=element.msMatchesSelector(subrules[sr].selector.toCSSString())
-                    else if(element.mozMatchesSelector) isMatching=element.mozMatchesSelector(subrules[sr].selector.toCSSString())
-                    else if(element.webkitMatchesSelector) isMatching=element.webkitMatchesSelector(subrules[sr].selector.toCSSString())
-                    else { throw "wft u no element.matchesSelector?" }
+                    try {
+                        if(element.matchesSelector) isMatching=element.matchesSelector(subrules[sr].selector.toCSSString())
+                        else if(element.oMatchesSelector) isMatching=element.oMatchesSelector(subrules[sr].selector.toCSSString())
+                        else if(element.msMatchesSelector) isMatching=element.msMatchesSelector(subrules[sr].selector.toCSSString())
+                        else if(element.mozMatchesSelector) isMatching=element.mozMatchesSelector(subrules[sr].selector.toCSSString())
+                        else if(element.webkitMatchesSelector) isMatching=element.webkitMatchesSelector(subrules[sr].selector.toCSSString())
+                        else { throw new Error("wft u no element.matchesSelector?") }
+                    } catch(ex) { debugger; setImmediate(function() { throw ex; }) }
                     
                     if(isMatching) { results.push(subrules[sr]); }
                     
@@ -3296,11 +3298,18 @@ var cssRegionsHelpers = {
                         var cssValue = cssCascade.getSpecifiedStyle(node1, properties[p], matchedRules);
                         if(cssValue && cssValue.length) {
                             node2.style.setProperty(properties[p], cssValue.toCSSString());
-                        } else if(isRoot) {
+                        } else if(isRoot && properties[p][0] != '-') {
                             
                             // NOTE: the root will be detached from its parent
                             // Therefore, we have to inherit styles from it (oh no!)
-                            node2.style.setProperty(properties[p], getComputedStyle(node1).getPropertyValue(properties[p]))
+                            
+                            var style = getComputedStyle(node1).getPropertyValue(properties[p]);
+                            var parentStyle = getComputedStyle(node1.parentNode).getPropertyValue(properties[p]);
+                            var defaultStyle = getComputedStyle(document.body).getPropertyValue(properties[p]);
+                            
+                            if(style == parentStyle && style != defaultStyle) {
+                                node2.style.setProperty(properties[p], style)
+                            }
                             
                         }
                         
@@ -3924,7 +3933,7 @@ var cssRegions = {
         //
         var s = document.createElement('style');
         s.setAttribute("data-css-no-polyfill", true);
-        s.textContent = "cssregion,[data-css-regions-fragment-source]:not([data-css-regions-cloning]){display:none !important}[data-css-region]>cssregion:last-of-type{display:inline !important}[data-css-special-continued-fragment]{margin-bottom:0 !important;border-bottom-left-radius:0 !important;border-bottom-right-radius:0 !important}[data-css-continued-fragment]{margin-bottom:0 !important;padding-bottom:0 !important;border-bottom:none !important;border-bottom-left-radius:0 !important;border-bottom-right-radius:0 !important}[data-css-continued-fragment]::after{content:none !important;display:none !important}[data-css-special-starting-fragment]{margin-top:0 !important}[data-css-starting-fragment]{margin-top:0 !important;padding-top:0 !important;border-top:none !important;border-top-left-radius:0 !important;border-top-right-radius:0 !important}[data-css-starting-fragment]::before{content:none !important;display:none !important}";
+        s.textContent = "cssregion,[data-css-region]>*,[data-css-regions-fragment-source]:not([data-css-regions-cloning]){display:none !important}[data-css-region]>cssregion:last-of-type{display:inline !important}[data-css-region]{content:normal !important}[data-css-special-continued-fragment]{counter-reset:none !important;counter-increment:none !important;margin-bottom:0 !important;border-bottom-left-radius:0 !important;border-bottom-right-radius:0 !important}[data-css-continued-fragment]{counter-reset:none !important;counter-increment:none !important;margin-bottom:0 !important;padding-bottom:0 !important;border-bottom:none !important;border-bottom-left-radius:0 !important;border-bottom-right-radius:0 !important}[data-css-continued-fragment]::after{content:none !important;display:none !important}[data-css-special-starting-fragment]{margin-top:0 !important}[data-css-starting-fragment]{margin-top:0 !important;padding-top:0 !important;border-top:none !important;border-top-left-radius:0 !important;border-top-right-radius:0 !important}[data-css-starting-fragment]::before{content:none !important;display:none !important}";
         var head = document.head || document.getElementsByTagName('head')[0];
         head.appendChild(s);
         

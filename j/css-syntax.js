@@ -1147,7 +1147,7 @@ var cssSyntax = {
         return {type:'func', name:this.name, value:this.value.map(function(e){return e.toJSON();})};
     }
     Func.prototype.toCSSString = function() {
-        return this.name+'('+this.value.toCSSString().slice(0,-1)+')';
+        return this.name+'('+this.value.toCSSString().slice(0,-2)+')';
     }
     
     var FuncArg = cssSyntax.FuncArg = function FuncArg() {

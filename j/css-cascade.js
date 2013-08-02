@@ -79,12 +79,14 @@ var cssCascade = {
                 for(var sr = subrules.length; sr--; ) {
                     
                     var isMatching = false;
-                    if(element.matchesSelector) isMatching=element.matchesSelector(subrules[sr].selector.toCSSString())
-                    else if(element.oMatchesSelector) isMatching=element.oMatchesSelector(subrules[sr].selector.toCSSString())
-                    else if(element.msMatchesSelector) isMatching=element.msMatchesSelector(subrules[sr].selector.toCSSString())
-                    else if(element.mozMatchesSelector) isMatching=element.mozMatchesSelector(subrules[sr].selector.toCSSString())
-                    else if(element.webkitMatchesSelector) isMatching=element.webkitMatchesSelector(subrules[sr].selector.toCSSString())
-                    else { throw "wft u no element.matchesSelector?" }
+                    try {
+                        if(element.matchesSelector) isMatching=element.matchesSelector(subrules[sr].selector.toCSSString())
+                        else if(element.oMatchesSelector) isMatching=element.oMatchesSelector(subrules[sr].selector.toCSSString())
+                        else if(element.msMatchesSelector) isMatching=element.msMatchesSelector(subrules[sr].selector.toCSSString())
+                        else if(element.mozMatchesSelector) isMatching=element.mozMatchesSelector(subrules[sr].selector.toCSSString())
+                        else if(element.webkitMatchesSelector) isMatching=element.webkitMatchesSelector(subrules[sr].selector.toCSSString())
+                        else { throw new Error("wft u no element.matchesSelector?") }
+                    } catch(ex) { debugger; setImmediate(function() { throw ex; }) }
                     
                     if(isMatching) { results.push(subrules[sr]); }
                     
