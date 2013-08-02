@@ -1,0 +1,105 @@
+<!--
+Copyright 2012 Adobe Systems Inc.;
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset='UTF-8'>
+    <title>Mixed Content Example</title>
+
+    <link rel="stylesheet" href="../support.css" />
+    <script src="../../cssregions.js"></script>
+
+    <style>
+        body {
+            width: 80%;
+            margin: 50px 10% 10%;
+            font-family: Palatino, Georgia, serif;
+            background-color: white;
+        }
+
+        #source {
+            -adobe-flow-into: article;
+            -webkit-flow-into: article;
+            -ms-flow-into: article;
+            clear: both;
+        }
+
+        .myregions {
+            -adobe-flow-from: article;
+            -webkit-flow-from: article;
+            -ms-flow-from: article;
+            float: left;
+            width: 25%;
+            min-width: 200px;
+            margin: 0px 20px 20px;
+            padding: 7px;
+            background-color: #dedede;
+            height: auto;
+        }
+
+        .region-small-height {
+            height: 400px;
+        }
+
+        p {
+            line-height: 1.6em;
+        }
+        img {
+            width:100%;
+            max-width: 300px;
+        }
+        .notes {
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+<div>
+    <h1>Mixed Content Example</h1>
+
+    <p>In this example the content to be flown is composed of both TextNodes and IMGs.</p>
+    <article>
+        <div class="myregions region-small-height"></div>
+        <div class="myregions region-small-height"></div>
+        <div class="myregions"></div>
+    </article>
+</div>
+<div id="source">
+    <h2>Forbidden City</h2>
+    <p>
+        The Forbidden City was the Chinese imperial palace from the Ming Dynasty to the end of the Qing Dynasty. It is located in the middle of Beijing, China, and now houses the Palace Museum. For almost 500 years, it served as the home of emperors and their households, as well as the ceremonial and political center of Chinese government.
+    </p>
+    <p>
+        <img src="pic-0.jpg">
+    </p>
+    <p>
+        Built in 1406 to 1420, the complex consists of 980 buildings and covers 720,000 m2 (7,800,000 sq ft).[1] The palace complex <a href="http://en.wikipedia.org/wiki/Chinese_architecture">exemplifies traditional Chinese palatial architecture</a>,[2] and has influenced cultural and architectural developments in East Asia and elsewhere. The Forbidden City was declared a World Heritage Site in 1987,[2] and is listed by UNESCO as the largest collection of preserved ancient wooden structures in the world.
+    </p>
+    <p>
+        <img src="pic-1.jpg">
+    </p>
+    <p>
+        Since 1925, the Forbidden City has been under the charge of the Palace Museum, whose extensive collection of artwork and artifacts were built upon the imperial collections of the Ming and Qing dynasties.
+    </p>
+    <p>
+        <img src="pic-2.jpg">
+    </p>
+    <p class="notes">
+        Notes: This text is from <a href="http://en.wikipedia.org/wiki/Forbidden_City">Wikipedia</a>. Pictures taken by me.
+    </p>
+</div>
+
+</body>
+</html>

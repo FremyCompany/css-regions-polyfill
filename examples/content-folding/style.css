@@ -1,0 +1,94 @@
+* {
+  margin: 0;
+  padding: 0;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+.group:after {
+  visibility: hidden;
+  display: block;
+  content: "";
+  clear: both;
+  height: 0;
+}
+
+body {
+  font: 13px/1.4 sans-serif; 
+  background: #ccc;
+}
+a {
+  text-decoration: none;
+}
+h1 {
+  font-size: 50px;
+  letter-spacing: -2px;
+  line-height: 1;
+  margin: 0 0 10px 0;
+}
+
+h1~p {
+  margin: 0 0 20px 0;
+}
+
+p.cssregions, p.no-cssregions { display: none; }
+.cssregions-test p.cssregions { color: green; display: block; }
+.no-cssregions-test p.no-cssregions { color: red; display: block; }
+
+article {
+  margin: 0 0 30px 0;
+}
+.date-bubble {
+  color: #777;
+}
+
+.page-wrap {
+  width: 80%;
+  margin: 0 auto;
+  background: #eee;
+  overflow: hidden;
+}
+
+.main-content, aside {
+  padding: 80px 20px 20px 20px;
+}
+
+.main-content {
+  float: left;
+  width: 70%;
+}
+
+aside {
+  float: right;
+  width: 30%;
+}
+
+#ad-source img { /* the selector is always the source, not the element it flows into */
+  width: 100%;
+  max-width: 200px;
+  height: auto;
+  float: right;
+  margin: 0 0 10px 0;
+}
+
+@media (max-width: 800px) {
+  .main-content [class^='ad-region'] {
+    display: block;
+  }
+    .main-content [class^='ad-region']:last-child {
+    height: 300px; /* I wish height auto worked */
+  }
+  aside {
+    display: none;
+  }
+
+  #ad-source img {
+    float: left;
+    width: auto;
+    margin-right: 10px;
+  }
+  .main-content {
+    width: 100%;
+  }
+}

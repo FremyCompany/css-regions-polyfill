@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='UTF-8'>
+    <title>Breaking News Example</title>
+
+    <link rel="stylesheet" href="../support.css" />
+    <script src="../../cssregions.js"></script>
+
+    <style>
+        body {
+            width: 80%;
+            margin: 50px 10% 10%;
+            font-family: Palatino, Georgia, serif;
+            background-color: white;
+        }
+
+        .breaking {
+            background: yellow;
+            -adobe-flow-into: breaking-news;
+            -webkit-flow-into: breaking-news;
+        }
+
+        .stories,
+        .breaking-news{
+            width:20ex;
+            height:5ex;
+        }
+
+        /* show only breaking news */
+        .breaking-news{
+            -adobe-flow-from: breaking-news;
+            -webkit-flow-from: breaking-news;
+        }
+
+        p {
+            line-height: 1.6em;
+        }
+
+    </style>
+</head>
+<body>
+<div>
+    <h1>Breaking News Example</h1>
+    <p>With CSS Regions You can filter the content and surface it. Possible use cases: “breaking news” lists, terms of content summary, collecting references from a page, such as bugs or external links. This use case is documented in this <a href="http://wiki.csswg.org/spec/css3-regions/regions-use-cases">document</a>.</p>
+
+    <h2>Surfacing breaking news</h2>
+    <ul class="breaking-news"></ul>
+
+    <ul class="stories">
+        <li><a href="//example.com/story/1">A story</a></li>
+        <li><a href="//example.com/story/2">Another story</a></li>
+        <li class="breaking"><a href="//example.com/story/3">Something notable</a></li>
+        <li><a href="//example.com/story/4">Slow news day</a></li>
+        <li class="breaking"><a href="//example.com/story/5">Critical story</a></li>
+    </ul>
+</div>
+
+<h2>License Information:</h2>
+<div>This example is from <a href="http://wiki.csswg.org/spec/css3-regions/regions-use-cases">CSS Regions Use Cases</a></div>
+<div>Copyright © 01/3/2013 World Wide Web Consortium, (Massachusetts Institute of Technology, European Research Consortium for Informatics and Mathematics, Keio University). All Rights Reserved. <a href="http://www.w3.org/Consortium/Legal/2002/copyright-documents-20021231">http://www.w3.org/Consortium/Legal/2002/copyright-documents-20021231</a></div>
+
+</body>
+</html>

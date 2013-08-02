@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset='UTF-8'>
+    <title>Complex Content Flow Example</title>
+
+    <link rel="stylesheet" href="../support.css" />
+    <script src="../../cssregions.js"></script>
+
+    <style>
+        body {
+            width: 80%;
+            margin: 50px 10% 10%;
+            font-family: Palatino, Georgia, serif;
+            background-color: white;
+        }
+        div {
+            box-sizing: border-box;
+            margin: 0px;
+        }
+        .left {
+            float: left;
+        }
+        .main {
+            width: 67%;
+        }
+        #source {
+            -adobe-flow-into: article;
+            -webkit-flow-into: article;
+            -ms-flow-into: article;
+            clear: both;
+        }
+        .clear {
+            clear: both;
+        }
+
+        .first-part {
+            max-width: 700px;
+        }
+        .last-part {
+            height: auto;
+            max-width: 665px;
+            margin: 0px;
+        }
+
+        .col1 {
+            width: 65%;
+            height: 600px;
+        }
+        .col2 {
+            width: 30%;
+            height: 600px;
+        }
+
+        .r1 {
+            height: 135px;
+        }
+
+        .myregions {
+            -adobe-flow-from: article;
+            -webkit-flow-from: article;
+            -ms-flow-from: article;
+            background-color: #dedede;
+            margin: 0px 2% 2% 0px;
+            padding: 6px;
+            text-align: justify;
+        }
+
+        .col1, .col2, .r2 {
+            float: left;
+        }
+        .r2 {
+            width: 48%;
+            height: 195px;
+        }
+
+        .opening-title {
+            color: red;
+            font-weight: bold;
+        }
+
+        .subtitle {
+            font-weight: bold;
+            border-left: solid 1px #040404;
+            padding-left: 10px;
+        }
+
+        p {
+            line-height: 1.6em;
+        }
+
+        img {
+            width: 98%;
+        }
+
+    </style>
+</head>
+<body>
+<div>
+    <h1>Complex Content Flow Example</h1>
+
+    <div>
+        <div class="left main">
+            <p>Using CSS Regions, a designer is able to position an image in box ‘A’ and to flow an article's content from box ‘1’ through boxes ‘2’, ‘3’ and ‘4’.</p>
+            <p>Note that the second box should have two columns, and the image is not contained in the article.</p>
+            <p>Box ‘4’ should auto-size to render the remainder of the article content that did not fit in the earlier boxes.</p>
+            <p>See the image on the right side for an visual description of this example.</p>
+        </div>
+        <div class="left">
+            <img src="complex-flow.png">
+        </div>
+    </div>
+
+    <div class="first-part clear">
+        <div class="col1">
+            <div class="myregions r1"></div>
+            <div class="clear">
+                <div class="myregions r2"></div>
+                <div class="myregions r2"></div>
+            </div>
+            <div>
+                <img src="image.png">
+            </div>
+        </div>
+        <div class="myregions col2"></div>
+    </div>
+    <div class="myregions clear last-part"></div>
+</div>
+
+<div id="source">
+    <p class="opening-title">
+        Introduction
+    </p>
+    <p>
+        This is an example that shows hot content can be made to flow between multiple regions.
+        The image is displayed in box 'A'. The 'article' is flowed from region '1', to region '2', to region '3', and finally
+        to region '4'. Note how the content that is laid out in 'region 1' can be subject to a different style.
+    </p>
+    <p class="subtitle">
+        More Details
+    </p>
+    <p>
+        This illustrates some of the features of CSS Regions. First, the ability to associate a flow of content to a set
+        of regions and effectively getting that content to be threaded from one region to the next.
+    </p>
+    <p>
+        Then, the example illustrates the concept of 'region styling', where to content that falls into a specific region
+        is subject to additional style rule.
+    </p>
+    <p>
+        Finally, this initial example shows that the concept of region is orthogonal to the layout of regions. This means
+        that regions can be created and positioned using existing CSS and HTML layout (such as multi-column, flex box or
+        grid layout). The CSS Regions specification defines how these regions can be the recipients of a 'named flow'.
+    </p>
+</div>
+
+<h2>License Information:</h2>
+<div>The two pictures and this layout idea is from the  <a href="http://dev.w3.org/csswg/css3-regions/">CSS Regions proposal page</a></div>
+<div>Copyright © 01/3/2013 World Wide Web Consortium, (Massachusetts Institute of Technology, European Research Consortium for Informatics and Mathematics, Keio University). All Rights Reserved. <a href="http://www.w3.org/Consortium/Legal/2002/copyright-documents-20021231">http://www.w3.org/Consortium/Legal/2002/copyright-documents-20021231</a></div>
+<div>Status of the proposal: Editor's Draft.</div>
+
+</body>
+</html>

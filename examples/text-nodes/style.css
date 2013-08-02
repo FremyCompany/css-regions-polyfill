@@ -1,0 +1,30 @@
+body {
+    width: 80%;
+    margin: 50px 10% 10%;
+    font-family: Palatino, Georgia, serif;
+    background-color: white;
+}
+
+#source {
+    flow-into: article;
+    clear: both;
+}
+
+.myregions {
+    flow-from: article;
+    float: left;
+    width: 25%;
+    min-width: 200px;
+    margin: 0px 20px 20px;
+    padding: 7px;
+    background-color: #dedede;
+    height: auto;
+}
+
+.region-small-height {
+    height: 200px;
+}
+
+p {
+    line-height: 1.6em;
+} 

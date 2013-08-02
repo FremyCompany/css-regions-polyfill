@@ -1,0 +1,461 @@
+<!--
+
+This example is based on Christian Cantrell's work. We've modified his example to make it work with the polyfill.
+You can find his work here: http://christiancantrell.com/adobe/hlp/callout.html
+
+-->
+<!DOCTYPE html>
+<html>
+
+    <head>
+        <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+        <title>Paginated Content</title>
+
+        <style>
+            html {
+                margin: 0;
+                padding: 0;
+            }
+
+            body {
+                margin: 0;
+                padding: 0;
+                overflow: hidden;
+            }
+
+            .title {
+                font-size: 6em;
+                text-align: center;
+            }
+
+            .dropcap {
+                font-size: 3em;
+                float: left;
+                line-height: 1em; 
+                padding: 0 4px 0 0;
+            }
+
+            p {
+                line-height: 1.5em;
+                margin: 0;
+                -webkit-hyphens: auto;
+            }
+
+            p + p {
+                text-indent: 1.75em;
+            }
+
+            .hr {
+                font-size: 2em;
+                text-align: center;
+                padding: 20px 0 20px 0;
+            }
+
+            #content {
+                -adobe-flow-into: story;
+                -webkit-flow-into: story;
+                font-family: Palatino;
+                text-align: justify;
+            }
+
+            .region {
+                overflow: hidden;
+                padding-left: 20px;
+                padding-right: 10px;
+                -webkit-box-sizing: border-box;
+                -adobe-flow-from: story;
+                -webkit-flow-from: story;
+                background-repeat: no-repeat;
+                background-position: center;
+                background-size: contain;
+            }
+
+            .box_a {padding: 25px 15px 25px 25px;}
+            .box_b {padding: 25px 15px 0    15px;}
+            .box_c {padding: 0    0    0    15px;}
+            .box_d {padding: 0    15px 25px 15px;}
+            .box_e {padding: 25px 15px 0    15px;}
+            .box_f {padding: 0    15px 0    0;}
+            .box_g {padding: 0    15px 25px 15px;}
+            .box_h {padding: 25px 25px 25px 15px;}
+
+            .pull_quote_box {
+                font-size: 2em;
+                font-style: italic;
+            }
+
+            .pull_quote_text_box {
+                -webkit-box-sizing: border-box;
+                width: inherit;
+                height: inherit;
+                padding: 20px;
+            }
+
+            .page_number {
+                padding-bottom: 5px;
+                text-align: center;
+                font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
+                font-size: .8em;
+                color: #555;
+            }
+
+            #pageCountLabel {
+                position: absolute;
+                top: 5px;
+                right: 5px;
+                font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
+                font-size: .75em;
+                color: #fff;
+            }
+
+            #viewport {
+                position: absolute;
+                top: 0px;
+                right: 0px;
+                bottom: 0px;
+                left: 0px;
+                overflow: hidden;
+            }
+
+            .tweenable {
+                -webkit-transition-property: left, right;
+                -webkit-transition-duration: .33s;
+                -webkit-transition-timing-function: ease-in, ease-out;
+            }
+
+        </style>
+
+        <script src="../../cssregions.js"></script>
+        <script type="text/javascript">
+
+            var winW, winH, colW,
+                lastColPosition,
+                scrollPosition,
+                pullQuotes,
+                pageCount,
+                defaultPullQuoteSize = 1,
+                story;
+                
+            function getNamedFlows(){
+                if ('webkitGetNamedFlows' in document){
+                    return document.webkitGetNamedFlows()
+                }
+                else if ('adobeGetNamedFlows' in document){
+                   return document.adobeGetNamedFlows()
+                }
+                
+                return null
+            }
+
+            function init() {
+                var timeoutId, namedFlows;
+                window.addEventListener("resize",
+                        function() {
+                            window.clearTimeout(timeoutId);
+                            timeoutId = window.setTimeout(function() {
+                                doLayout();
+                            }, 300);
+                        });
+                window.addEventListener("keydown", onKeyDown);
+                namedFlows = getNamedFlows();
+                if (!namedFlows){
+                    throw new Error("No CSS Regions support and no polyfill loaded.")
+                }
+                story = namedFlows.namedItem("story");
+                doLayout();
+            }
+
+            function onMainFlowUpdate(e) {
+                var story = e.target;
+                if (story.overset) {
+                    addPage();
+                } else {
+                    story.removeEventListener("webkitregionlayoutupdate", onMainFlowUpdate);
+                    story.removeEventListener("adoberegionlayoutupdate", onMainFlowUpdate);
+                    addPullQuotes();
+                }                
+            }
+
+            function doLayout() {
+                story.addEventListener("webkitregionlayoutupdate", onMainFlowUpdate);
+                story.addEventListener("adoberegionlayoutupdate", onMainFlowUpdate);
+                // First, remove the pull-quote styles.
+                var pqStyles = document.getElementsByClassName("pq_style");
+                var head = document.getElementsByTagName("head")[0];
+                for (var i = 0; i < pqStyles.length; ++i) {
+                    head.removeChild(pqStyles[i]);
+                }
+
+                // Now clear out the viewport.
+                var vp = document.getElementById("viewport");
+
+                while (vp.hasChildNodes()) {
+                    vp.removeChild(vp.firstChild);
+                }
+
+                // Reset and re-measure.
+                pageCount = 0;
+
+                winW = window.innerWidth;
+                winH = window.innerHeight;
+
+                colW = Math.floor(winW / 4);
+
+                lastColPosition = (colW) * -1;
+
+                if (scrollPosition != 0) {
+                    scrollPosition = 0;
+                    scrollViewport();
+                }
+
+                document.getElementById("storyTitle").style.fontSize = (colW/85)+"em";
+
+                addPage();
+            }
+
+            function onKeyDown(event) {
+                if (event.keyCode == 39) { // right
+                    scrollForward();
+                } else if (event.keyCode == 37) { // left
+                    scrollBack();
+                } else if (event.keyCode == 27) { // esc
+                    toggleRegionBorders();
+                }
+            }
+
+            function toggleRegionBorders() {
+                var head = document.getElementsByTagName("head")[0];
+                var style = document.getElementById("region_border");
+                if (style) {
+                    head.removeChild(style);
+                } else {
+                    style = document.createElement("style");
+                    style.setAttribute("id", "region_border");
+                    style.innerHTML = ".region {border: 1px solid blue;}\n";
+                    style.innerHTML += ".box_a {background-image: url(numbers/1.svg);}\n";
+                    style.innerHTML += ".box_b {background-image: url(numbers/2.svg);}\n";
+                    style.innerHTML += ".box_c {background-image: url(numbers/3.svg);}\n";
+                    style.innerHTML += ".box_d {background-image: url(numbers/4.svg);}\n";
+                    style.innerHTML += ".box_e {background-image: url(numbers/5.svg);}\n";
+                    style.innerHTML += ".box_f {background-image: url(numbers/6.svg);}\n";
+                    style.innerHTML += ".box_g {background-image: url(numbers/7.svg);}\n";
+                    style.innerHTML += ".box_h {background-image: url(numbers/8.svg);}";
+                    head.appendChild(style);
+                }
+            }
+
+            function scrollForward() {
+                var isLastColShowing = ((Math.abs(scrollPosition)) < lastColPosition && ((Math.abs(scrollPosition) + (winW*1)) > lastColPosition));
+                if (isLastColShowing) return;
+                scrollPosition -= winW;
+                scrollViewport();
+            }
+
+            function scrollBack() {
+                if (scrollPosition == 0) return;
+                scrollPosition += winW;
+                scrollViewport();
+            }
+
+            function scrollViewport() {
+                vp = document.getElementById("viewport");
+                vp.style.left = scrollPosition + "px";
+            }
+
+            function getBox(width, height, left, top, cssClass) {
+                var box = document.createElement("div");
+                box.setAttribute("class", cssClass);
+                var pageWidth = ((left) + (pageCount * winW));
+                box.setAttribute("style", "position:absolute;width:" + Math.round(width) + "px;height:" + Math.round(height) + "px;top:" + Math.round(top) + "px;left:" + Math.round(pageWidth) + "px;");
+                lastColPosition = pageWidth;
+
+                return box;
+            }
+
+            function addPage() {
+                var vp = document.getElementById("viewport");
+
+                var box_a = getBox(colW, winH, 0, 0, "region box_a");
+                vp.appendChild(box_a);
+
+                var box_b = getBox(colW, winH / 3, colW, 0, "region box_b");
+                vp.appendChild(box_b);
+
+                var box_c = getBox( winW / 8 , winH / 3, colW, winH / 3, "region box_c");
+                vp.appendChild(box_c);
+
+                var box_d = getBox(colW, winH / 3, colW, (winH - (winH / 3)), "region box_d");
+                vp.appendChild(box_d);
+
+                var box_e = getBox(colW, winH / 3, winW / 2, 0, "region box_e");
+                vp.appendChild(box_e);
+
+                var box_f = getBox( winW / 8, winH / 3, winW * .625, winH / 3, "region box_f");
+                vp.appendChild(box_f);
+
+                var box_g = getBox( colW, winH / 3, winW / 2, (winH - (winH / 3)), "region box_g");
+                vp.appendChild(box_g);
+
+                var box_h = getBox( colW, winH, (winW - (winW  / 4)), 0, "region box_h");
+                vp.appendChild(box_h);
+
+                var pq = getBox( colW, winH / 3, (winW - (winW * .625)), winH / 3, "pull_quote_box");
+                var pqText = document.createElement("div");
+                pqText.setAttribute("class", "pull_quote_text_box");
+                pqText.style.webkitFlowFrom = "pq_" + pageCount;
+                pqText.style.adobeFlowFrom = "pq_" + pageCount;
+                pqText.setAttribute("id", "pq_box_" + pageCount);
+                pq.appendChild(pqText);
+                vp.appendChild(pq);
+
+                var pageNumber = document.createElement("div");
+                pageNumber.setAttribute("class", "page_number");
+                pageNumber.setAttribute("style", "position:absolute;width:"+winW+"px;left:"+(winW*pageCount)+"px;bottom:0px;");
+                pageNumber.innerHTML = pageCount + 1;
+                vp.appendChild(pageNumber);
+
+                ++pageCount;
+
+                if (CSSRegions) {
+                    story.regions.push(box_a);
+                    story.regions.push(box_b);
+                    story.regions.push(box_c);
+                    story.regions.push(box_d);
+                    story.regions.push(box_e);
+                    story.regions.push(box_f);
+                    story.regions.push(box_g);
+                    story.regions.push(box_h);
+                    CSSRegions.addRegionToNamedFlow("pq_" + (pageCount-1), pqText);
+                    CSSRegions.doLayout();
+                }
+            }
+
+            function addPullQuotes() {
+                var pqs = document.getElementsByClassName("pull_quote");
+                var currentSibling = null;
+                for (var i = 0; i < pqs.length; ++i) {
+                    var pq = pqs[i];
+                    var region = story.getRegionsByContent(pq);
+                    if (region.length === 0) return;
+                    for (var sibling = region[0].nextSibling;
+                         sibling.getAttribute("class") !== "pull_quote_box";
+                         sibling = sibling.nextSibling) {}
+                    if(sibling == currentSibling) continue;
+                    currentSibling = sibling;
+
+                    var pullQuoteBoxId = sibling.firstChild.getAttribute("id");
+                    var index = pullQuoteBoxId.substring(pullQuoteBoxId.lastIndexOf("_") + 1, pullQuoteBoxId.length);
+
+                    document.getElementsByTagName("head")[0].appendChild(getPQStyle(index, defaultPullQuoteSize));
+
+                    if (!document.getElementById("pq_text_" + index)) {
+                        var quote = document.createElement("div");
+                        quote.setAttribute("id", "pq_text_" + index);
+                        quote.style.webkitFlowInto = sibling.firstChild.style["-webkit-flow-from"];
+                        quote.style.adobeFlowInto = sibling.firstChild.style["-adobe-flow-from"];
+                        quote.innerHTML = pq.innerText;
+                        document.getElementById("viewport").appendChild(quote);
+                        if (CSSRegions) {
+                            CSSRegions.addSourceToNamedFlow("pq_" + index, quote);
+                        }
+                        var namedFlows = getNamedFlows();
+                        region = namedFlows.namedItem("pq_"+index);
+                        region.addEventListener("webkitregionlayoutupdate", adjustPullQuoteFontSize);
+                        region.addEventListener("adoberegionlayoutupdate", adjustPullQuoteFontSize);
+                    }
+                    if (CSSRegions) {
+                        CSSRegions.doLayout();
+                    }
+                }
+            }
+
+            function getPQStyle(index, fontSize) {
+                var pqStyle = document.createElement("style");
+                pqStyle.setAttribute("id", "pq_style_" + index);
+                pqStyle.setAttribute("class", "pq_style");
+                var styleText = "#pq_text_" + index + " {-webkit-flow-into:pq_"+index+";";
+                var styleText = "#pq_text_" + index + " {-adobe-flow-into:pq_"+index+";";
+                styleText += "font-size:"+fontSize+"em;";
+                styleText += "font-style:italic;";
+                styleText += "text-align:center;}";
+                pqStyle.innerHTML = styleText;
+                return pqStyle;
+            }
+
+            function adjustPullQuoteFontSize(event) {
+                var namedFlow = event.target;
+                if (!namedFlow.overset) {
+                    changePullQuoteStyle(namedFlow, .1);
+                } else  {
+                    namedFlow.removeEventListener("webkitregionlayoutupdate", adjustPullQuoteFontSize);
+                    namedFlow.removeEventListener("adoberegionlayoutupdate", adjustPullQuoteFontSize);
+                    changePullQuoteStyle(namedFlow, -.1);
+                }
+            }
+
+            function changePullQuoteStyle(namedFlow, delta) {
+                var index = namedFlow.name.substring(namedFlow.name.lastIndexOf("_") + 1, namedFlow.name.length);
+                var regionId = "pq_box_" + index;
+                var region = document.getElementById(regionId);
+                var style = document.getElementById("pq_style_"+index);
+                if (!style) return;
+                var styleHTML = style.innerHTML;
+                var fontSize = styleHTML.match(/font-size:(\d+(\.\d)?)em/)[1];
+                var newFontSize = Math.round((parseFloat(fontSize) + delta) * 10) / 10;
+                var newStyle = getPQStyle(index, newFontSize);
+                var head = document.getElementsByTagName("head")[0];
+                head.removeChild(style);
+                head.appendChild(newStyle);
+            }
+
+            if (CSSRegions) {
+                setTimeout(function() {init()}, 1000);
+            } else {
+                window.onload = init;
+            }
+
+        </script>
+    </head>
+<body>
+
+<div id="viewport" class="tweenable"></div>
+
+<div id="content">
+
+<div class="title" id="storyTitle">A Connecticut Yankee in King Arthur's Court</div>
+<p><span class="dropcap">C</span>amelot--Camelot, said I to myself. "I don't seem to remember hearing of it before. Name of the asylum, likely."</p>
+<p><span class="pull_quote">It was a soft, reposeful summer landscape</span>, as lovely as a dream, and as lonesome as Sunday. The air was full of the smell of flowers, and the buzzing of insects, and the twittering of birds, and there were no people, no wagons, there was no stir of life, nothing going on. The road was mainly a winding path with hoof-prints in it, and now and then a faint trace of wheels on either side in the grass--wheels that apparently had a tire as broad as one's hand.</p>
+<p>Presently a fair slip of a girl, about ten years old, with a cataract of golden hair streaming down over her shoulders, came along. Around her head she wore a hoop of flame-red poppies. It was as sweet an outfit as ever I saw, what there was of it. She walked indolently along, with a mind at rest, its peace reflected in her innocent face. The circus man paid no attention to her; didn't even seem to see her. And she--she was no more startled at his fantastic make-up than if she was used to his like every day of her life. She was going by as indifferently as she might have gone by a couple of cows; but when she happened to notice me, then there was a change! Up went her hands, and she was turned to stone; her mouth dropped open, her eyes stared wide and timorously, she was the picture of astonished curiosity touched with fear. And there she stood gazing, in a sort of stupefied fascination, till we turned a corner of the wood and were lost to her view. That she should be startled at me instead of at the other man, was too many for me; I couldn't make head or tail of it. And that she should seem to consider me a spectacle, and totally overlook her own merits in that respect, was another puzzling thing, and a display of magnanimity, too, that was surprising in one so young. There was food for thought here. I moved along as one in a dream.</p>
+<p>As we approached the town, signs of life began to appear. At intervals we passed a wretched cabin, with a thatched roof, and about it small fields and garden patches in an indifferent state of cultivation. There were people, too; brawny men, with long, coarse, uncombed hair that hung down over their faces and made them look like animals. They and the women, as a rule, wore a coarse tow-linen robe that came well below the knee, and a rude sort of sandal, and many wore an iron collar. The small boys and girls were always naked; but nobody seemed to know it. All of these people stared at me, talked about me, ran into the huts and fetched out their families to gape at me; but nobody ever noticed that other fellow, except to make him humble salutation and get no response for their pains.</p>
+<p>In the town were some substantial windowless houses of stone scattered among a wilderness of thatched cabins; the streets were mere crooked alleys, and unpaved; troops of dogs and nude children played in the sun and made life and noise; hogs roamed and rooted contentedly about, and one of them lay in a reeking wallow in the middle of the main thoroughfare and suckled her family. Presently there was a distant blare of military music; it came nearer, still nearer, and soon a noble cavalcade wound into view, glorious with plumed helmets and flashing mail and flaunting banners and rich doublets and horse-cloths and gilded spearheads; and through the muck and swine, and naked brats, and joyous dogs, and shabby huts, it took its gallant way, and in its wake we followed. Followed through one winding alley and then another,--and climbing, always climbing--till at last we gained the breezy height where the huge castle stood. There was an exchange of bugle blasts; then a parley from the walls, where men-at-arms, in hauberk and morion, marched back and forth with halberd at shoulder under flapping banners with the rude figure of a dragon displayed upon them; and then the great gates were flung open, the drawbridge was lowered, and the head of the cavalcade swept forward under the frowning arches; and we, following, soon found ourselves in a great paved court, with towers and turrets stretching up into the blue air on all the four sides; and all about us the dismount was going on, and much greeting and ceremony, and running to and fro, and a gay display of moving and intermingling colors, and an altogether pleasant stir and noise and confusion.</p>
+<p>The moment I got a chance I slipped aside privately and touched an ancient common looking man on the shoulder and said, in an insinuating, confidential way:</p>
+<p>"Friend, do me a kindness. Do you belong to the asylum, or are you just on a visit or something like that?"</p>
+<p>He looked me over stupidly, and said:</p>
+<p>"Marry, fair sir, me seemeth--"</p>
+<p><span class="pull_quote">"That will do," I said; "I reckon you are a patient."</span></p>
+<p>I moved away, cogitating, and at the same time keeping an eye out for any chance passenger in his right mind that might come along and give me some light. I judged I had found one, presently; so I drew him aside and said in his ear:</p>
+<p>"If I could see the head keeper a minute--only just a minute--"</p>
+<p>"Prithee do not let me."</p>
+<p>"Let you what?"</p>
+<p>"Hinder me, then, if the word please thee better. Then he went on to say he was an under-cook and could not stop to gossip, though he would like it another time; for it would comfort his very liver to know where I got my clothes. As he started away he pointed and said yonder was one who was idle enough for my purpose, and was seeking me besides, no doubt. This was an airy slim boy in shrimp-colored tights that made him look like a forked carrot, the rest of his gear was blue silk and dainty laces and ruffles; and he had long yellow curls, and wore a plumed pink satin cap tilted complacently over his ear. By his look, he was good-natured; by his gait, he was satisfied with himself. He was pretty enough to frame. He arrived, looked me over with a smiling and impudent curiosity; said he had come for me, and informed me that he was a page.</p>
+<p><span class="pull_quote">"Go 'long," I said; "you ain't more than a paragraph."</span></p>
+<p>It was pretty severe, but I was nettled. However, it never phazed him; he didn't appear to know he was hurt. He began to talk and laugh, in happy, thoughtless, boyish fashion, as we walked along, and made himself old friends with me at once; asked me all sorts of questions about myself and about my clothes, but never waited for an answer--always chattered straight ahead, as if he didn't know he had asked a question and wasn't expecting any reply, until at last he happened to mention that he was born in the beginning of the year 513.</p>
+<p>It made the cold chills creep over me! I stopped and said, a little faintly:</p>
+<p>"Maybe I didn't hear you just right. Say it again--and say it slow. What year was it?"</p>
+<p>"513"</p>
+<p>"513! You don't look it! Come, my boy, I am a stranger and friendless; be honest and honorable with me. Are you in your right mind?"</p>
+<p>He said he was.</p>
+<p>"Are these other people in their right minds?"</p>
+<p>He said they were.</p>
+<p>"And this isn't an asylum? I mean, it isn't a place where they cure crazy people?"</p>
+<p>He said it wasn't.</p>
+<p>"Well, then," I said, "either I am a lunatic, or something just as awful has happened. Now tell me, honest and true, where am I?"</p>
+<p>"IN KING ARTHUR'S COURT."</p>
+<p>I waited a minute, to let that idea shudder its way home, and then said:</p>
+<p>"And according to your notions, what year is it now?"</p>
+<p><span class="pull_quote">"528--nineteenth of June."</span></p>
+
+</div>
+
+</body>
+</html>
