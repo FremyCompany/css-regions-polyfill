@@ -204,6 +204,10 @@ cssRegions.Flow.prototype._relayout = function(){
         console.log("starting a new relayout for "+This.name);
         //debugger;
         
+        // NOTE: we recover the scroll position in case the browser mess it up
+        var docElmScrollTop = document.documentElement.scrollTop;
+        var docBdyScrollTop = document.body.scrollTop;
+        
         
         //
         // STEP 1: REMOVE PREVIOUS EVENT LISTENERS
@@ -301,6 +305,10 @@ cssRegions.Flow.prototype._relayout = function(){
             
         });
         
+        
+        // NOTE: we recover the scroll position in case the browser mess it up
+        document.documentElement.scrollTop = docElmScrollTop;
+        document.body.scrollTop = docBdyScrollTop;
         
         // mark layout has being done
         This.relayoutScheduled = false;

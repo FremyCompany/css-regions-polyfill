@@ -1632,32 +1632,45 @@ var cssCascade = {
         var results = [];
         
         // walk the whole stylesheet...
-        for(var s=cssCascade.stylesheets.length; s--; ) {
-            var rules = cssCascade.stylesheets[s];
+        function visit(rules) {
             for(var r = rules.length; r--; ) {
                 var rule = rules[r]; 
                 
                 // TODO: media queries hook
                 if(rule.disabled) continue;
                 
-                // consider each selector independtly
-                var subrules = rule.subRules || cssCascade.splitRule(rule);
-                for(var sr = subrules.length; sr--; ) {
+                if(rule instanceof cssSyntax.StyleRule) {
                     
-                    var isMatching = false;
-                    try {
-                        if(element.matchesSelector) isMatching=element.matchesSelector(subrules[sr].selector.toCSSString())
-                        else if(element.oMatchesSelector) isMatching=element.oMatchesSelector(subrules[sr].selector.toCSSString())
-                        else if(element.msMatchesSelector) isMatching=element.msMatchesSelector(subrules[sr].selector.toCSSString())
-                        else if(element.mozMatchesSelector) isMatching=element.mozMatchesSelector(subrules[sr].selector.toCSSString())
-                        else if(element.webkitMatchesSelector) isMatching=element.webkitMatchesSelector(subrules[sr].selector.toCSSString())
-                        else { throw new Error("wft u no element.matchesSelector?") }
-                    } catch(ex) { debugger; setImmediate(function() { throw ex; }) }
+                    // consider each selector independtly
+                    var subrules = rule.subRules || cssCascade.splitRule(rule);
+                    for(var sr = subrules.length; sr--; ) {
+                        
+                        var isMatching = false;
+                        try {
+                            if(element.matchesSelector) isMatching=element.matchesSelector(subrules[sr].selector.toCSSString())
+                            else if(element.oMatchesSelector) isMatching=element.oMatchesSelector(subrules[sr].selector.toCSSString())
+                            else if(element.msMatchesSelector) isMatching=element.msMatchesSelector(subrules[sr].selector.toCSSString())
+                            else if(element.mozMatchesSelector) isMatching=element.mozMatchesSelector(subrules[sr].selector.toCSSString())
+                            else if(element.webkitMatchesSelector) isMatching=element.webkitMatchesSelector(subrules[sr].selector.toCSSString())
+                            else { throw new Error("wft u no element.matchesSelector?") }
+                        } catch(ex) { debugger; setImmediate(function() { throw ex; }) }
+                        
+                        if(isMatching) { results.push(subrules[sr]); }
+                        
+                    }
                     
-                    if(isMatching) { results.push(subrules[sr]); }
+                } else if(rule instanceof cssSyntax.AtRule && rule.name=="media") {
+                    
+                    visit(rule.value);
                     
                 }
+                
             }
+        }
+        
+        for(var s=cssCascade.stylesheets.length; s--; ) {
+            var rules = cssCascade.stylesheets[s];
+            visit(rules);
         }
         
         return results;
@@ -1670,6 +1683,8 @@ var cssCascade = {
             var bestValue = element.currentStyle[cssPropertyName];
             return bestValue ? cssSyntax.parse("*{a:"+bestValue+"}").value[0].value[0].value : new cssSyntax.TokenList();
         } else {
+            
+            // TODO: support the "initial" and "inherit" things?
             
             // first, let's try inline style as it's fast and generally accurate
             // TODO: what if important rules override that?
@@ -1684,46 +1699,58 @@ var cssCascade = {
                 ? element.myMatchedRules || []
                 : cssCascade.findAllMatchingRules(element)
             );
-            for(var i=rules.length; i--; ) {
+            
+            function visit(rules) {
                 
-                // TODO: media queries hook
-                if(rules[i].disabled) continue;
-                
-                // find a relevant declaration
-                var decls = rules[i].value;
-                for(var j=decls.length-1; j>=0; j--) {
-                    if(decls[j].type=="DECLARATION") {
-                        if(decls[j].name==cssPropertyName) {
-                            // TODO: only works if selectors containing a "," are deduplicated
-                            var currentPriority = cssCascade.computeSelectorPriorityOf(rules[i].selector);
-                            
-                            if(isBestImportant) {
-                                // only an important declaration can beat another important declaration
-                                if(decls[j].important) {
-                                    if(currentPriority >= bestPriority) {
-                                        bestPriority = currentPriority;
-                                        bestValue = decls[j].value;
-                                    }
-                                }
-                            } else {
-                                // an important declaration beat any non-important declaration
-                                if(decls[j].important) {
-                                    isBestImportant = true;
-                                    bestPriority = currentPriority;
-                                    bestValue = decls[j].value;
-                                } else {
-                                    // the selector priority has to be higher otherwise
-                                    if(currentPriority >= bestPriority) {
-                                        bestPriority = currentPriority;
-                                        bestValue = decls[j].value;
+                for(var i=rules.length; i--; ) {
+                    
+                    // TODO: media queries hook
+                    if(rules[i].disabled) continue;
+                    
+                    // find a relevant declaration
+                    if(rules[i] instanceof cssSyntax.StyleRule) {
+                        var decls = rules[i].value;
+                        for(var j=decls.length-1; j>=0; j--) {
+                            if(decls[j].type=="DECLARATION") {
+                                if(decls[j].name==cssPropertyName) {
+                                    // TODO: only works if selectors containing a "," are deduplicated
+                                    var currentPriority = cssCascade.computeSelectorPriorityOf(rules[i].selector);
+                                    
+                                    if(isBestImportant) {
+                                        // only an important declaration can beat another important declaration
+                                        if(decls[j].important) {
+                                            if(currentPriority >= bestPriority) {
+                                                bestPriority = currentPriority;
+                                                bestValue = decls[j].value;
+                                            }
+                                        }
+                                    } else {
+                                        // an important declaration beat any non-important declaration
+                                        if(decls[j].important) {
+                                            isBestImportant = true;
+                                            bestPriority = currentPriority;
+                                            bestValue = decls[j].value;
+                                        } else {
+                                            // the selector priority has to be higher otherwise
+                                            if(currentPriority >= bestPriority) {
+                                                bestPriority = currentPriority;
+                                                bestValue = decls[j].value;
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
+                    } else if((rules[i] instanceof cssSyntax.AtRule) && (rules[i].name=="media")) {
+                        
+                        visit(rules[i].value);
+                        
                     }
+                    
                 }
                 
             }
+            visit(rules);
             
             // return our best guess...
             return bestValue;
@@ -1753,13 +1780,18 @@ var cssCascade = {
         
         // for all stylesheets in the <head> tag...
         var head = document.head || document.documentElement;
-        var stylesheets = head.querySelectorAll('style:not([data-no-css-polyfill]), link[rel=stylesheet]:not([data-no-css-polyfill])');
-        for(var i = this.stylesheets.length = stylesheets.length; i--;) {
+        var stylesheets = head.querySelectorAll('style:not([data-no-css-polyfill]):not([data-css-polyfilled]), link[rel=stylesheet]:not([data-no-css-polyfill]):not([data-css-polyfilled])');
+        
+        var intialLength = this.stylesheets.length;
+        this.stylesheets.length += stylesheets.length
+        
+        // for all of them...
+        for(var i = stylesheets.length; i--;) {
             
             // 
             // load the stylesheet
             // 
-            var stylesheet = stylesheets[i];
+            var stylesheet = stylesheets[i]; 
             if(stylesheet.tagName=='LINK') {
                 
                 // oh, no, we have to download it...
@@ -1769,23 +1801,34 @@ var cssCascade = {
                     cssCascade.stylesheets[i] = new cssSyntax.TokenList();
                     
                     //
-                    var xhr = new XMLHttpRequest();
-                    xhr.open('GET',stylesheet.href,true); xhr.ruleIndex = i;
+                    var xhr = new XMLHttpRequest(); xhr.href = stylesheet.href;
+                    xhr.open('GET',stylesheet.href,true); xhr.ruleIndex = intialLength+i; 
                     xhr.onreadystatechange = function() {
-                        if(this.readyState==4 && this.status==200) {
-                            this.loadStyleSheet(this.responseText,this.ruleIndex)
+                        if(this.readyState==4) { 
+                            
+                            // status 0 is a webkit bug for local files
+                            if(this.status==200||this.status==0) {
+                                cssCascade.loadStyleSheet(this.responseText,this.ruleIndex)
+                            } else {
+                                console.log("css-cascade polyfill failled to load: " + this.href);
+                            }
                         }
                     };
                     xhr.send();
                     
-                } catch(ex) {}
+                } catch(ex) {
+                    console.log("css-cascade polyfill failled to load: " + stylesheet.href);
+                }
                 
             } else {
                 
                 // oh, cool, we just have to parse the content!
-                this.loadStyleSheet(stylesheet.textContent,i);
+                cssCascade.loadStyleSheet(stylesheet.textContent,intialLength+i);
                 
             }
+            
+            // mark the stylesheet as ok
+            stylesheet.setAttribute('data-css-polyfilled',true);
             
         }
     },
@@ -1841,7 +1884,9 @@ var cssCascade = {
             // only consider style rules
             if(rules[i] instanceof cssSyntax.StyleRule) {
                 
-                // try to see if the current rule is worth watching
+                // try to see if the current rule is worth monitoring
+                if(rules[i].isMonitored) continue;
+                
                 // for that, let's see if we can find a declaration we should watch
                 var decls = rules[i].value;
                 for(var j=decls.length-1; j>=0; j--) {
@@ -1856,12 +1901,59 @@ var cssCascade = {
                     }
                 }
                 
-            } else {
+            } else if(rules[i] instanceof cssSyntax.AtRule) {
                 
                 // TODO: handle @media
+                if(rules[i].name == "media" && window.matchMedia) {
+                    
+                    cssCascade.startMonitoringMedia(rules[i]);
+                    
+                }
                 
             }
             
+        }
+    },
+    
+    startMonitoringMedia: function startMonitoringMedia(atrule) {
+        try {
+            
+            var media = window.matchMedia(atrule.prelude.toCSSString());
+            
+            // update all the rules when needed
+            cssCascade.updateMedia(atrule.value, !media.matches, false);
+            media.addListener(
+                function(newMedia) { cssCascade.updateMedia(atrule.value, !newMedia.matches, true); }
+            );
+        
+            // it seems I like taking risks...
+            cssCascade.startMonitoringStylesheet(atrule.value);
+            
+        } catch(ex) {
+            setImmediate(function() { throw ex; })
+        }
+    },
+    
+    updateMedia: function(rules,disabled,update) {
+        for(var i=rules.length; i--; ) {
+            rules[i].disabled = disabled;
+            // TODO: should probably get handled by a setter on the rule...
+            var sr = rules[i].subRules;
+            if(sr) {
+                for(var j=sr.length; j--; ) {
+                    sr[j].disabled = disabled;
+                }
+            }
+        }
+        
+        // in case of update, all elements matching the selector went potentially updated...
+        if(update) {
+            for(var i=rules.length; i--; ) {
+                var els = document.querySelectorAll(rules[i].selector.toCSSString());
+                for(var j=els.length; j--; ) {
+                    cssCascade.monitoredPropertiesHandler.onupdate(els[j],rules[i]);
+                }
+            }
         }
     },
     
@@ -1874,10 +1966,11 @@ var cssCascade = {
         var rules = [];
         
         // fill the array
-        var currentRule = new cssSyntax.StyleRule(); for(var i=0; i<rule.selector.length; i++) {
+        var currentRule = new cssSyntax.StyleRule(); currentRule.disabled=rule.disabled;
+        for(var i=0; i<rule.selector.length; i++) {
             if(rule.selector[i] instanceof cssSyntax.DelimToken && rule.selector[i].value==",") {
                 currentRule.value = rule.value; rules.push(currentRule);
-                currentRule = new cssSyntax.StyleRule(); 
+                currentRule = new cssSyntax.StyleRule(); currentRule.disabled=rule.disabled;
             } else {
                 currentRule.selector.push(rule.selector[i])
             }
@@ -1930,6 +2023,9 @@ var cssCascade = {
 };
 
 cssCascade.loadAllStyleSheets();
+document.addEventListener("DOMContentLoaded", function() {
+    cssCascade.loadAllStyleSheets();
+})
 /////////////////////////////////////////////////////////////////
 ////                                                         ////
 ////                 prerequirements of qSL                  ////
@@ -2974,7 +3070,19 @@ var cssRegionsHelpers = {
     //
     expandListValues: function(OL) {
         if(OL.getAttribute("data-css-old-start")) return;
-        var currentValue = OL.getAttribute("start") ? parseInt(OL.getAttribute("start")) : 1;
+        
+        if(OL.hasAttribute("reversed")) {
+            
+            var currentValue = OL.getAttribute("start") ? parseInt(OL.getAttribute("start")) : OL.childElementCount;
+            var increment = -1;
+            
+        } else {
+            
+            var currentValue = OL.getAttribute("start") ? parseInt(OL.getAttribute("start")) : 1;
+            var increment = +1;
+            
+        }
+        
         OL.setAttribute("data-css-old-start", currentValue);
         var LI = OL.firstElementChild; var LIV = null;
         while(LI) {
@@ -2984,11 +3092,13 @@ var cssRegionsHelpers = {
                     LI.setAttribute('data-css-old-value', currentValue)
                 } else {
                     LI.setAttribute("value", currentValue);
-                    currentValue = currentValue + 1;
                 }
+                currentValue = currentValue + increment;
             }
             LI = LI.nextElementSibling;
         }
+        
+        
     },
     
     //
@@ -3280,6 +3390,7 @@ var cssRegionsHelpers = {
     ///
     /// walk the two trees the same way, and copy all the styles
     /// BEWARE: if the DOMs are different, funny things will happen
+    /// NOTE: this function will also remove elements put in another flow
     ///
     copyStyle: function(root1, root2) {
         
@@ -3295,6 +3406,13 @@ var cssRegionsHelpers = {
                     var properties = cssRegionsHelpers.allCSSProperties || cssRegionsHelpers.getAllCSSProperties();
                     for(var p=properties.length; p--; ) {
                         
+                        // TODO: create a list of computation-safe properties
+                        if(properties[p].indexOf("margin")==0) {
+                            var style = getComputedStyle(node1).getPropertyValue(properties[p]);
+                            node2.style.setProperty(properties[p], style)
+                            continue;
+                        }
+                        
                         var cssValue = cssCascade.getSpecifiedStyle(node1, properties[p], matchedRules);
                         if(cssValue && cssValue.length) {
                             node2.style.setProperty(properties[p], cssValue.toCSSString());
@@ -3302,6 +3420,8 @@ var cssRegionsHelpers = {
                             
                             // NOTE: the root will be detached from its parent
                             // Therefore, we have to inherit styles from it (oh no!)
+                            
+                            // TODO: create a list of inherited properties
                             
                             var style = getComputedStyle(node1).getPropertyValue(properties[p]);
                             var parentStyle = getComputedStyle(node1.parentNode).getPropertyValue(properties[p]);
@@ -3322,7 +3442,14 @@ var cssRegionsHelpers = {
                     while (child1) {
                         next1 = child1.nextSibling;
                         next2 = child2.nextSibling;
-                        visit(child1, child2);
+                        
+                        // decide between process style or hide
+                        if(child1.cssRegionsLastFlowIntoName && child1.cssRegionsLastFlowIntoType==="element") {
+                            node2.removeChild(child2);
+                        } else {
+                            visit(child1, child2);
+                        }
+                        
                         child1 = next1;
                         child2 = next2;
                     }
@@ -3379,6 +3506,17 @@ var cssRegions = {
         
         // get the next region
         var region = regions.pop();
+          
+        // NOTE: while we don't monitor that, and it can therefore become inacurate
+        // I'm going to follow the spec and refuse to mark as region inline/none elements]
+        while(true) {
+            var regionDisplay = getComputedStyle(region).display;
+            if(regionDisplay == "none" || regionDisplay.indexOf("inline") !== -1) {
+                region = regions.pop(); continue;
+            } else {
+                break;
+            }
+        }
         
         // the polyfill actually use a <cssregion> wrapper
         // we need to link this wrapper and the actual region
@@ -4257,6 +4395,10 @@ cssRegions.Flow.prototype._relayout = function(){
         console.log("starting a new relayout for "+This.name);
         //debugger;
         
+        // NOTE: we recover the scroll position in case the browser mess it up
+        var docElmScrollTop = document.documentElement.scrollTop;
+        var docBdyScrollTop = document.body.scrollTop;
+        
         
         //
         // STEP 1: REMOVE PREVIOUS EVENT LISTENERS
@@ -4354,6 +4496,10 @@ cssRegions.Flow.prototype._relayout = function(){
             
         });
         
+        
+        // NOTE: we recover the scroll position in case the browser mess it up
+        document.documentElement.scrollTop = docElmScrollTop;
+        document.body.scrollTop = docBdyScrollTop;
         
         // mark layout has being done
         This.relayoutScheduled = false;

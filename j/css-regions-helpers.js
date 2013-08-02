@@ -94,7 +94,19 @@ var cssRegionsHelpers = {
     //
     expandListValues: function(OL) {
         if(OL.getAttribute("data-css-old-start")) return;
-        var currentValue = OL.getAttribute("start") ? parseInt(OL.getAttribute("start")) : 1;
+        
+        if(OL.hasAttribute("reversed")) {
+            
+            var currentValue = OL.getAttribute("start") ? parseInt(OL.getAttribute("start")) : OL.childElementCount;
+            var increment = -1;
+            
+        } else {
+            
+            var currentValue = OL.getAttribute("start") ? parseInt(OL.getAttribute("start")) : 1;
+            var increment = +1;
+            
+        }
+        
         OL.setAttribute("data-css-old-start", currentValue);
         var LI = OL.firstElementChild; var LIV = null;
         while(LI) {
@@ -104,11 +116,13 @@ var cssRegionsHelpers = {
                     LI.setAttribute('data-css-old-value', currentValue)
                 } else {
                     LI.setAttribute("value", currentValue);
-                    currentValue = currentValue + 1;
                 }
+                currentValue = currentValue + increment;
             }
             LI = LI.nextElementSibling;
         }
+        
+        
     },
     
     //
@@ -400,6 +414,7 @@ var cssRegionsHelpers = {
     ///
     /// walk the two trees the same way, and copy all the styles
     /// BEWARE: if the DOMs are different, funny things will happen
+    /// NOTE: this function will also remove elements put in another flow
     ///
     copyStyle: function(root1, root2) {
         
@@ -415,6 +430,13 @@ var cssRegionsHelpers = {
                     var properties = cssRegionsHelpers.allCSSProperties || cssRegionsHelpers.getAllCSSProperties();
                     for(var p=properties.length; p--; ) {
                         
+                        // TODO: create a list of computation-safe properties
+                        if(properties[p].indexOf("margin")==0) {
+                            var style = getComputedStyle(node1).getPropertyValue(properties[p]);
+                            node2.style.setProperty(properties[p], style)
+                            continue;
+                        }
+                        
                         var cssValue = cssCascade.getSpecifiedStyle(node1, properties[p], matchedRules);
                         if(cssValue && cssValue.length) {
                             node2.style.setProperty(properties[p], cssValue.toCSSString());
@@ -422,6 +444,8 @@ var cssRegionsHelpers = {
                             
                             // NOTE: the root will be detached from its parent
                             // Therefore, we have to inherit styles from it (oh no!)
+                            
+                            // TODO: create a list of inherited properties
                             
                             var style = getComputedStyle(node1).getPropertyValue(properties[p]);
                             var parentStyle = getComputedStyle(node1.parentNode).getPropertyValue(properties[p]);
@@ -442,7 +466,14 @@ var cssRegionsHelpers = {
                     while (child1) {
                         next1 = child1.nextSibling;
                         next2 = child2.nextSibling;
-                        visit(child1, child2);
+                        
+                        // decide between process style or hide
+                        if(child1.cssRegionsLastFlowIntoName && child1.cssRegionsLastFlowIntoType==="element") {
+                            node2.removeChild(child2);
+                        } else {
+                            visit(child1, child2);
+                        }
+                        
                         child1 = next1;
                         child2 = next2;
                     }

@@ -43,6 +43,17 @@ var cssRegions = {
         
         // get the next region
         var region = regions.pop();
+          
+        // NOTE: while we don't monitor that, and it can therefore become inacurate
+        // I'm going to follow the spec and refuse to mark as region inline/none elements]
+        while(true) {
+            var regionDisplay = getComputedStyle(region).display;
+            if(regionDisplay == "none" || regionDisplay.indexOf("inline") !== -1) {
+                region = regions.pop(); continue;
+            } else {
+                break;
+            }
+        }
         
         // the polyfill actually use a <cssregion> wrapper
         // we need to link this wrapper and the actual region
