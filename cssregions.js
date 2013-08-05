@@ -3843,6 +3843,10 @@ var cssRegions = {
         var pos = region.cssRegionHost.getBoundingClientRect(); // avail size?
         pos = {top: pos.top, bottom: pos.bottom, left: pos.left, right: pos.right};
         
+        // substract from the bottom any border/padding of the region
+        var lostHeight = parseInt(getComputedStyle(region.cssRegionHost).paddingBottom);
+        lostHeight += parseInt(getComputedStyle(region.cssRegionHost).borderBottomWidth);
+        pos.bottom -= lostHeight; sizingH -= lostHeight;
         
         //
         // note: let's use hit targeting to find a dom range
