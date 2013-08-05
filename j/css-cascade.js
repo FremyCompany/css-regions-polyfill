@@ -467,6 +467,8 @@ var cssCascade = {
     
 };
 
+basicObjectModel.EventTarget.implementsIn(cssCascade);
+
 cssCascade.loadAllStyleSheets();
 document.addEventListener("DOMContentLoaded", function() {
     cssCascade.loadAllStyleSheets();
@@ -477,6 +479,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 onadded: function(e) {
                     // TODO: respect DOM order?
                     cssCascade.loadStyleSheetTag(e);
+                    cssCascade.dispatchEvent('stylesheetadded');
                 }
             }
         )
