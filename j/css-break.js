@@ -51,6 +51,29 @@ var cssBreak = {
     },
     
     // 
+    // returns true if the element is part of an inline flow
+    // TextNodes definitely qualify, but also inline-block elements
+    // 
+    hasAnyInlineFlow: function(element) {
+        
+        function countAsInline(element) {
+            if(!(element instanceof Element)) return !(/^\s*$/.test(element.nodeValue));
+            return !cssBreak.isOutOfFlowElement(element) && cssBreak.isSingleLineOfTextComponent(element);
+        }
+        
+        // try to find any inline element
+        var current = element.firstChild;
+        while(current) {
+            if(countAsInline(current)) return true;
+            current = current.nextSibling;
+        }
+        
+        // no inline element
+        return false;
+        
+    },
+    
+    // 
     // returns true if the element breaks the inline flow
     // (the case of block elements, mostly)
     // 

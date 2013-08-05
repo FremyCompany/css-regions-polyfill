@@ -454,6 +454,10 @@ cssRegions.NamedFlowCollection = function NamedFlowCollection() {
     
 }
 
+cssRegions.NamedFlowCollection.prototype.namedItem = function(k) {
+    return cssRegions.flows[k] || (cssRegions.flows[k]=new cssRegions.Flow(k));
+}
+
 
 //
 // this helper creates the required methods on top of the DOM {ie: public exports}
@@ -475,7 +479,7 @@ cssRegions.enablePolyfillObjectModel = function() {
             if(Object.prototype.hasOwnProperty.call(flows, flowName)) {
                 
                 // only active flows can be included
-                if(flows[flowName].content.length!=0 && flows[flowName].regions.length!=0) {
+                if(flows[flowName].content.length!=0 || flows[flowName].regions.length!=0) {
                     c[c.length++] = c[flowName] = flows[flowName];
                 }
                 

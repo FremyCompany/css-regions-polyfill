@@ -289,58 +289,60 @@ var cssRegions = {
         // backtrack to end of previous line...
         // 
         var first = r.startContainer.childNodes[r.startOffset], current = first; 
-        while((current) && (current = current.previousSibling)) {
-            
-            if(cssBreak.areInSameSingleLine(current,first)) {
+        if(cssBreak.hasAnyInlineFlow(r.startContainer)) {
+            while((current) && (current = current.previousSibling)) {
                 
-                // optimization: first and current are on the same line
-                // so if next and current are not the same line, it will still be
-                // the same line the "first" element is in
-                first = current;
-                
-                if(current instanceof Element) {
+                if(cssBreak.areInSameSingleLine(current,first)) {
                     
-                    // we don't want to break inside text lines
-                    r.setEndBefore(current);
+                    // optimization: first and current are on the same line
+                    // so if next and current are not the same line, it will still be
+                    // the same line the "first" element is in
+                    first = current;
                     
-                } else {
-                    
-                    // TODO: get last line via client rects
-                    var lines = Node.getClientRects(current);
-                    
-                    // if the text node did wrap into multiple lines
-                    if(lines.length>1) {
+                    if(current instanceof Element) {
                         
-                        // move back from the end until we get into previous line
-                        var previousLineBottom = lines[lines.length-2].bottom;
-                        r.setEnd(current, current.nodeValue.length);
-                        while(rect.bottom>previousLineBottom) {
-                            r.myMoveOneCharLeft(); rect = r.myGetExtensionRect();
-                        }
-                        
-                        // make sure we didn't exit the text node by mistake
-                        if(r.endContainer!==current) {
-                            // if we did, there's something wrong about the text node
-                            // but we can consider the text node as an element instead
-                            r.setEndBefore(current); // debugger; 
-                        }
+                        // we don't want to break inside text lines
+                        r.setEndBefore(current);
                         
                     } else {
                         
-                        // we can consider the text node as an element
-                        r.setEndBefore(current);
+                        // TODO: get last line via client rects
+                        var lines = Node.getClientRects(current);
+                        
+                        // if the text node did wrap into multiple lines
+                        if(lines.length>1) {
+                            
+                            // move back from the end until we get into previous line
+                            var previousLineBottom = lines[lines.length-2].bottom;
+                            r.setEnd(current, current.nodeValue.length);
+                            while(rect.bottom>previousLineBottom) {
+                                r.myMoveOneCharLeft(); rect = r.myGetExtensionRect();
+                            }
+                            
+                            // make sure we didn't exit the text node by mistake
+                            if(r.endContainer!==current) {
+                                // if we did, there's something wrong about the text node
+                                // but we can consider the text node as an element instead
+                                r.setEndBefore(current); // debugger; 
+                            }
+                            
+                        } else {
+                            
+                            // we can consider the text node as an element
+                            r.setEndBefore(current);
+                            
+                        }
                         
                     }
+                } else {
+                    
+                    // if the two elements are not on the same line, 
+                    // then we just found a line break!
+                    break;
                     
                 }
-            } else {
-                
-                // if the two elements are not on the same line, 
-                // then we just found a line break!
-                break;
                 
             }
-            
         }
         
         // if the selection is not in the region anymore, add the whole region

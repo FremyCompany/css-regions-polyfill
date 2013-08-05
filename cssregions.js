@@ -2663,6 +2663,29 @@ var cssBreak = {
     },
     
     // 
+    // returns true if the element is part of an inline flow
+    // TextNodes definitely qualify, but also inline-block elements
+    // 
+    hasAnyInlineFlow: function(element) {
+        
+        function countAsInline(element) {
+            if(!(element instanceof Element)) return !(/^\s*$/.test(element.nodeValue));
+            return !cssBreak.isOutOfFlowElement(element) && cssBreak.isSingleLineOfTextComponent(element);
+        }
+        
+        // try to find any inline element
+        var current = element.firstChild;
+        while(current) {
+            if(countAsInline(current)) return true;
+            current = current.nextSibling;
+        }
+        
+        // no inline element
+        return false;
+        
+    },
+    
+    // 
     // returns true if the element breaks the inline flow
     // (the case of block elements, mostly)
     // 
@@ -3752,58 +3775,60 @@ var cssRegions = {
         // backtrack to end of previous line...
         // 
         var first = r.startContainer.childNodes[r.startOffset], current = first; 
-        while((current) && (current = current.previousSibling)) {
-            
-            if(cssBreak.areInSameSingleLine(current,first)) {
+        if(cssBreak.hasAnyInlineFlow(r.startContainer)) {
+            while((current) && (current = current.previousSibling)) {
                 
-                // optimization: first and current are on the same line
-                // so if next and current are not the same line, it will still be
-                // the same line the "first" element is in
-                first = current;
-                
-                if(current instanceof Element) {
+                if(cssBreak.areInSameSingleLine(current,first)) {
                     
-                    // we don't want to break inside text lines
-                    r.setEndBefore(current);
+                    // optimization: first and current are on the same line
+                    // so if next and current are not the same line, it will still be
+                    // the same line the "first" element is in
+                    first = current;
                     
-                } else {
-                    
-                    // TODO: get last line via client rects
-                    var lines = Node.getClientRects(current);
-                    
-                    // if the text node did wrap into multiple lines
-                    if(lines.length>1) {
+                    if(current instanceof Element) {
                         
-                        // move back from the end until we get into previous line
-                        var previousLineBottom = lines[lines.length-2].bottom;
-                        r.setEnd(current, current.nodeValue.length);
-                        while(rect.bottom>previousLineBottom) {
-                            r.myMoveOneCharLeft(); rect = r.myGetExtensionRect();
-                        }
-                        
-                        // make sure we didn't exit the text node by mistake
-                        if(r.endContainer!==current) {
-                            // if we did, there's something wrong about the text node
-                            // but we can consider the text node as an element instead
-                            r.setEndBefore(current); // debugger; 
-                        }
+                        // we don't want to break inside text lines
+                        r.setEndBefore(current);
                         
                     } else {
                         
-                        // we can consider the text node as an element
-                        r.setEndBefore(current);
+                        // TODO: get last line via client rects
+                        var lines = Node.getClientRects(current);
+                        
+                        // if the text node did wrap into multiple lines
+                        if(lines.length>1) {
+                            
+                            // move back from the end until we get into previous line
+                            var previousLineBottom = lines[lines.length-2].bottom;
+                            r.setEnd(current, current.nodeValue.length);
+                            while(rect.bottom>previousLineBottom) {
+                                r.myMoveOneCharLeft(); rect = r.myGetExtensionRect();
+                            }
+                            
+                            // make sure we didn't exit the text node by mistake
+                            if(r.endContainer!==current) {
+                                // if we did, there's something wrong about the text node
+                                // but we can consider the text node as an element instead
+                                r.setEndBefore(current); // debugger; 
+                            }
+                            
+                        } else {
+                            
+                            // we can consider the text node as an element
+                            r.setEndBefore(current);
+                            
+                        }
                         
                     }
+                } else {
+                    
+                    // if the two elements are not on the same line, 
+                    // then we just found a line break!
+                    break;
                     
                 }
-            } else {
-                
-                // if the two elements are not on the same line, 
-                // then we just found a line break!
-                break;
                 
             }
-            
         }
         
         // if the selection is not in the region anymore, add the whole region
@@ -4645,6 +4670,10 @@ cssRegions.NamedFlowCollection = function NamedFlowCollection() {
     
 }
 
+cssRegions.NamedFlowCollection.prototype.namedItem = function(k) {
+    return cssRegions.flows[k] || (cssRegions.flows[k]=new cssRegions.Flow(k));
+}
+
 
 //
 // this helper creates the required methods on top of the DOM {ie: public exports}
@@ -4666,7 +4695,7 @@ cssRegions.enablePolyfillObjectModel = function() {
             if(Object.prototype.hasOwnProperty.call(flows, flowName)) {
                 
                 // only active flows can be included
-                if(flows[flowName].content.length!=0 && flows[flowName].regions.length!=0) {
+                if(flows[flowName].content.length!=0 || flows[flowName].regions.length!=0) {
                     c[c.length++] = c[flowName] = flows[flowName];
                 }
                 
