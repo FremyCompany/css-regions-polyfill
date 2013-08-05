@@ -497,6 +497,14 @@ cssRegions.enablePolyfillObjectModel = function() {
         }
     )
     
+    
+    //
+    // CSSDeclaration interface
+    //
+    cssCascade.polyfillStyleInterface('flow-into');
+    cssCascade.polyfillStyleInterface('flow-from');
+    cssCascade.polyfillStyleInterface('region-fragment');
+
 }
 
 cssRegions.enablePolyfill();

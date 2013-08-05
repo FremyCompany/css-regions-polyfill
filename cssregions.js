@@ -1806,7 +1806,7 @@ var cssCascade = {
             
             // first, let's try inline style as it's fast and generally accurate
             // TODO: what if important rules override that?
-            if(bestValue = element.style.getPropertyValue(cssPropertyName)) {
+            if(bestValue = element.style.getPropertyValue(cssPropertyName) || element.myStyle[cssPropertyName]) {
                 return cssSyntax.parse("*{a:"+bestValue+"}").value[0].value[0].value;
             }
             
@@ -2147,11 +2147,60 @@ var cssCascade = {
             });
         }
         
+    },
+        
+    toCamelCase: function toCamelCase(variable) { 
+        return variable.replace(
+            /-([a-z])/g, 
+            function(str,letter) { 
+                return letter.toUpperCase();
+            }
+        );
+    },
+    
+    polyfillStyleInterface: function(cssPropertyName) {
+        
+        var prop = {
+            
+            get: function() {
+                
+                try { if(!this.parentElement) throw new Error("Please use the anHTMLElement.myStyle property to get polyfilled properties") }
+                catch(ex) { setImmediate(function() { throw ex; }) }
+                
+                return this.parentElement.getAttribute('data-style-'+cssPropertyName);
+                
+            },
+            
+            set: function(v) {
+                
+                try { if(!this.parentElement) throw new Error("Please use the anHTMLElement.myStyle property to set polyfilled properties") }
+                catch(ex) { setImmediate(function() { throw ex; }) }
+                
+                if(this.parentElement.getAttribute('data-style-'+cssPropertyName) != v) {
+                    this.parentElement.setAttribute('data-style-'+cssPropertyName,v);
+                }
+                
+            }
+            
+        };
+        
+        var styleProto = Object.getPrototypeOf(document.documentElement.style) || CSSStyleDeclaration;
+        Object.defineProperty(styleProto,cssPropertyName,prop);
+        Object.defineProperty(styleProto,cssCascade.toCamelCase(cssPropertyName),prop);
+        cssCascade.startMonitoringRule(cssSyntax.parse('[data-style-'+cssPropertyName+']{'+cssPropertyName+':attr(style)}').value[0]);
+        
     }
     
 };
 
 basicObjectModel.EventTarget.implementsIn(cssCascade);
+Object.defineProperty(Element.prototype,'myStyle',{
+    get: function() {
+        var style = this.style; 
+        if(!style.parentElement) style.parentElement = this;
+        return style;
+    }
+});
 
 cssCascade.loadAllStyleSheets();
 document.addEventListener("DOMContentLoaded", function() {
@@ -4856,6 +4905,14 @@ cssRegions.enablePolyfillObjectModel = function() {
         }
     )
     
+    
+    //
+    // CSSDeclaration interface
+    //
+    cssCascade.polyfillStyleInterface('flow-into');
+    cssCascade.polyfillStyleInterface('flow-from');
+    cssCascade.polyfillStyleInterface('region-fragment');
+
 }
 
 cssRegions.enablePolyfill();

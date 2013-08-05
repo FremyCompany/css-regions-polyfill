@@ -292,7 +292,7 @@ You can find his work here: http://christiancantrell.com/adobe/hlp/callout.html
                 var pq = getBox( colW, winH / 3, (winW - (winW * .625)), winH / 3, "pull_quote_box");
                 var pqText = document.createElement("div");
                 pqText.setAttribute("class", "pull_quote_text_box");
-                pqText.style['flow-from'] = "pq_" + pageCount;
+                pqText.myStyle['flow-from'] = "pq_" + pageCount;
                 pqText.setAttribute("id", "pq_box_" + pageCount);
                 pq.appendChild(pqText);
                 vp.appendChild(pq);
@@ -316,9 +316,9 @@ You can find his work here: http://christiancantrell.com/adobe/hlp/callout.html
                     var region = story.getRegionsByContent(pq);
                     if (region.length === 0) continue;
                     for (var sibling = region[0].nextSibling;
-                         sibling.getAttribute("class") !== "pull_quote_box";
+                         sibling && (!sibling.getAttribute || sibling.getAttribute("class") !== "pull_quote_box");
                          sibling = sibling.nextSibling) {}
-                    if(sibling == currentSibling) continue;
+                    if(!sibling || sibling == currentSibling) continue;
                     currentSibling = sibling;
                     
                     var pullQuoteBoxId = sibling.firstChild.getAttribute("id");
@@ -329,7 +329,7 @@ You can find his work here: http://christiancantrell.com/adobe/hlp/callout.html
                     if (!document.getElementById("pq_text_" + index)) {
                         var quote = document.createElement("div");
                         quote.setAttribute("id", "pq_text_" + index);
-                        quote.style['flow-into'] = sibling.firstChild.style["flow-from"];
+                        quote.myStyle['flow-into'] = sibling.firstChild.myStyle["flow-from"];
                         quote.innerHTML = pq.innerText;
                         document.getElementById("viewport").appendChild(quote);
                         var namedFlows = getNamedFlows();
