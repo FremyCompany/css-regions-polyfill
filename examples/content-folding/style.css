@@ -84,7 +84,7 @@ aside {
   }
 
   #ad-source img {
-    float: left;
+    float: none;
     width: auto;
     margin-right: 10px;
   }
