@@ -2054,7 +2054,7 @@ var cssCascade = {
             media.addListener(
                 function(newMedia) { cssCascade.updateMedia(atrule.value, !newMedia.matches, true); }
             );
-        
+            
             // it seems I like taking risks...
             cssCascade.startMonitoringStylesheet(atrule.value);
             
@@ -4394,8 +4394,12 @@ cssRegions.Flow = function NamedFlow(name) {
     };
     
     // register to style changes already
+    This.lastStylesheetAdded = 0;
     cssCascade.addEventListener('stylesheetadded', function() {
-        This.relayout();
+        if(This.lastStylesheetAdded - Date() > 100) {
+            This.lastStylesheetAdded = +Date();
+            This.relayout();
+        }
     });
 }
     

@@ -370,7 +370,7 @@ var cssCascade = {
             media.addListener(
                 function(newMedia) { cssCascade.updateMedia(atrule.value, !newMedia.matches, true); }
             );
-        
+            
             // it seems I like taking risks...
             cssCascade.startMonitoringStylesheet(atrule.value);
             

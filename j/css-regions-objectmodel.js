@@ -35,8 +35,12 @@ cssRegions.Flow = function NamedFlow(name) {
     };
     
     // register to style changes already
+    This.lastStylesheetAdded = 0;
     cssCascade.addEventListener('stylesheetadded', function() {
-        This.relayout();
+        if(This.lastStylesheetAdded - Date() > 100) {
+            This.lastStylesheetAdded = +Date();
+            This.relayout();
+        }
     });
 }
     
