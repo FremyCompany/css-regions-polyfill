@@ -210,11 +210,58 @@ var cssCascade = {
         
     },
     
+    loadStyleSheetTag: function loadStyleSheetTag(stylesheet,i) {
+        
+        if(stylesheet.hasAttribute('data-css-polyfilled')) {
+            return;
+        }
+        
+        if(stylesheet.tagName=='LINK') {
+            
+            // oh, no, we have to download it...
+            try {
+                
+                // dummy value in-between
+                cssCascade.stylesheets[i] = new cssSyntax.TokenList();
+                
+                //
+                var xhr = new XMLHttpRequest(); xhr.href = stylesheet.href;
+                xhr.open('GET',stylesheet.href,true); xhr.ruleIndex = i; 
+                xhr.onreadystatechange = function() {
+                    if(this.readyState==4) { 
+                        
+                        // status 0 is a webkit bug for local files
+                        if(this.status==200||this.status==0) {
+                            cssCascade.loadStyleSheet(this.responseText,this.ruleIndex)
+                        } else {
+                            console.log("css-cascade polyfill failled to load: " + this.href);
+                        }
+                    }
+                };
+                xhr.send();
+                
+            } catch(ex) {
+                console.log("css-cascade polyfill failled to load: " + stylesheet.href);
+            }
+            
+        } else {
+            
+            // oh, cool, we just have to parse the content!
+            cssCascade.loadStyleSheet(stylesheet.textContent,i);
+            
+        }
+        
+        // mark the stylesheet as ok
+        stylesheet.setAttribute('data-css-polyfilled',true);
+        
+    },
+    
+    selectorForStylesheets: "style:not([data-no-css-polyfill]):not([data-css-polyfilled]), link[rel=stylesheet]:not([data-no-css-polyfill]):not([data-css-polyfilled])",
     loadAllStyleSheets: function loadAllStyleSheets() {
         
         // for all stylesheets in the <head> tag...
         var head = document.head || document.documentElement;
-        var stylesheets = head.querySelectorAll('style:not([data-no-css-polyfill]):not([data-css-polyfilled]), link[rel=stylesheet]:not([data-no-css-polyfill]):not([data-css-polyfilled])');
+        var stylesheets = head.querySelectorAll(cssCascade.selectorForStylesheets);
         
         var intialLength = this.stylesheets.length;
         this.stylesheets.length += stylesheets.length
@@ -226,43 +273,7 @@ var cssCascade = {
             // load the stylesheet
             // 
             var stylesheet = stylesheets[i]; 
-            if(stylesheet.tagName=='LINK') {
-                
-                // oh, no, we have to download it...
-                try {
-                    
-                    // dummy value in-between
-                    cssCascade.stylesheets[i] = new cssSyntax.TokenList();
-                    
-                    //
-                    var xhr = new XMLHttpRequest(); xhr.href = stylesheet.href;
-                    xhr.open('GET',stylesheet.href,true); xhr.ruleIndex = intialLength+i; 
-                    xhr.onreadystatechange = function() {
-                        if(this.readyState==4) { 
-                            
-                            // status 0 is a webkit bug for local files
-                            if(this.status==200||this.status==0) {
-                                cssCascade.loadStyleSheet(this.responseText,this.ruleIndex)
-                            } else {
-                                console.log("css-cascade polyfill failled to load: " + this.href);
-                            }
-                        }
-                    };
-                    xhr.send();
-                    
-                } catch(ex) {
-                    console.log("css-cascade polyfill failled to load: " + stylesheet.href);
-                }
-                
-            } else {
-                
-                // oh, cool, we just have to parse the content!
-                cssCascade.loadStyleSheet(stylesheet.textContent,intialLength+i);
-                
-            }
-            
-            // mark the stylesheet as ok
-            stylesheet.setAttribute('data-css-polyfilled',true);
+            cssCascade.loadStyleSheetTag(stylesheet,intialLength+i)
             
         }
     },
@@ -459,4 +470,15 @@ var cssCascade = {
 cssCascade.loadAllStyleSheets();
 document.addEventListener("DOMContentLoaded", function() {
     cssCascade.loadAllStyleSheets();
+    if(window.myQuerySelectorLive) {
+        window.myQuerySelectorLive(
+            cssCascade.selectorForStylesheets,
+            {
+                onadded: function(e) {
+                    // TODO: respect DOM order?
+                    cssCascade.loadStyleSheetTag(e);
+                }
+            }
+        )
+    }
 })
