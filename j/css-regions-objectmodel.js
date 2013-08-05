@@ -383,18 +383,52 @@ cssRegions.Flow.prototype.removeEventListener = function(eventType,f) {
 cssRegions.Flow.prototype.dispatchEvent = function(event_or_type) {
     
     var event = event_or_type;
+    function setUpPropertyForwarding(e,ee,key) {
+        Object.defineProperty(ee,key,{
+            get:function() {
+                var v = e[key]; 
+                if(typeof(v)=="function") {
+                    return v.bind(e);
+                } else {
+                    return v;
+                }
+            },
+            set:function(v) {
+                e[key] = v;
+            }
+        });
+    }
     function setUpTarget(e,v) {
-        Object.defineProperty(e,"target",{get:function() {return v}});
+        try { Object.defineProperty(e,"target",{get:function() {return v}}); }
+        catch(ex) {}
+        finally {
+            
+            if(e.target !== v) {
+                
+                var ee = Object.create(Object.getPrototypeOf(e));
+                ee = setUpTarget(ee,v);
+                for(key in e) {
+                    if(key != "target") setUpPropertyForwarding(e,ee,key);
+                }
+                return ee;
+                
+            } else {
+                
+                return e;
+                
+            }
+            
+        }
     }
     
     // try to set the target
     if(typeof(event)=="object") {
-        try { setUpTarget(event,this); } catch(ex) {}
+        try { event=setUpTarget(event,this); } catch(ex) {}
         
     } else if(typeof(event)=="string") {
         event = document.createEvent("CustomEvent");
         event.initCustomEvent(event_or_type, /*canBubble:*/ true, /*cancelable:*/ false, /*detail:*/this);
-        try { setUpTarget(event,this); } catch(ex) {}
+        try { event=setUpTarget(event,this); } catch(ex) {}
         
     } else {
         throw new Error("dispatchEvent expect an Event object or a string containing the event type");
