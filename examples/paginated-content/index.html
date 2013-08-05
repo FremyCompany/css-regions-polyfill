@@ -126,7 +126,7 @@ You can find his work here: http://christiancantrell.com/adobe/hlp/callout.html
 
         <script src="../../cssregions.js"></script>
         <script type="text/javascript">
-
+            
             var winW, winH, colW,
                 lastColPosition,
                 scrollPosition,
@@ -138,7 +138,7 @@ You can find his work here: http://christiancantrell.com/adobe/hlp/callout.html
             function getNamedFlows(){
                return document.getNamedFlows();
             }
-
+            
             function init() {
                 var timeoutId, namedFlows;
                 window.addEventListener("resize",
@@ -156,7 +156,7 @@ You can find his work here: http://christiancantrell.com/adobe/hlp/callout.html
                 story = namedFlows.namedItem("story");
                 doLayout();
             }
-
+            
             function onMainFlowUpdate(e) {
                 var story = e.target;
                 if (story.overset) {
@@ -166,7 +166,7 @@ You can find his work here: http://christiancantrell.com/adobe/hlp/callout.html
                     addPullQuotes();
                 }                
             }
-
+            
             function doLayout() {
                 story.addEventListener("regionfragmentchange", onMainFlowUpdate);
                 // First, remove the pull-quote styles.
@@ -175,34 +175,34 @@ You can find his work here: http://christiancantrell.com/adobe/hlp/callout.html
                 for (var i = 0; i < pqStyles.length; ++i) {
                     head.removeChild(pqStyles[i]);
                 }
-
+                
                 // Now clear out the viewport.
                 var vp = document.getElementById("viewport");
-
+                
                 while (vp.hasChildNodes()) {
                     vp.removeChild(vp.firstChild);
                 }
-
+                
                 // Reset and re-measure.
                 pageCount = 0;
-
+                
                 winW = window.innerWidth;
                 winH = window.innerHeight;
-
+                
                 colW = Math.floor(winW / 4);
-
+                
                 lastColPosition = (colW) * -1;
-
+                
                 if (scrollPosition != 0) {
                     scrollPosition = 0;
                     scrollViewport();
                 }
-
+                
                 document.getElementById("storyTitle").style.fontSize = (colW/85)+"em";
-
+                
                 addPage();
             }
-
+            
             function onKeyDown(event) {
                 if (event.keyCode == 39) { // right
                     scrollForward();
@@ -212,7 +212,7 @@ You can find his work here: http://christiancantrell.com/adobe/hlp/callout.html
                     toggleRegionBorders();
                 }
             }
-
+            
             function toggleRegionBorders() {
                 var head = document.getElementsByTagName("head")[0];
                 var style = document.getElementById("region_border");
@@ -233,62 +233,62 @@ You can find his work here: http://christiancantrell.com/adobe/hlp/callout.html
                     head.appendChild(style);
                 }
             }
-
+            
             function scrollForward() {
                 var isLastColShowing = ((Math.abs(scrollPosition)) < lastColPosition && ((Math.abs(scrollPosition) + (winW*1)) > lastColPosition));
                 if (isLastColShowing) return;
                 scrollPosition -= winW;
                 scrollViewport();
             }
-
+            
             function scrollBack() {
                 if (scrollPosition == 0) return;
                 scrollPosition += winW;
                 scrollViewport();
             }
-
+            
             function scrollViewport() {
                 vp = document.getElementById("viewport");
                 vp.style.left = scrollPosition + "px";
             }
-
+            
             function getBox(width, height, left, top, cssClass) {
                 var box = document.createElement("div");
                 box.setAttribute("class", cssClass);
                 var pageWidth = ((left) + (pageCount * winW));
                 box.setAttribute("style", "position:absolute;width:" + Math.round(width) + "px;height:" + Math.round(height) + "px;top:" + Math.round(top) + "px;left:" + Math.round(pageWidth) + "px;");
                 lastColPosition = pageWidth;
-
+                
                 return box;
             }
-
+            
             function addPage() {
                 var vp = document.getElementById("viewport");
-
+                
                 var box_a = getBox(colW, winH, 0, 0, "region box_a");
                 vp.appendChild(box_a);
-
+                
                 var box_b = getBox(colW, winH / 3, colW, 0, "region box_b");
                 vp.appendChild(box_b);
-
+                
                 var box_c = getBox( winW / 8 , winH / 3, colW, winH / 3, "region box_c");
                 vp.appendChild(box_c);
-
+                
                 var box_d = getBox(colW, winH / 3, colW, (winH - (winH / 3)), "region box_d");
                 vp.appendChild(box_d);
-
+                
                 var box_e = getBox(colW, winH / 3, winW / 2, 0, "region box_e");
                 vp.appendChild(box_e);
-
+                
                 var box_f = getBox( winW / 8, winH / 3, winW * .625, winH / 3, "region box_f");
                 vp.appendChild(box_f);
-
+                
                 var box_g = getBox( colW, winH / 3, winW / 2, (winH - (winH / 3)), "region box_g");
                 vp.appendChild(box_g);
-
+                
                 var box_h = getBox( colW, winH, (winW - (winW  / 4)), 0, "region box_h");
                 vp.appendChild(box_h);
-
+                
                 var pq = getBox( colW, winH / 3, (winW - (winW * .625)), winH / 3, "pull_quote_box");
                 var pqText = document.createElement("div");
                 pqText.setAttribute("class", "pull_quote_text_box");
@@ -296,18 +296,18 @@ You can find his work here: http://christiancantrell.com/adobe/hlp/callout.html
                 pqText.setAttribute("id", "pq_box_" + pageCount);
                 pq.appendChild(pqText);
                 vp.appendChild(pq);
-
+                
                 var pageNumber = document.createElement("div");
                 pageNumber.setAttribute("class", "page_number");
                 pageNumber.setAttribute("style", "position:absolute;width:"+winW+"px;left:"+(winW*pageCount)+"px;bottom:0px;");
                 pageNumber.innerHTML = pageCount + 1;
                 vp.appendChild(pageNumber);
-
+                
                 ++pageCount;
                 
                 // requires layout update
             }
-
+            
             function addPullQuotes() {
                 var pqs = document.getElementsByClassName("pull_quote");
                 var currentSibling = null;
@@ -320,12 +320,12 @@ You can find his work here: http://christiancantrell.com/adobe/hlp/callout.html
                          sibling = sibling.nextSibling) {}
                     if(sibling == currentSibling) continue;
                     currentSibling = sibling;
-
+                    
                     var pullQuoteBoxId = sibling.firstChild.getAttribute("id");
                     var index = pullQuoteBoxId.substring(pullQuoteBoxId.lastIndexOf("_") + 1, pullQuoteBoxId.length);
-
+                    
                     document.getElementsByTagName("head")[0].appendChild(getPQStyle(index, defaultPullQuoteSize));
-
+                    
                     if (!document.getElementById("pq_text_" + index)) {
                         var quote = document.createElement("div");
                         quote.setAttribute("id", "pq_text_" + index);
@@ -339,7 +339,7 @@ You can find his work here: http://christiancantrell.com/adobe/hlp/callout.html
                     // requires region update
                 }
             }
-
+            
             function getPQStyle(index, fontSize) {
                 var pqStyle = document.createElement("style");
                 pqStyle.setAttribute("id", "pq_style_" + index);
@@ -351,7 +351,7 @@ You can find his work here: http://christiancantrell.com/adobe/hlp/callout.html
                 pqStyle.innerHTML = styleText;
                 return pqStyle;
             }
-
+            
             function adjustPullQuoteFontSize(event) {
                 var namedFlow = event.target;
                 if (!namedFlow.overset) {
@@ -361,7 +361,7 @@ You can find his work here: http://christiancantrell.com/adobe/hlp/callout.html
                     changePullQuoteStyle(namedFlow, -.1);
                 }
             }
-
+            
             function changePullQuoteStyle(namedFlow, delta) {
                 var index = namedFlow.name.substring(namedFlow.name.lastIndexOf("_") + 1, namedFlow.name.length);
                 var regionId = "pq_box_" + index;
@@ -376,9 +376,9 @@ You can find his work here: http://christiancantrell.com/adobe/hlp/callout.html
                 head.removeChild(style);
                 head.appendChild(newStyle);
             }
-
-            window.onload = function() { setTimeout(init,250) };
-
+            
+            window.onload = init;
+            
         </script>
     </head>
 <body>
