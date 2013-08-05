@@ -3,7 +3,7 @@
 // 
 // this class contains flow-relative data field
 // 
-cssRegions.Flow= function NamedFlow(name) {
+cssRegions.Flow = function NamedFlow(name) {
     
     // TODO: force immediate relayout if someone ask the overset properties
     // and the layout has been deemed wrong (still isn't a proof of correctness but okay)
@@ -33,6 +33,11 @@ cssRegions.Flow= function NamedFlow(name) {
     var This=this; This.update = function(stream) {
         stream.schedule(This.update); This.relayout();
     };
+    
+    // register to style changes already
+    cssCascade.addEventListener('stylesheetadded', function() {
+        This.relayout();
+    });
 }
     
 cssRegions.Flow.prototype.removeFromContent = function(element) {
@@ -366,86 +371,6 @@ cssRegions.Flow.prototype.removeEventListenersOf = function(nodes) {
     
 }
 
-cssRegions.Flow.prototype.addEventListener = function(eventType,f) {
-    var ls = (this.eventListeners[eventType] || (this.eventListeners[eventType]=[]));
-    if(ls.indexOf(f)==-1) {
-        ls.push(f);
-    }
-}
-
-cssRegions.Flow.prototype.removeEventListener = function(eventType,f) {
-    var ls = (this.eventListeners[eventType] || (this.eventListeners[eventType]=[])), i;
-    if((i=ls.indexOf(f))==-1) {
-        ls.splice(i,1);
-    }
-}
-
-cssRegions.Flow.prototype.dispatchEvent = function(event_or_type) {
-    
-    var event = event_or_type;
-    function setUpPropertyForwarding(e,ee,key) {
-        Object.defineProperty(ee,key,{
-            get:function() {
-                var v = e[key]; 
-                if(typeof(v)=="function") {
-                    return v.bind(e);
-                } else {
-                    return v;
-                }
-            },
-            set:function(v) {
-                e[key] = v;
-            }
-        });
-    }
-    function setUpTarget(e,v) {
-        try { Object.defineProperty(e,"target",{get:function() {return v}}); }
-        catch(ex) {}
-        finally {
-            
-            if(e.target !== v) {
-                
-                var ee = Object.create(Object.getPrototypeOf(e));
-                ee = setUpTarget(ee,v);
-                for(key in e) {
-                    if(key != "target") setUpPropertyForwarding(e,ee,key);
-                }
-                return ee;
-                
-            } else {
-                
-                return e;
-                
-            }
-            
-        }
-    }
-    
-    // try to set the target
-    if(typeof(event)=="object") {
-        try { event=setUpTarget(event,this); } catch(ex) {}
-        
-    } else if(typeof(event)=="string") {
-        event = document.createEvent("CustomEvent");
-        event.initCustomEvent(event_or_type, /*canBubble:*/ true, /*cancelable:*/ false, /*detail:*/this);
-        try { event=setUpTarget(event,this); } catch(ex) {}
-        
-    } else {
-        throw new Error("dispatchEvent expect an Event object or a string containing the event type");
-    }
-    
-    var ls = (this.eventListeners[event.type] || (this.eventListeners[event.type]=[]));
-    for(var i=ls.length; i--;) {
-        try { 
-            ls[i](event);
-        } catch(ex) {
-            setImmediate(function() { throw ex; });
-        }
-    }
-    
-    return event.isDefaultPrevented;
-}
-
 // alias
 cssRegions.NamedFlow = cssRegions.Flow;
 
@@ -477,7 +402,7 @@ cssRegions.NamedFlow.prototype.getRegionsByContent = function getRegionsByConten
     return regions;
 }
 
-
+basicObjectModel.EventTarget.implementsIn(cssRegions.Flow);
 
 //
 // this class is a collection of named flows (not an array, sadly)
