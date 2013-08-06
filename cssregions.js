@@ -427,7 +427,7 @@ basicObjectModel.EventTarget.prototype.removeEventListener = function(eventType,
     if(!this.eventListeners) this.eventListeners=[];
 
     var ls = (this.eventListeners[eventType] || (this.eventListeners[eventType]=[])), i;
-    if((i=ls.indexOf(f))==-1) {
+    if((i=ls.indexOf(f))!==-1) {
         ls.splice(i,1);
     }
     
@@ -1794,12 +1794,67 @@ var cssCascade = {
         return results;
     },
     
+    //
+    // a list of all properties supported by the current browser
+    //
+    allCSSProperties: null,
+    getAllCSSProperties: function getAllCSSProperties() {
+        
+        var s = getComputedStyle(document.body); var ps = new Array(s.length);
+        for(var i=s.length; i--; ) {
+            ps[i] = s[i];
+        }
+        return this.allCSSProperties = ps;
+        
+    },
+    
+    // 
+    // those properties are not safe for computation->specified round-tripping
+    // 
+    computationUnsafeProperties: {
+        "bottom": false,
+        "direction": false,
+        "display": false,
+        "font-size": false,
+        "height":false,
+        "left": false,
+        "line-height": false,
+        "max-height": false,
+        "max-width": false,
+        "min-height": false,
+        "min-width": false,
+        "right": false,
+        "text-align": false,
+        "text-align-last": false,
+        "top": false,
+        "width": false,
+    },
+    
+    defaultStylesForTag: Object.create ? Object.create(null) : {},
+    getDefaultStyleForTag: function getDefaultStyleForTag(tagName) {
+        
+        // get result from cache
+        var result = cssRegionsHelpers[tagName];
+        if(result) return result;
+        
+        // create dummy virtual element
+        var element = document.createElement(tagName);
+        var style = cssRegionsHelpers[tagName] = getComputedStyle(element);
+        if(style.display) return style;
+        
+        // webkit fix: insert the dummy element anywhere (head -> display:none)
+        document.head.insertBefore(element, document.head.firstChild);
+        return style;
+    },
+    
     getSpecifiedStyle: function getSpecifiedStyle(element, cssPropertyName, matchedRules) {
         
         // give IE a thumbs up for this!
         if(element.currentStyle) {
+            
             var bestValue = element.currentStyle[cssPropertyName];
             return bestValue ? cssSyntax.parse("*{a:"+bestValue+"}").value[0].value[0].value : new cssSyntax.TokenList();
+            
         } else {
             
             // TODO: support the "initial" and "inherit" things?
@@ -3591,17 +3646,6 @@ var cssRegionsHelpers = {
         
     },
     
-    allCSSProperties: null,
-    getAllCSSProperties: function getAllCSSProperties() {
-        
-        var s = getComputedStyle(document.body); var ps = new Array(s.length);
-        for(var i=s.length; i--; ) {
-            ps[i] = s[i];
-        }
-        return this.allCSSProperties = ps;
-        
-    },
-    
     ///
     /// walk the two trees the same way, and copy all the styles
     /// BEWARE: if the DOMs are different, funny things will happen
@@ -3618,20 +3662,25 @@ var cssRegionsHelpers = {
                     var matchedRules = node1.curentStyle ? null : cssCascade.findAllMatchingRules(node1)
                     
                     // and computed the value of all css properties
-                    var properties = cssRegionsHelpers.allCSSProperties || cssRegionsHelpers.getAllCSSProperties();
+                    var properties = cssCascade.allCSSProperties || cssCascade.getAllCSSProperties();
                     for(var p=properties.length; p--; ) {
                         
-                        // TODO: create a list of computation-safe properties
-                        if(properties[p].indexOf("margin")==0) {
+                        // if the property is computation-safe, use the computed value
+                        if(!(properties[p] in cssCascade.computationUnsafeProperties) && properties[p][0]!='-') {
                             var style = getComputedStyle(node1).getPropertyValue(properties[p]);
-                            node2.style.setProperty(properties[p], style)
+                            var defaultStyle = cssCascade.getDefaultStyleForTag(node1.tagName).getPropertyValue(properties[p]);
+                            if(style != defaultStyle) node2.style.setProperty(properties[p], style)
                             continue;
                         }
                         
+                        // otherwise, get the parent's specified value
                         var cssValue = cssCascade.getSpecifiedStyle(node1, properties[p], matchedRules);
                         if(cssValue && cssValue.length) {
+                            
+                            // if we have a specified value, let's use it
                             node2.style.setProperty(properties[p], cssValue.toCSSString());
-                        } else if(isRoot && properties[p][0] != '-') {
+                            
+                        } else if(isRoot && node1.parentNode && properties[p][0] != '-') {
                             
                             // NOTE: the root will be detached from its parent
                             // Therefore, we have to inherit styles from it (oh no!)
@@ -3727,7 +3776,7 @@ var cssRegions = {
         while(true) {
             var regionDisplay = getComputedStyle(region).display;
             if(regionDisplay == "none" || regionDisplay.indexOf("inline") !== -1) {
-                region = regions.pop(); continue;
+                if(region = regions.pop()) { continue } else { return !!remainingContent.hasChildNodes() };
             } else {
                 break;
             }
@@ -3747,6 +3796,8 @@ var cssRegions = {
         
         // avoid doing the layout of empty regions
         if(!remainingContent.hasChildNodes()) {
+            
+            console.log(region.className);
             
             region.cssRegionsLastOffsetHeight = region.offsetHeight;
             region.cssRegionsLastOffsetWidth = region.offsetWidth;
@@ -3812,7 +3863,7 @@ var cssRegions = {
                 region.cssRegionHost.cssRegionsLastOffsetWidth = region.cssRegionHost.offsetWidth;
                 
                 // WE RETURN FALSE IF WE DIDN'T OVERFLOW
-                return false;
+                return region.cssRegionHost.offsetHeight != region.cssRegionHost.scrollHeight;
                 
             }
             
@@ -4468,6 +4519,8 @@ cssRegions.Flow = function NamedFlow(name) {
         if(This.lastStylesheetAdded - Date() > 100) {
             This.lastStylesheetAdded = +Date();
             This.relayout();
+        } else {
+            console.warn("Please don't add stylesheets as a response to region events. Operation cancelled.")
         }
     });
 }
@@ -4575,11 +4628,19 @@ cssRegions.Flow.prototype.generateContentFragment = function() {
         // depending on the requested behavior
         if(element.cssRegionsLastFlowIntoType=="element") {
             
-            // add the element
-            fragment.appendChild(element.cloneNode(true));
-            
-            // clone the style
-            cssRegionsHelpers.copyStyle(element, fragment.lastChild);
+                // add the element
+                var el = element;
+                var elClone = el.cloneNode(true);
+                var elToInsert = el; if(elToInsert.tagName=="LI") {
+                    elToInsert = document.createElement(el.parentNode.tagName);
+                    elToInsert.style.margin="0";
+                    elToInsert.style.padding="0";
+                    elToInsert.appendChild(elClone);
+                }
+                fragment.appendChild(elToInsert);
+                
+                // clone the style
+                cssRegionsHelpers.copyStyle(el, elClone);
             
         } else {
             
@@ -4587,10 +4648,17 @@ cssRegions.Flow.prototype.generateContentFragment = function() {
             var el = element.firstChild; while(el) {
                 
                 // add the element
-                fragment.appendChild(el.cloneNode(true));
+                var elClone = el.cloneNode(true);
+                var elToInsert = el; if(elToInsert.tagName=="LI") {
+                    elToInsert = document.createElement(el.parentNode.tagName);
+                    elToInsert.style.margin="0";
+                    elToInsert.style.padding="0";
+                    elToInsert.appendChild(elClone);
+                }
+                fragment.appendChild(elToInsert);
                 
                 // clone the style
-                cssRegionsHelpers.copyStyle(el, fragment.lastChild);
+                cssRegionsHelpers.copyStyle(el, elClone);
                 
                 el = el.nextSibling;
             }
@@ -4653,7 +4721,7 @@ cssRegions.Flow.prototype._relayout = function(){
         // remove the listeners from everything
         This.removeEventListenersOf(This.lastRegions);
         This.removeEventListenersOf(This.lastContent);
-
+        cancelAnimationFrame(This.lastEventRAF);
         
         
         //
@@ -4734,13 +4802,15 @@ cssRegions.Flow.prototype._relayout = function(){
         //
         // STEP 7: FIRE SOME EVENTS
         //
-        requestAnimationFrame(function() {
-            
-            // TODO: only fire when necessary but...
-            This.dispatchEvent('regionfragmentchange');
-            This.dispatchEvent('regionoversetchange');
-            
-        });
+        if(This.regions.length > 0) {
+            This.lastEventRAF = requestAnimationFrame(function() {
+                
+                // TODO: only fire when necessary but...
+                This.dispatchEvent('regionfragmentchange');
+                This.dispatchEvent('regionoversetchange');
+                
+            });
+        }
         
         
         // NOTE: we recover the scroll position in case the browser mess it up

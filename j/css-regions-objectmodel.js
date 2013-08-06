@@ -40,6 +40,8 @@ cssRegions.Flow = function NamedFlow(name) {
         if(This.lastStylesheetAdded - Date() > 100) {
             This.lastStylesheetAdded = +Date();
             This.relayout();
+        } else {
+            console.warn("Please don't add stylesheets as a response to region events. Operation cancelled.")
         }
     });
 }
@@ -147,11 +149,19 @@ cssRegions.Flow.prototype.generateContentFragment = function() {
         // depending on the requested behavior
         if(element.cssRegionsLastFlowIntoType=="element") {
             
-            // add the element
-            fragment.appendChild(element.cloneNode(true));
-            
-            // clone the style
-            cssRegionsHelpers.copyStyle(element, fragment.lastChild);
+                // add the element
+                var el = element;
+                var elClone = el.cloneNode(true);
+                var elToInsert = el; if(elToInsert.tagName=="LI") {
+                    elToInsert = document.createElement(el.parentNode.tagName);
+                    elToInsert.style.margin="0";
+                    elToInsert.style.padding="0";
+                    elToInsert.appendChild(elClone);
+                }
+                fragment.appendChild(elToInsert);
+                
+                // clone the style
+                cssRegionsHelpers.copyStyle(el, elClone);
             
         } else {
             
@@ -159,10 +169,17 @@ cssRegions.Flow.prototype.generateContentFragment = function() {
             var el = element.firstChild; while(el) {
                 
                 // add the element
-                fragment.appendChild(el.cloneNode(true));
+                var elClone = el.cloneNode(true);
+                var elToInsert = el; if(elToInsert.tagName=="LI") {
+                    elToInsert = document.createElement(el.parentNode.tagName);
+                    elToInsert.style.margin="0";
+                    elToInsert.style.padding="0";
+                    elToInsert.appendChild(elClone);
+                }
+                fragment.appendChild(elToInsert);
                 
                 // clone the style
-                cssRegionsHelpers.copyStyle(el, fragment.lastChild);
+                cssRegionsHelpers.copyStyle(el, elClone);
                 
                 el = el.nextSibling;
             }
