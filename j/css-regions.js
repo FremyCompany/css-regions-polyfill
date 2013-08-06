@@ -49,7 +49,7 @@ var cssRegions = {
         while(true) {
             var regionDisplay = getComputedStyle(region).display;
             if(regionDisplay == "none" || regionDisplay.indexOf("inline") !== -1) {
-                region = regions.pop(); continue;
+                if(region = regions.pop()) { continue } else { return !!remainingContent.hasChildNodes() };
             } else {
                 break;
             }
@@ -134,7 +134,7 @@ var cssRegions = {
                 region.cssRegionHost.cssRegionsLastOffsetWidth = region.cssRegionHost.offsetWidth;
                 
                 // WE RETURN FALSE IF WE DIDN'T OVERFLOW
-                return false;
+                return region.cssRegionHost.offsetHeight != region.cssRegionHost.scrollHeight;
                 
             }
             
