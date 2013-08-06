@@ -63,7 +63,7 @@ You can find his work here: http://christiancantrell.com/adobe/hlp/callout.html
                 padding-right: 10px;
                 flow-from: story;
                 region-fragment: break;
-                box-sizing: border-box;
+                box-sizing: border-box; -moz-box-sizing: border-box;
                 background-repeat: no-repeat;
                 background-position: center;
                 background-size: contain;
@@ -81,13 +81,15 @@ You can find his work here: http://christiancantrell.com/adobe/hlp/callout.html
             .pull_quote_box {
                 font-size: 2em;
                 font-style: italic;
+                region-fragment: break;
             }
 
             .pull_quote_text_box {
-                box-sizing: border-box;
+                box-sizing: border-box; -moz-box-sizing: border-box;
                 width: inherit;
                 height: inherit;
                 padding: 20px;
+                region-fragment: break;
             }
 
             .page_number {
@@ -157,11 +159,15 @@ You can find his work here: http://christiancantrell.com/adobe/hlp/callout.html
                 doLayout();
             }
             
-            function onMainFlowUpdate(e) {
-                var story = e.target;
+            function onMainFlowUpdate(e) {     
+                var story = e.target;           
+                console.log('region event')
+                
                 if (story.overset) {
+                    console.log('adding page')
                     addPage();
                 } else {
+                    console.log('adding quotes')
                     story.removeEventListener("regionfragmentchange", onMainFlowUpdate);
                     addPullQuotes();
                 }                
@@ -321,7 +327,7 @@ You can find his work here: http://christiancantrell.com/adobe/hlp/callout.html
                         var quote = document.createElement("div");
                         quote.setAttribute("id", "pq_text_" + index);
                         quote.myStyle['flow-into'] = sibling.firstChild.myStyle["flow-from"];
-                        quote.innerHTML = pq.innerText;
+                        quote.innerHTML = pq.innerHTML;
                         document.getElementById("viewport").appendChild(quote);
                         var namedFlows = getNamedFlows();
                         region = namedFlows.namedItem("pq_"+index);
@@ -332,11 +338,11 @@ You can find his work here: http://christiancantrell.com/adobe/hlp/callout.html
             }
             
             function setPQStyle(pq, index, fontSize) {
-                var styleText = "flow-into:pq_"+index+";";
-                styleText += "font-size:"+fontSize+"em;";
-                styleText += "font-style:italic;";
-                styleText += "text-align:center;";
-                pq.setAttribute('style',styleText);
+                var style = pq.myStyle;
+                style.fontSize = fontSize+"em";
+                style.fontStyle = "italic";
+                style.textAlign = "center";
+                style.flowFrom = "pq_"+index;
             }
             
             function adjustPullQuoteFontSize(event) {
@@ -358,7 +364,7 @@ You can find his work here: http://christiancantrell.com/adobe/hlp/callout.html
                 var styleHTML = region.style.cssText;
                 var fontSize = styleHTML.match(/font-size:\s*(\d+(\.\d+)?)em/)[1];
                 var newFontSize = Math.round((parseFloat(fontSize) + delta) * 10) / 10;
-                setPQStyle(region, index, newFontSize);
+                if(newFontSize<4) setPQStyle(region, index, newFontSize);
             }
             
             window.onload = init;

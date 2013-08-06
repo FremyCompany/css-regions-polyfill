@@ -1,0 +1,31 @@
+<!doctype html>
+<html><head><title>Hidden overflow and regions</title></head><body>
+	
+	<!-- the div imports its align with him -->
+	<div style="-webkit-flow-into: region1">AAAAAAAAAAAAAAAAAAAAA</div>
+	<div style="font-size: 30px; text-align: center; -webkit-flow-from: region1;"></div>
+	<br/>
+	
+	<div style="font-size: 30px; text-align: center;">
+		<div>AAAAAAAAAAAAAAAAAAAAA</div>
+	</div>
+	<hr/>
+	
+	<!-- as does the span, which is INLINE! -->
+	<span style="-webkit-flow-into: region2">AAAAAAAAAAAAAAAAAAAAA</span>
+	<div style="font-size: 30px; text-align: center; -webkit-flow-from: region2;"></div>
+	<br/>
+	
+	<div style="font-size: 30px; text-align: center;">
+		<span style="text-align: left">AAAAAAAAAAAAAAAAAAAAA</span>
+	</div>	
+	<hr/>
+	
+	<!-- not working in chrome right now
+	<div style="-webkit-flow-into: region3 content">AAAAAAAAAAAAAAAAAAAAA</div>
+	<div style="font-size: 30px; text-align: center; -webkit-flow-from: region3;"></div>
+	
+	<br/>
+	-->
+	
+</body></html>
