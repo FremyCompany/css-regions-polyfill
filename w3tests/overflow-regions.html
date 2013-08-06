@@ -1,0 +1,13 @@
+<!doctype html>
+<html><head><title>Hidden overflow and regions</title></head><body>
+	
+	<div style="-webkit-flow-into: region">AAAAAAAAAAAAAAAAAAAAA</div>
+	<div style="width: 50px; padding: 0px 50px; border: double 10px; overflow: hidden; -webkit-flow-from: region"></div>
+	
+	<br/>
+	
+	<div style="width: 50px; padding: 0px 50px; border: double 10px; overflow: hidden;">
+		<div>AAAAAAAAAAAAAAAAAAAAA</div>
+	</div>
+	
+</body></html>
