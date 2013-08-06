@@ -169,19 +169,10 @@ You can find his work here: http://christiancantrell.com/adobe/hlp/callout.html
             
             function doLayout() {
                 story.addEventListener("regionfragmentchange", onMainFlowUpdate);
-                // First, remove the pull-quote styles.
-                var pqStyles = document.getElementsByClassName("pq_style");
-                var head = document.getElementsByTagName("head")[0];
-                for (var i = 0; i < pqStyles.length; ++i) {
-                    head.removeChild(pqStyles[i]);
-                }
                 
                 // Now clear out the viewport.
                 var vp = document.getElementById("viewport");
-                
-                while (vp.hasChildNodes()) {
-                    vp.removeChild(vp.firstChild);
-                }
+                vp.innerHTML="";
                 
                 // Reset and re-measure.
                 pageCount = 0;
@@ -324,7 +315,7 @@ You can find his work here: http://christiancantrell.com/adobe/hlp/callout.html
                     var pullQuoteBoxId = sibling.firstChild.getAttribute("id");
                     var index = pullQuoteBoxId.substring(pullQuoteBoxId.lastIndexOf("_") + 1, pullQuoteBoxId.length);
                     
-                    document.getElementsByTagName("head")[0].appendChild(getPQStyle(index, defaultPullQuoteSize));
+                    setPQStyle(sibling.firstChild, index, defaultPullQuoteSize);
                     
                     if (!document.getElementById("pq_text_" + index)) {
                         var quote = document.createElement("div");
@@ -340,16 +331,12 @@ You can find his work here: http://christiancantrell.com/adobe/hlp/callout.html
                 }
             }
             
-            function getPQStyle(index, fontSize) {
-                var pqStyle = document.createElement("style");
-                pqStyle.setAttribute("id", "pq_style_" + index);
-                pqStyle.setAttribute("class", "pq_style");
-                var styleText = "#pq_text_" + index + " {flow-into:pq_"+index+";";
+            function setPQStyle(pq, index, fontSize) {
+                var styleText = "flow-into:pq_"+index+";";
                 styleText += "font-size:"+fontSize+"em;";
                 styleText += "font-style:italic;";
-                styleText += "text-align:center;}";
-                pqStyle.innerHTML = styleText;
-                return pqStyle;
+                styleText += "text-align:center;";
+                pq.setAttribute('style',styleText);
             }
             
             function adjustPullQuoteFontSize(event) {
@@ -366,15 +353,12 @@ You can find his work here: http://christiancantrell.com/adobe/hlp/callout.html
                 var index = namedFlow.name.substring(namedFlow.name.lastIndexOf("_") + 1, namedFlow.name.length);
                 var regionId = "pq_box_" + index;
                 var region = document.getElementById(regionId);
-                var style = document.getElementById("pq_style_"+index);
-                if (!style) return;
-                var styleHTML = style.innerHTML;
-                var fontSize = styleHTML.match(/font-size:(\d+(\.\d)?)em/)[1];
+                var pullquote = document.getElementById("pq_text_"+index);
+                if (!pullquote) return;
+                var styleHTML = region.style.cssText;
+                var fontSize = styleHTML.match(/font-size:\s*(\d+(\.\d+)?)em/)[1];
                 var newFontSize = Math.round((parseFloat(fontSize) + delta) * 10) / 10;
-                var newStyle = getPQStyle(index, newFontSize);
-                var head = document.getElementsByTagName("head")[0];
-                head.removeChild(style);
-                head.appendChild(newStyle);
+                setPQStyle(region, index, newFontSize);
             }
             
             window.onload = init;
