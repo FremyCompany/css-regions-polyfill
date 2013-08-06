@@ -225,7 +225,7 @@ cssRegions.Flow.prototype._relayout = function(){
         // remove the listeners from everything
         This.removeEventListenersOf(This.lastRegions);
         This.removeEventListenersOf(This.lastContent);
-
+        cancelAnimationFrame(This.lastEventRAF);
         
         
         //
@@ -306,13 +306,15 @@ cssRegions.Flow.prototype._relayout = function(){
         //
         // STEP 7: FIRE SOME EVENTS
         //
-        requestAnimationFrame(function() {
-            
-            // TODO: only fire when necessary but...
-            This.dispatchEvent('regionfragmentchange');
-            This.dispatchEvent('regionoversetchange');
-            
-        });
+        if(This.regions.length > 0) {
+            This.lastEventRAF = requestAnimationFrame(function() {
+                
+                // TODO: only fire when necessary but...
+                This.dispatchEvent('regionfragmentchange');
+                This.dispatchEvent('regionoversetchange');
+                
+            });
+        }
         
         
         // NOTE: we recover the scroll position in case the browser mess it up
