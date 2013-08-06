@@ -31,7 +31,7 @@ basicObjectModel.EventTarget.prototype.removeEventListener = function(eventType,
     if(!this.eventListeners) this.eventListeners=[];
 
     var ls = (this.eventListeners[eventType] || (this.eventListeners[eventType]=[])), i;
-    if((i=ls.indexOf(f))==-1) {
+    if((i=ls.indexOf(f))!==-1) {
         ls.splice(i,1);
     }
     
