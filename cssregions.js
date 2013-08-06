@@ -3908,7 +3908,23 @@ var cssRegions = {
             
             // move the end point char by char until it's completely in the region
             while(!(r.endContainer==region && r.endOffset==r.endContainer.childNodes.length) && rect.bottom<=pos.top+sizingH) {
-                r.myMoveOneCharRight(); rect = r.myGetExtensionRect();
+                
+                // look if we can optimize by moving fast forward
+                var nextSibling = r.endContainer.childNodes[r.endOffset];
+                var nextSiblingRect = !nextSibling || Node.getBoundingClientRect(nextSibling);
+                if(nextSibling && nextSiblingRect.bottom<=pos.top+sizingH) {
+                    
+                    // if yes, move element by element
+                    r.setStartAfter(nextSibling)
+                    r.setEndAfter(nextSibling)
+                    rect = nextSiblingRect
+                    
+                } else {
+                    
+                    // otherwise, go char-by-char
+                    r.myMoveOneCharRight(); rect = r.myGetExtensionRect();
+                    
+                }
             }
             
             //
