@@ -3797,8 +3797,6 @@ var cssRegions = {
         // avoid doing the layout of empty regions
         if(!remainingContent.hasChildNodes()) {
             
-            console.log(region.className);
-            
             region.cssRegionsLastOffsetHeight = region.offsetHeight;
             region.cssRegionsLastOffsetWidth = region.offsetWidth;
             
@@ -4387,15 +4385,20 @@ var cssRegions = {
                         cssCascade.getSpecifiedStyle(element, "flow-into")
                         .filter(function(t) { return t instanceof cssSyntax.IdentifierToken })
                     );
-                    var flowIntoName = flowInto[0] ? flowInto[0].toCSSString().toLowerCase() : ""; if(flowIntoName=="none") {flowIntoName=""}
-                    var flowIntoType = flowInto[1] ? flowInto[1].toCSSString().toLowerCase() : ""; if(flowIntoType!="content") {flowIntoType="element"}
-                    var flowInto = flowIntoName + " " + flowIntoType;
+                    
+                    var flowIntoName = flowInto[0] ? flowInto[0].toCSSString().toLowerCase() : "";
+                    if(flowIntoName=="none"||flowIntoName=="initial"||flowIntoName=="inherit"||flowIntoName=="default") {flowIntoName=""}
+                    var flowIntoType = flowInto[1] ? flowInto[1].toCSSString().toLowerCase() : ""; 
+                    if(flowIntoType!="content") {flowIntoType="element"}
+                    var flowInto = flowIntoName ? flowIntoName + " " + flowIntoType : "";
                     
                     var flowFrom = (
                         cssCascade.getSpecifiedStyle(element, "flow-from")
                         .filter(function(t) { return t instanceof cssSyntax.IdentifierToken })
                     );
-                    var flowFromName = flowFrom[0] ? flowFrom[0].toCSSString().toLowerCase() : ""; if(flowFromName=="none") {flowFromName=""}
+                    
+                    var flowFromName = flowFrom[0] ? flowFrom[0].toCSSString().toLowerCase() : ""; 
+                    if(flowFromName=="none"||flowFromName=="initial"||flowFromName=="inherit"||flowFromName=="default") {flowFromName=""}
                     var flowFrom = flowFromName;
                     
                     //
