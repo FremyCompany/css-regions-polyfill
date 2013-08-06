@@ -110,12 +110,67 @@ var cssCascade = {
         return results;
     },
     
+    //
+    // a list of all properties supported by the current browser
+    //
+    allCSSProperties: null,
+    getAllCSSProperties: function getAllCSSProperties() {
+        
+        var s = getComputedStyle(document.body); var ps = new Array(s.length);
+        for(var i=s.length; i--; ) {
+            ps[i] = s[i];
+        }
+        return this.allCSSProperties = ps;
+        
+    },
+    
+    // 
+    // those properties are not safe for computation->specified round-tripping
+    // 
+    computationUnsafeProperties: {
+        "bottom": false,
+        "direction": false,
+        "display": false,
+        "font-size": false,
+        "height":false,
+        "left": false,
+        "line-height": false,
+        "max-height": false,
+        "max-width": false,
+        "min-height": false,
+        "min-width": false,
+        "right": false,
+        "text-align": false,
+        "text-align-last": false,
+        "top": false,
+        "width": false,
+    },
+    
+    defaultStylesForTag: Object.create ? Object.create(null) : {},
+    getDefaultStyleForTag: function getDefaultStyleForTag(tagName) {
+        
+        // get result from cache
+        var result = cssRegionsHelpers[tagName];
+        if(result) return result;
+        
+        // create dummy virtual element
+        var element = document.createElement(tagName);
+        var style = cssRegionsHelpers[tagName] = getComputedStyle(element);
+        if(style.display) return style;
+        
+        // webkit fix: insert the dummy element anywhere (head -> display:none)
+        document.head.insertBefore(element, document.head.firstChild);
+        return style;
+    },
+    
     getSpecifiedStyle: function getSpecifiedStyle(element, cssPropertyName, matchedRules) {
         
         // give IE a thumbs up for this!
         if(element.currentStyle) {
+            
             var bestValue = element.currentStyle[cssPropertyName];
             return bestValue ? cssSyntax.parse("*{a:"+bestValue+"}").value[0].value[0].value : new cssSyntax.TokenList();
+            
         } else {
             
             // TODO: support the "initial" and "inherit" things?

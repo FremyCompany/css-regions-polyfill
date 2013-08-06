@@ -400,17 +400,6 @@ var cssRegionsHelpers = {
         
     },
     
-    allCSSProperties: null,
-    getAllCSSProperties: function getAllCSSProperties() {
-        
-        var s = getComputedStyle(document.body); var ps = new Array(s.length);
-        for(var i=s.length; i--; ) {
-            ps[i] = s[i];
-        }
-        return this.allCSSProperties = ps;
-        
-    },
-    
     ///
     /// walk the two trees the same way, and copy all the styles
     /// BEWARE: if the DOMs are different, funny things will happen
@@ -427,20 +416,25 @@ var cssRegionsHelpers = {
                     var matchedRules = node1.curentStyle ? null : cssCascade.findAllMatchingRules(node1)
                     
                     // and computed the value of all css properties
-                    var properties = cssRegionsHelpers.allCSSProperties || cssRegionsHelpers.getAllCSSProperties();
+                    var properties = cssCascade.allCSSProperties || cssCascade.getAllCSSProperties();
                     for(var p=properties.length; p--; ) {
                         
-                        // TODO: create a list of computation-safe properties
-                        if(properties[p].indexOf("margin")==0) {
+                        // if the property is computation-safe, use the computed value
+                        if(!(properties[p] in cssCascade.computationUnsafeProperties) && properties[p][0]!='-') {
                             var style = getComputedStyle(node1).getPropertyValue(properties[p]);
-                            node2.style.setProperty(properties[p], style)
+                            var defaultStyle = cssCascade.getDefaultStyleForTag(node1.tagName).getPropertyValue(properties[p]);
+                            if(style != defaultStyle) node2.style.setProperty(properties[p], style)
                             continue;
                         }
                         
+                        // otherwise, get the parent's specified value
                         var cssValue = cssCascade.getSpecifiedStyle(node1, properties[p], matchedRules);
                         if(cssValue && cssValue.length) {
+                            
+                            // if we have a specified value, let's use it
                             node2.style.setProperty(properties[p], cssValue.toCSSString());
-                        } else if(isRoot && properties[p][0] != '-') {
+                            
+                        } else if(isRoot && node1.parentNode && properties[p][0] != '-') {
                             
                             // NOTE: the root will be detached from its parent
                             // Therefore, we have to inherit styles from it (oh no!)
