@@ -433,7 +433,7 @@ var cssRegionsHelpers = {
                     // firstly, setup a cache of all css properties on the element
                     var matchedRules = node1.currentStyle ? undefined : cssCascade.findAllMatchingRules(node1)
                     
-                    // and computed the value of all css properties
+                    // and compute the value of all css properties
                     var properties = cssCascade.allCSSProperties || cssCascade.getAllCSSProperties();
                     for(var p=properties.length; p--; ) {
                         
@@ -472,6 +472,42 @@ var cssRegionsHelpers = {
                         }
                         
                     }
+                    
+                    // now, let's work on ::after and ::before
+                    function importPseudo(node1,node2,pseudo) {
+                        var pseudoStyle = getComputedStyle(node1,pseudo);
+                        if(pseudoStyle.content!='none'){
+                            
+                            // let's create a stylesheet for the element
+                            var stylesheet = document.createElement('style');
+                            stylesheet.setAttribute('data-no-css-polyfill',true);
+                            
+                            // compute the value of all css properties
+                            var node2style = "";
+                            var properties = cssCascade.allCSSProperties || cssCascade.getAllCSSProperties();
+                            for(var p=properties.length; p--; ) {
+                                
+                                // we always use the computed value, because we don't have better
+                                var style = pseudoStyle.getPropertyValue(properties[p]);
+                                node2style += properties[p]+":"+style+";";
+                                
+                            }
+                            
+                            stylesheet.textContent = (
+                                '[data-css-regions-fragment-of="' + node1.getAttribute('data-css-regions-fragment-source') + '"]' 
+                                +':not([data-css-regions-starting-fragment]):not([data-css-regions-special-starting-fragment])'
+                                +':'+pseudo+'{'
+                                +node2style
+                                +"}"
+                            );
+                            
+                            node2.parentNode.insertBefore(stylesheet, node2);
+                            
+                        }
+                    }
+                    importPseudo(node1,node2,":before");
+                    importPseudo(node1,node2,":after");
+                    
                     
                 case 9: // Document node
                 case 11: // Document fragment node

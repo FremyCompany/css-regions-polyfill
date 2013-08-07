@@ -118,10 +118,25 @@ var cssCascade = {
         
         if(this.allCSSProperties) return this.allCSSProperties;
         
+        // get all claimed properties
         var s = getComputedStyle(document.documentElement); var ps = new Array(s.length);
         for(var i=s.length; i--; ) {
             ps[i] = s[i];
         }
+        
+        // FIX A BUG WHERE WEBKIT DOESN'T REPORT ALL PROPERTIES
+        if(ps.indexOf('content')==-1) {ps.push('content');}
+        if(ps.indexOf('counter-reset')==-1) {
+            
+            ps.push('counter-reset');
+            ps.push('counter-increment');
+            
+            // FIX A BUG WHERE WEBKIT RETURNS SHIT FOR THE COMPUTED VALUE OF COUNTER-RESET
+            cssCascade.computationUnsafeProperties['counter-reset']=true;
+            
+        }
+        
+        // save in a cache for faster access the next times
         return this.allCSSProperties = ps;
         
     },
