@@ -6,7 +6,12 @@
 
 var cssSyntax = { 
     tokenize: function(string) {}, 
-    parse: function(tokens) {} 
+    parse: function(tokens) {},
+    parseCSSValue: function(bestValue) {
+        var result = bestValue ? cssSyntax.parse("*{a:"+bestValue+"}").value[0].value[0].value : new cssSyntax.TokenList();
+        result.asCSSString = bestValue; // optimize conversion
+        return result;
+    }
 };
 
 //
