@@ -44,6 +44,9 @@ cssRegions.Flow = function NamedFlow(name) {
             console.warn("Please don't add stylesheets as a response to region events. Operation cancelled.")
         }
     });
+    
+    // a small counter to avoid enter retry loops
+    This.failedLayoutCount = 0;
 }
     
 cssRegions.Flow.prototype.removeFromContent = function(element) {
@@ -340,6 +343,7 @@ cssRegions.Flow.prototype._relayout = function(){
         
         // mark layout has being done
         This.relayoutScheduled = false;
+        This.failedLayoutCount = 0;
         
     } catch(ex) {
         
@@ -349,7 +353,9 @@ cssRegions.Flow.prototype._relayout = function(){
 
         // but we cannot accept to fail, so we need to try again
         // until we finish a complete layout pass...
-        requestAnimationFrame(function() { This._relayout() });
+        This.failedLayoutCount++;
+        if(This.failedLayoutCount<7) {requestAnimationFrame(function() { This._relayout() });}
+        else {This.failedLayoutCount=0;}
         
     }
 }
