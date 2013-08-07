@@ -201,7 +201,7 @@ var cssCascade = {
         return style;
     },
     
-    getSpecifiedStyle: function getSpecifiedStyle(element, cssPropertyName, matchedRules) {
+    getSpecifiedStyle: function getSpecifiedStyle(element, cssPropertyName, matchedRules, stringOnly) {
         
         // hook for css regions
         var fragmentSource;
@@ -217,7 +217,7 @@ var cssCascade = {
             var bestValue = element.myStyle[cssPropertyName] || element.currentStyle[cssPropertyName];
             
             // return a parsed representation of the value
-            return cssSyntax.parseCSSValue(bestValue);
+            return cssSyntax.parseCSSValue(bestValue, stringOnly);
             
         } else {
             
@@ -227,7 +227,7 @@ var cssCascade = {
             // TODO: what if important rules override that?
             try {
                 if(bestValue = element.style.getPropertyValue(cssPropertyName) || element.myStyle[cssPropertyName]) {
-                    return cssSyntax.parseCSSValue(bestValue);
+                    return cssSyntax.parseCSSValue(bestValue, stringOnly);
                 }
             } catch(ex) {}
             

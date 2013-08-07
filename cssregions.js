@@ -529,10 +529,16 @@ basicObjectModel.EventTarget.prototype.dispatchEvent = function(event_or_type) {
 var cssSyntax = { 
     tokenize: function(string) {}, 
     parse: function(tokens) {},
-    parseCSSValue: function(bestValue) {
-        var result = bestValue ? cssSyntax.parse("*{a:"+bestValue+"}").value[0].value[0].value : new cssSyntax.TokenList();
-        result.asCSSString = bestValue; // optimize conversion
-        return result;
+    parseCSSValue: function(bestValue, stringOnly) {
+        if(stringOnly) {
+            var result = /*bestValue ? cssSyntax.parse("*{a:"+bestValue+"}").value[0].value[0].value : */new cssSyntax.TokenList();
+            result.asCSSString = bestValue; // optimize conversion
+            return result;
+        } else {
+            var result = bestValue ? cssSyntax.parse("*{a:"+bestValue+"}").value[0].value[0].value : new cssSyntax.TokenList();
+            result.asCSSString = bestValue; // optimize conversion
+            return result;
+        }
     }
 };
 
@@ -1898,7 +1904,7 @@ var cssCascade = {
         return style;
     },
     
-    getSpecifiedStyle: function getSpecifiedStyle(element, cssPropertyName, matchedRules) {
+    getSpecifiedStyle: function getSpecifiedStyle(element, cssPropertyName, matchedRules, stringOnly) {
         
         // hook for css regions
         var fragmentSource;
@@ -1914,7 +1920,7 @@ var cssCascade = {
             var bestValue = element.myStyle[cssPropertyName] || element.currentStyle[cssPropertyName];
             
             // return a parsed representation of the value
-            return cssSyntax.parseCSSValue(bestValue);
+            return cssSyntax.parseCSSValue(bestValue, stringOnly);
             
         } else {
             
@@ -1924,7 +1930,7 @@ var cssCascade = {
             // TODO: what if important rules override that?
             try {
                 if(bestValue = element.style.getPropertyValue(cssPropertyName) || element.myStyle[cssPropertyName]) {
-                    return cssSyntax.parseCSSValue(bestValue);
+                    return cssSyntax.parseCSSValue(bestValue, stringOnly);
                 }
             } catch(ex) {}
             
@@ -3772,7 +3778,7 @@ var cssRegionsHelpers = {
                 case 1: // Element node
                     
                     // firstly, setup a cache of all css properties on the element
-                    var matchedRules = node1.curentStyle ? null : cssCascade.findAllMatchingRules(node1)
+                    var matchedRules = node1.currentStyle ? undefined : cssCascade.findAllMatchingRules(node1)
                     
                     // and computed the value of all css properties
                     var properties = cssCascade.allCSSProperties || cssCascade.getAllCSSProperties();
@@ -3958,7 +3964,7 @@ var cssRegions = {
         } else {
             
             // support region-fragment: break
-            if(cssCascade.getSpecifiedStyle(region.cssRegionHost,"region-fragment").toCSSString().trim().toLowerCase()=="break") {
+            if(cssCascade.getSpecifiedStyle(region.cssRegionHost,"region-fragment",undefined,true).toCSSString().trim().toLowerCase()=="break") {
                 
                 // WE RETURN TRUE IF WE DID OVERFLOW
                 var didOverflow = (this.extractOverflowingContent(region).hasChildNodes());
@@ -4261,7 +4267,7 @@ var cssRegions = {
             if(current.style) {
                 
                 if(current != first) {
-                    if(/(region|all)/i.test(cssCascade.getSpecifiedStyle(current,'break-after').toCSSString())) {
+                    if(/(region|all)/i.test(cssCascade.getSpecifiedStyle(current,'break-after',undefined,true).toCSSString())) {
                         r.setStartAfter(current);
                         r.setEndAfter(current);
                         dontOptimize=true; // no algo involved in breaking, after all
@@ -4269,7 +4275,7 @@ var cssRegions = {
                 }
                 
                 if(current !== region) {
-                    if(/(region|all)/i.test(cssCascade.getSpecifiedStyle(current,'break-before').toCSSString())) {
+                    if(/(region|all)/i.test(cssCascade.getSpecifiedStyle(current,'break-before',undefined,true).toCSSString())) {
                         r.setStartBefore(current);
                         r.setEndBefore(current);
                         dontOptimize=true; // no algo involved in breaking, after all

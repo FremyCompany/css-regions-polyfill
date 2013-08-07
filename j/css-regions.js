@@ -116,7 +116,7 @@ var cssRegions = {
         } else {
             
             // support region-fragment: break
-            if(cssCascade.getSpecifiedStyle(region.cssRegionHost,"region-fragment").toCSSString().trim().toLowerCase()=="break") {
+            if(cssCascade.getSpecifiedStyle(region.cssRegionHost,"region-fragment",undefined,true).toCSSString().trim().toLowerCase()=="break") {
                 
                 // WE RETURN TRUE IF WE DID OVERFLOW
                 var didOverflow = (this.extractOverflowingContent(region).hasChildNodes());
@@ -419,7 +419,7 @@ var cssRegions = {
             if(current.style) {
                 
                 if(current != first) {
-                    if(/(region|all)/i.test(cssCascade.getSpecifiedStyle(current,'break-after').toCSSString())) {
+                    if(/(region|all)/i.test(cssCascade.getSpecifiedStyle(current,'break-after',undefined,true).toCSSString())) {
                         r.setStartAfter(current);
                         r.setEndAfter(current);
                         dontOptimize=true; // no algo involved in breaking, after all
@@ -427,7 +427,7 @@ var cssRegions = {
                 }
                 
                 if(current !== region) {
-                    if(/(region|all)/i.test(cssCascade.getSpecifiedStyle(current,'break-before').toCSSString())) {
+                    if(/(region|all)/i.test(cssCascade.getSpecifiedStyle(current,'break-before',undefined,true).toCSSString())) {
                         r.setStartBefore(current);
                         r.setEndBefore(current);
                         dontOptimize=true; // no algo involved in breaking, after all
