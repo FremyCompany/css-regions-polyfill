@@ -440,12 +440,13 @@ var cssRegionsHelpers = {
                             // Therefore, we have to inherit styles from it (oh no!)
                             
                             // TODO: create a list of inherited properties
+                            if(!(properties[p] in cssCascade.inheritingProperties)) continue;
                             
                             var style = getComputedStyle(node1).getPropertyValue(properties[p]);
-                            var parentStyle = getComputedStyle(node1.parentNode).getPropertyValue(properties[p]);
-                            var defaultStyle = getComputedStyle(document.body).getPropertyValue(properties[p]);
+                            var parentStyle = style; try { parentStyle = getComputedStyle(node1.parentNode).getPropertyValue(properties[p]) } catch(ex){}
+                            var defaultStyle = cssCascade.getDefaultStyleForTag(node1.tagName).getPropertyValue(properties[p]);
                             
-                            if(style == parentStyle && style != defaultStyle) {
+                            if(style === parentStyle && style !== defaultStyle) {
                                 node2.style.setProperty(properties[p], style)
                             }
                             

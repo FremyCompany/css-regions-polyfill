@@ -116,6 +116,8 @@ var cssCascade = {
     allCSSProperties: null,
     getAllCSSProperties: function getAllCSSProperties() {
         
+        if(this.allCSSProperties) return this.allCSSProperties;
+        
         var s = getComputedStyle(document.body); var ps = new Array(s.length);
         for(var i=s.length; i--; ) {
             ps[i] = s[i];
@@ -146,6 +148,42 @@ var cssCascade = {
         "width": false,
     },
     
+    //
+    // a list of property we should inherit...
+    //
+    inheritingProperties: {
+        "border-collapse": false,
+        "border-spacing": false,
+        "caption-side": false,
+        "color": false,
+        "cursor": false,
+        "direction": false,
+        "empty-cells": false,
+        "font-family": false,
+        "font-size": false,
+        "font-style": false,
+        "font-variant": false,
+        "font-weight": false,
+        "font": false,
+        "letter-spacing": false,
+        "line-height": false,
+        "list-style-image": false,
+        "list-style-position": false,
+        "list-style-type": false,
+        "list-style": false,
+        "orphans": false,
+        "quotes": false,
+        "text-align": false,
+        "text-indent": false,
+        "text-transform": false,
+        "visibility": false,
+        "white-space": false,
+        "widows": false,
+        "word-break": false,
+        "word-spacing": false,
+        "word-wrap": false,
+    },
+    
     defaultStylesForTag: Object.create ? Object.create(null) : {},
     getDefaultStyleForTag: function getDefaultStyleForTag(tagName) {
         
@@ -165,6 +203,13 @@ var cssCascade = {
     
     getSpecifiedStyle: function getSpecifiedStyle(element, cssPropertyName, matchedRules) {
         
+        // hook for css regions
+        var fragmentSource;
+        if(fragmentSource=element.getAttribute('data-css-regions-fragment-of')) {
+            fragmentSource = document.querySelector('[data-css-regions-fragment-source="'+fragmentSource+'"]');
+            if(fragmentSource) return cssCascade.getSpecifiedStyle(fragmentSource, cssPropertyName);
+        }
+        
         // give IE a thumbs up for this!
         if(element.currentStyle) {
             
@@ -177,9 +222,11 @@ var cssCascade = {
             
             // first, let's try inline style as it's fast and generally accurate
             // TODO: what if important rules override that?
-            if(bestValue = element.style.getPropertyValue(cssPropertyName) || element.myStyle[cssPropertyName]) {
-                return cssSyntax.parse("*{a:"+bestValue+"}").value[0].value[0].value;
-            }
+            try {
+                if(bestValue = element.style.getPropertyValue(cssPropertyName) || element.myStyle[cssPropertyName]) {
+                    return cssSyntax.parse("*{a:"+bestValue+"}").value[0].value[0].value;
+                }
+            } catch(ex) {}
             
             // find all relevant style rules
             var isBestImportant=false; var bestPriority = 0; var bestValue = new cssSyntax.TokenList();
@@ -559,6 +606,10 @@ var cssCascade = {
         Object.defineProperty(styleProto,cssPropertyName,prop);
         Object.defineProperty(styleProto,cssCascade.toCamelCase(cssPropertyName),prop);
         cssCascade.startMonitoringRule(cssSyntax.parse('[data-style-'+cssPropertyName+']{'+cssPropertyName+':attr(style)}').value[0]);
+        
+        // add to the list of polyfilled properties...
+        cssCascade.getAllCSSProperties().push(cssPropertyName);
+        cssCascade.computationUnsafeProperties[cssPropertyName] = true;
         
     }
     
