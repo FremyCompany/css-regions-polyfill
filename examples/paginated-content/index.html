@@ -321,7 +321,7 @@ You can find his work here: http://christiancantrell.com/adobe/hlp/callout.html
                     var pullQuoteBoxId = sibling.firstChild.getAttribute("id");
                     var index = pullQuoteBoxId.substring(pullQuoteBoxId.lastIndexOf("_") + 1, pullQuoteBoxId.length);
                     
-                    setPQStyle(sibling.firstChild, index, defaultPullQuoteSize);
+                    //setPQStyle(sibling.firstChild, index, defaultPullQuoteSize);
                     
                     if (!document.getElementById("pq_text_" + index)) {
                         var quote = document.createElement("div");
@@ -342,11 +342,13 @@ You can find his work here: http://christiancantrell.com/adobe/hlp/callout.html
                 style.fontSize = fontSize+"em";
                 style.fontStyle = "italic";
                 style.textAlign = "center";
-                style.flowFrom = "pq_"+index;
+                style.flowInto = "pq_"+index;
+                // hack:
+                pq.setAttribute('data-style',style.cssText);
             }
             
             function adjustPullQuoteFontSize(event) {
-                var namedFlow = event.target;
+                var namedFlow = event.target; console.log("adjusting quote "+namedFlow.name+" ["+namedFlow.overset+"]");
                 if (!namedFlow.overset) {
                     changePullQuoteStyle(namedFlow, .1);
                 } else  {
@@ -360,11 +362,11 @@ You can find his work here: http://christiancantrell.com/adobe/hlp/callout.html
                 var regionId = "pq_box_" + index;
                 var region = document.getElementById(regionId);
                 var pullquote = document.getElementById("pq_text_"+index);
-                if (!pullquote) return;
-                var styleHTML = region.style.cssText;
-                var fontSize = styleHTML.match(/font-size:\s*(\d+(\.\d+)?)em/)[1];
+                if (!pullquote) { requestAnimationFrame(function(){changePullQuoteStyle(namedFlow, delta)}); return; }
+                var styleHTML = pullquote.style.cssText;
+                var fontSize = styleHTML.match(/font-size:\s*(\d+(\.\d+)?)em/); fontSize=fontSize?fontSize[1]||1:1;
                 var newFontSize = Math.round((parseFloat(fontSize) + delta) * 10) / 10;
-                if(newFontSize<4) setPQStyle(region, index, newFontSize);
+                if(newFontSize<4) setPQStyle(pullquote, index, newFontSize);
             }
             
             window.onload = init;
