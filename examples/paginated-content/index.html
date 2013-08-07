@@ -349,6 +349,15 @@ You can find his work here: http://christiancantrell.com/adobe/hlp/callout.html
             
             function adjustPullQuoteFontSize(event) {
                 var namedFlow = event.target; console.log("adjusting quote "+namedFlow.name+" ["+namedFlow.overset+"]");
+                
+                // sanity checks (could be considered as an hack)
+                // actually not strictly required but sometimes weird things happen
+                var index = namedFlow.name.substring(namedFlow.name.lastIndexOf("_") + 1, namedFlow.name.length);
+                var pullquote = document.getElementById("pq_text_" + index);
+                if (!pullquote) { return; }
+                if (namedFlow.getRegionsByContent(pullquote)==0) { return; }
+                
+                // font-size udate logic...
                 if (!namedFlow.overset) {
                     changePullQuoteStyle(namedFlow, .1);
                 } else  {
