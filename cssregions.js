@@ -1800,6 +1800,8 @@ var cssCascade = {
     allCSSProperties: null,
     getAllCSSProperties: function getAllCSSProperties() {
         
+        if(this.allCSSProperties) return this.allCSSProperties;
+        
         var s = getComputedStyle(document.body); var ps = new Array(s.length);
         for(var i=s.length; i--; ) {
             ps[i] = s[i];
@@ -1830,6 +1832,42 @@ var cssCascade = {
         "width": false,
     },
     
+    //
+    // a list of property we should inherit...
+    //
+    inheritingProperties: {
+        "border-collapse": false,
+        "border-spacing": false,
+        "caption-side": false,
+        "color": false,
+        "cursor": false,
+        "direction": false,
+        "empty-cells": false,
+        "font-family": false,
+        "font-size": false,
+        "font-style": false,
+        "font-variant": false,
+        "font-weight": false,
+        "font": false,
+        "letter-spacing": false,
+        "line-height": false,
+        "list-style-image": false,
+        "list-style-position": false,
+        "list-style-type": false,
+        "list-style": false,
+        "orphans": false,
+        "quotes": false,
+        "text-align": false,
+        "text-indent": false,
+        "text-transform": false,
+        "visibility": false,
+        "white-space": false,
+        "widows": false,
+        "word-break": false,
+        "word-spacing": false,
+        "word-wrap": false,
+    },
+    
     defaultStylesForTag: Object.create ? Object.create(null) : {},
     getDefaultStyleForTag: function getDefaultStyleForTag(tagName) {
         
@@ -1849,6 +1887,13 @@ var cssCascade = {
     
     getSpecifiedStyle: function getSpecifiedStyle(element, cssPropertyName, matchedRules) {
         
+        // hook for css regions
+        var fragmentSource;
+        if(fragmentSource=element.getAttribute('data-css-regions-fragment-of')) {
+            fragmentSource = document.querySelector('[data-css-regions-fragment-source="'+fragmentSource+'"]');
+            if(fragmentSource) return cssCascade.getSpecifiedStyle(fragmentSource, cssPropertyName);
+        }
+        
         // give IE a thumbs up for this!
         if(element.currentStyle) {
             
@@ -1861,9 +1906,11 @@ var cssCascade = {
             
             // first, let's try inline style as it's fast and generally accurate
             // TODO: what if important rules override that?
-            if(bestValue = element.style.getPropertyValue(cssPropertyName) || element.myStyle[cssPropertyName]) {
-                return cssSyntax.parse("*{a:"+bestValue+"}").value[0].value[0].value;
-            }
+            try {
+                if(bestValue = element.style.getPropertyValue(cssPropertyName) || element.myStyle[cssPropertyName]) {
+                    return cssSyntax.parse("*{a:"+bestValue+"}").value[0].value[0].value;
+                }
+            } catch(ex) {}
             
             // find all relevant style rules
             var isBestImportant=false; var bestPriority = 0; var bestValue = new cssSyntax.TokenList();
@@ -2243,6 +2290,10 @@ var cssCascade = {
         Object.defineProperty(styleProto,cssPropertyName,prop);
         Object.defineProperty(styleProto,cssCascade.toCamelCase(cssPropertyName),prop);
         cssCascade.startMonitoringRule(cssSyntax.parse('[data-style-'+cssPropertyName+']{'+cssPropertyName+':attr(style)}').value[0]);
+        
+        // add to the list of polyfilled properties...
+        cssCascade.getAllCSSProperties().push(cssPropertyName);
+        cssCascade.computationUnsafeProperties[cssPropertyName] = true;
         
     }
     
@@ -2938,8 +2989,6 @@ var cssBreak = {
     // 
     isLineBreakingElement: function(element, elementStyle, elementDisplay, elementPosition) {
         
-        // TODO: nextSibling break-before?
-        
         if(!(element instanceof Element)) return false;
         if(typeof(elementStyle)=="undefined") elementStyle = getComputedStyle(element);
         if(typeof(elementDisplay)=="undefined") elementDisplay = elementStyle.display;
@@ -2958,6 +3007,36 @@ var cssBreak = {
                 
             ) // TODO: break-after?
         );
+    },
+    
+    // 
+    // returns true if the element breaks the inline flow before him
+    // (the case of block elements, mostly)
+    // 
+    isLinePreBreakingElement: function(element, elementStyle, elementDisplay, elementPosition) {
+        if(!(element instanceof Element)) return false;
+
+        var breakBefore = cssCascade.getSpecifiedStyle(element,'break-before').toCSSString();
+        return (
+            (breakBefore=="region"||breakBefore=="all") 
+            || cssBreak.isLineBreakingElement(element, elementStyle, elementDisplay, elementPosition)
+        );
+        
+    },
+    
+    // 
+    // returns true if the element breaks the inline flow after him
+    // (the case of block elements, mostly)
+    // 
+    isLinePostBreakingElement: function(element, elementStyle, elementDisplay, elementPosition) {
+        if(!(element instanceof Element)) return false;
+        
+        var breakAfter = cssCascade.getSpecifiedStyle(element,'break-after').toCSSString();
+        return (
+            (breakAfter=="region"||breakAfter=="all") 
+            || cssBreak.isLineBreakingElement(element, elementStyle, elementDisplay, elementPosition)
+        );
+        
     },
     
     // 
@@ -2996,15 +3075,15 @@ var cssBreak = {
         // look for obvious reasons why it wouldn't be the case
         //
         
-        // a block element is never on the same line as another element
-        if(this.isLineBreakingElement(element1)) return false;
-        if(this.isLineBreakingElement(element2)) return false;
-        
         // if the element are not direct sibling, we must use their inner siblings as well
         if(element1.nextSibling != element2) { 
             if(element2.nextSibling != element1) throw "I gave up!"; 
             var t = element1; element1=element2; element2=t;
         }
+         
+        // a block element is never on the same line as another element
+        if(this.isLinePostBreakingElement(element1)) return false;
+        if(this.isLinePreBreakingElement(element2)) return false;
         
         // if the previous element is out of flow, we may consider it as being part of the current line
         if(this.isOutOfFlowElement(element1)) return true;
@@ -3686,12 +3765,13 @@ var cssRegionsHelpers = {
                             // Therefore, we have to inherit styles from it (oh no!)
                             
                             // TODO: create a list of inherited properties
+                            if(!(properties[p] in cssCascade.inheritingProperties)) continue;
                             
                             var style = getComputedStyle(node1).getPropertyValue(properties[p]);
-                            var parentStyle = getComputedStyle(node1.parentNode).getPropertyValue(properties[p]);
-                            var defaultStyle = getComputedStyle(document.body).getPropertyValue(properties[p]);
+                            var parentStyle = style; try { parentStyle = getComputedStyle(node1.parentNode).getPropertyValue(properties[p]) } catch(ex){}
+                            var defaultStyle = cssCascade.getDefaultStyleForTag(node1.tagName).getPropertyValue(properties[p]);
                             
-                            if(style == parentStyle && style != defaultStyle) {
+                            if(style === parentStyle && style !== defaultStyle) {
                                 node2.style.setProperty(properties[p], style)
                             }
                             
@@ -4138,6 +4218,31 @@ var cssRegions = {
             r.setStart(region,region.childNodes.length);
             r.setEnd(region,region.childNodes.length);
         }
+            
+        // now, let's try to find a break-before/break-after element before the splitting point
+        var current = r.endContainer; if(current.hasChildNodes()) {current=current.childNodes[r.endOffset-1]};
+        var first = current || (current = r.endContainer);
+        do {
+            if(current.style) {
+                
+                if(current != first) {
+                    if(/(region|all)/i.test(cssCascade.getSpecifiedStyle(current,'break-after').toCSSString())) {
+                        r.setStartAfter(current);
+                        r.setEndAfter(current);
+                        dontOptimize=true; // no algo involved in breaking, after all
+                    }
+                }
+                
+                if(current !== region) {
+                    if(/(region|all)/i.test(cssCascade.getSpecifiedStyle(current,'break-before').toCSSString())) {
+                        r.setStartBefore(current);
+                        r.setEndBefore(current);
+                        dontOptimize=true; // no algo involved in breaking, after all
+                    }
+                }
+                
+            }
+        } while(current = cssRegionsHelpers.getAllLevelPreviousSibling(current, region));
         
         // we're almost done! now, let's collect the ancestors to make some splitting postprocessing
         var current = r.endContainer; var allAncestors=[];
@@ -4443,6 +4548,10 @@ var cssRegions = {
                 }
             }
         );
+        cssCascade.startMonitoringProperties(
+            ["break-before","break-after"], 
+            {onupdate:function(){/* TODO: update parent regions? */}}
+        );
         
         
         //
@@ -4634,7 +4743,7 @@ cssRegions.Flow.prototype.generateContentFragment = function() {
                 // add the element
                 var el = element;
                 var elClone = el.cloneNode(true);
-                var elToInsert = el; if(elToInsert.tagName=="LI") {
+                var elToInsert = elClone; if(elToInsert.tagName=="LI") {
                     elToInsert = document.createElement(el.parentNode.tagName);
                     elToInsert.style.margin="0";
                     elToInsert.style.padding="0";
@@ -4652,7 +4761,7 @@ cssRegions.Flow.prototype.generateContentFragment = function() {
                 
                 // add the element
                 var elClone = el.cloneNode(true);
-                var elToInsert = el; if(elToInsert.tagName=="LI") {
+                var elToInsert = elClone; if(elToInsert.tagName=="LI") {
                     elToInsert = document.createElement(el.parentNode.tagName);
                     elToInsert.style.margin="0";
                     elToInsert.style.padding="0";

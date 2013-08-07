@@ -411,6 +411,31 @@ var cssRegions = {
             r.setStart(region,region.childNodes.length);
             r.setEnd(region,region.childNodes.length);
         }
+            
+        // now, let's try to find a break-before/break-after element before the splitting point
+        var current = r.endContainer; if(current.hasChildNodes()) {current=current.childNodes[r.endOffset-1]};
+        var first = current || (current = r.endContainer);
+        do {
+            if(current.style) {
+                
+                if(current != first) {
+                    if(/(region|all)/i.test(cssCascade.getSpecifiedStyle(current,'break-after').toCSSString())) {
+                        r.setStartAfter(current);
+                        r.setEndAfter(current);
+                        dontOptimize=true; // no algo involved in breaking, after all
+                    }
+                }
+                
+                if(current !== region) {
+                    if(/(region|all)/i.test(cssCascade.getSpecifiedStyle(current,'break-before').toCSSString())) {
+                        r.setStartBefore(current);
+                        r.setEndBefore(current);
+                        dontOptimize=true; // no algo involved in breaking, after all
+                    }
+                }
+                
+            }
+        } while(current = cssRegionsHelpers.getAllLevelPreviousSibling(current, region));
         
         // we're almost done! now, let's collect the ancestors to make some splitting postprocessing
         var current = r.endContainer; var allAncestors=[];
@@ -715,6 +740,10 @@ var cssRegions = {
                     
                 }
             }
+        );
+        cssCascade.startMonitoringProperties(
+            ["break-before","break-after"], 
+            {onupdate:function(){/* TODO: update parent regions? */}}
         );
         
         

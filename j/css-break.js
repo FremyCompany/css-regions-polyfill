@@ -79,8 +79,6 @@ var cssBreak = {
     // 
     isLineBreakingElement: function(element, elementStyle, elementDisplay, elementPosition) {
         
-        // TODO: nextSibling break-before?
-        
         if(!(element instanceof Element)) return false;
         if(typeof(elementStyle)=="undefined") elementStyle = getComputedStyle(element);
         if(typeof(elementDisplay)=="undefined") elementDisplay = elementStyle.display;
@@ -99,6 +97,36 @@ var cssBreak = {
                 
             ) // TODO: break-after?
         );
+    },
+    
+    // 
+    // returns true if the element breaks the inline flow before him
+    // (the case of block elements, mostly)
+    // 
+    isLinePreBreakingElement: function(element, elementStyle, elementDisplay, elementPosition) {
+        if(!(element instanceof Element)) return false;
+
+        var breakBefore = cssCascade.getSpecifiedStyle(element,'break-before').toCSSString();
+        return (
+            (breakBefore=="region"||breakBefore=="all") 
+            || cssBreak.isLineBreakingElement(element, elementStyle, elementDisplay, elementPosition)
+        );
+        
+    },
+    
+    // 
+    // returns true if the element breaks the inline flow after him
+    // (the case of block elements, mostly)
+    // 
+    isLinePostBreakingElement: function(element, elementStyle, elementDisplay, elementPosition) {
+        if(!(element instanceof Element)) return false;
+        
+        var breakAfter = cssCascade.getSpecifiedStyle(element,'break-after').toCSSString();
+        return (
+            (breakAfter=="region"||breakAfter=="all") 
+            || cssBreak.isLineBreakingElement(element, elementStyle, elementDisplay, elementPosition)
+        );
+        
     },
     
     // 
@@ -137,15 +165,15 @@ var cssBreak = {
         // look for obvious reasons why it wouldn't be the case
         //
         
-        // a block element is never on the same line as another element
-        if(this.isLineBreakingElement(element1)) return false;
-        if(this.isLineBreakingElement(element2)) return false;
-        
         // if the element are not direct sibling, we must use their inner siblings as well
         if(element1.nextSibling != element2) { 
             if(element2.nextSibling != element1) throw "I gave up!"; 
             var t = element1; element1=element2; element2=t;
         }
+         
+        // a block element is never on the same line as another element
+        if(this.isLinePostBreakingElement(element1)) return false;
+        if(this.isLinePreBreakingElement(element2)) return false;
         
         // if the previous element is out of flow, we may consider it as being part of the current line
         if(this.isOutOfFlowElement(element1)) return true;
