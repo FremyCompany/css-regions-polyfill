@@ -93,7 +93,7 @@ if(!document.caretRangeFromPoint) {
             
             // try to create a text range at the specified location
             var r = document.body.createTextRange();
-            for(var iy=IYDepth; iy; iy--) {
+            for(var iy=IYDepth; iy; iy=iy-4) {
                 var ix = x; if(true) {
                     try {
                         r.moveToPoint(ix,iy+y-IYDepth); 
@@ -104,10 +104,18 @@ if(!document.caretRangeFromPoint) {
             }
             
             // if that fails, return the location just after the element located there
-            var elem = document.elementFromPoint(x,y);
-            var r = document.createRange();
-            r.setStartAfter(elem);
-            return r;
+            try {
+                
+                var elem = document.elementFromPoint(x-1,y-1);
+                var r = document.createRange();
+                r.setStartAfter(elem);
+                return r;
+                
+            } catch(ex) {
+                
+                return null;
+                
+            }
         }
     }
 }

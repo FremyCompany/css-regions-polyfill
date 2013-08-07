@@ -93,7 +93,7 @@ if(!document.caretRangeFromPoint) {
             
             // try to create a text range at the specified location
             var r = document.body.createTextRange();
-            for(var iy=IYDepth; iy; iy--) {
+            for(var iy=IYDepth; iy; iy=iy-4) {
                 var ix = x; if(true) {
                     try {
                         r.moveToPoint(ix,iy+y-IYDepth); 
@@ -104,10 +104,18 @@ if(!document.caretRangeFromPoint) {
             }
             
             // if that fails, return the location just after the element located there
-            var elem = document.elementFromPoint(x,y);
-            var r = document.createRange();
-            r.setStartAfter(elem);
-            return r;
+            try {
+                
+                var elem = document.elementFromPoint(x-1,y-1);
+                var r = document.createRange();
+                r.setStartAfter(elem);
+                return r;
+                
+            } catch(ex) {
+                
+                return null;
+                
+            }
         }
     }
 }
@@ -3437,7 +3445,8 @@ var cssRegionsHelpers = {
     // computes the "value" attribute of every LI element out there
     //
     expandListValues: function(OL) {
-        if(OL.getAttribute("data-css-old-start")) return;
+        if(OL.getAttribute("data-css-li-value-expanded")) return;
+        OL.setAttribute('data-css-li-value-expanded', true);
         
         if(OL.hasAttribute("reversed")) {
             
@@ -3451,7 +3460,6 @@ var cssRegionsHelpers = {
             
         }
         
-        OL.setAttribute("data-css-old-start", currentValue);
         var LI = OL.firstElementChild; var LIV = null;
         while(LI) {
             if(LI.tagName==="LI") {
@@ -3473,7 +3481,8 @@ var cssRegionsHelpers = {
     // reverts to automatic computation of the value of LI elements
     //
     unexpandListValues: function(OL) {
-        OL.removeAttribute("data-css-old-start");
+        if(!OL.hasAttribute('data-css-li-value-expanded')) return;
+        OL.removeAttribute('data-css-li-value-expanded')
         var LI = OL.firstElementChild; var LIV = null;
         while(LI) {
             if(LI.tagName==="LI") {
@@ -3516,8 +3525,10 @@ var cssRegionsHelpers = {
                     break;
                     
                 case 1: // Element node
-                    node.removeAttribute('data-css-regions-cloning');
-                    node.setAttribute('data-css-regions-cloned', true);
+                    if(node.hasAttribute('data-css-regions-cloning')) {
+                        node.removeAttribute('data-css-regions-cloning');
+                        node.setAttribute('data-css-regions-cloned', true);
+                    }
                     if(typeof(k)=="undefined") return;
                     
                 case 9: // Document node
@@ -3594,7 +3605,7 @@ var cssRegionsHelpers = {
                     node.removeAttribute('data-css-regions-cloned');
                     node.removeAttribute('data-css-regions-fragment-source');
                     if(node.tagName=="OL") cssRegionsHelpers.unexpandListValues(node);
-                    if(typeof(k)!="undefined" && node.tagName=="LI") cssRegionsHelpers.expandListValues(node.parentNode);
+                    if(typeof(k)!="undefined" && node.tagName=="LI") cssRegionsHelpers.unexpandListValues(node.parentNode);
                     
                 case 9: // Document node
                 case 11: // Document fragment node
@@ -3624,7 +3635,9 @@ var cssRegionsHelpers = {
                     var id = node.getAttribute('data-css-regions-fragment-source');
                     node.removeAttribute('data-css-regions-fragment-source');
                     node.removeAttribute('data-css-regions-cloning');
+                    node.removeAttribute('data-css-regions-cloned');
                     node.setAttribute('data-css-regions-fragment-of', id);
+                    if(node.id) node.id += "--fragment";
                     
                 case 9: // Document node
                 case 11: // Document fragment node
@@ -3789,12 +3802,13 @@ var cssRegionsHelpers = {
                             if(!(properties[p] in cssCascade.inheritingProperties)) continue;
                             
                             var style = getComputedStyle(node1).getPropertyValue(properties[p]);
-                            var parentStyle = style; try { parentStyle = getComputedStyle(node1.parentNode).getPropertyValue(properties[p]) } catch(ex){}
-                            var defaultStyle = cssCascade.getDefaultStyleForTag(node1.tagName).getPropertyValue(properties[p]);
+                            node2.style.setProperty(properties[p], style);
+                            //var parentStyle = style; try { parentStyle = getComputedStyle(node1.parentNode).getPropertyValue(properties[p]) } catch(ex){}
+                            //var defaultStyle = cssCascade.getDefaultStyleForTag(node1.tagName).getPropertyValue(properties[p]);
                             
-                            if(style === parentStyle && style !== defaultStyle) {
-                                node2.style.setProperty(properties[p], style)
-                            }
+                            //if(style === parentStyle) {
+                            //  node2.style.setProperty(properties[p], style)
+                            //}
                             
                         }
                         
@@ -4630,10 +4644,10 @@ cssRegions.Flow = function NamedFlow(name) {
     this.firstEmptyRegionIndex = -1;
     
     // elements poured into the flow
-    this.content = this.lastContent = [];
+    this.content = []; this.lastContent = [];
     
     // elements that consume this flow
-    this.regions = this.lastRegions = [];
+    this.regions = []; this.lastRegions = [];
     
     // event handlers
     this.eventListeners = {

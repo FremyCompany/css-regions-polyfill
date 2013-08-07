@@ -18,10 +18,10 @@ cssRegions.Flow = function NamedFlow(name) {
     this.firstEmptyRegionIndex = -1;
     
     // elements poured into the flow
-    this.content = this.lastContent = [];
+    this.content = []; this.lastContent = [];
     
     // elements that consume this flow
-    this.regions = this.lastRegions = [];
+    this.regions = []; this.lastRegions = [];
     
     // event handlers
     this.eventListeners = {
