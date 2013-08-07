@@ -15,7 +15,7 @@ if(!document.caretRangeFromPoint) {
             }
             return r;
         }
-    } else if(document.body.createTextRange) {
+    } else if((document.body||document.createElement('body')).createTextRange) {
         
         //
         // we may want to convert TextRange to Range

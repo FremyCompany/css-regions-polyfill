@@ -41,9 +41,20 @@ var cssRegionsHelpers = {
     //
     unmarkNodesAsRegion: function(nodes,fast) {
         nodes.forEach(function(node) {
+            
+            // restore regionOverset to its natural value
             node.regionOverset = 'fit';
-            node.cssRegionsWrapper && node.removeChild(node.cssRegionsWrapper); delete node.cssRegionsWrapper;
+            
+            // remove the current <cssregion> tag
+            try { node.cssRegionsWrapper && node.removeChild(node.cssRegionsWrapper); } 
+            catch(ex) { setImmediate(function() { throw ex })}; 
+            node.cssRegionsWrapper = undefined;
+            delete node.cssRegionsWrapper;
+            
+            // restore top-level texts that may have been hidden
             cssRegionsHelpers.unhideTextNodesFromFragmentSource([node]);
+            
+            // unmark as a region
             node.removeAttribute('data-css-region');
         });
     },
@@ -173,6 +184,7 @@ var cssRegionsHelpers = {
                     
                 case 1: // Element node
                     node.removeAttribute('data-css-regions-cloning');
+                    node.setAttribute('data-css-regions-cloned', true);
                     if(typeof(k)=="undefined") return;
                     
                 case 9: // Document node
@@ -246,6 +258,7 @@ var cssRegionsHelpers = {
                     
                     break;
                 case 1: // Element node
+                    node.removeAttribute('data-css-regions-cloned');
                     node.removeAttribute('data-css-regions-fragment-source');
                     if(node.tagName=="OL") cssRegionsHelpers.unexpandListValues(node);
                     if(typeof(k)!="undefined" && node.tagName=="LI") cssRegionsHelpers.expandListValues(node.parentNode);

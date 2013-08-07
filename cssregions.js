@@ -15,7 +15,7 @@ if(!document.caretRangeFromPoint) {
             }
             return r;
         }
-    } else if(document.body.createTextRange) {
+    } else if((document.body||document.createElement('body')).createTextRange) {
         
         //
         // we may want to convert TextRange to Range
@@ -520,7 +520,12 @@ basicObjectModel.EventTarget.prototype.dispatchEvent = function(event_or_type) {
 
 var cssSyntax = { 
     tokenize: function(string) {}, 
-    parse: function(tokens) {} 
+    parse: function(tokens) {},
+    parseCSSValue: function(bestValue) {
+        var result = bestValue ? cssSyntax.parse("*{a:"+bestValue+"}").value[0].value[0].value : new cssSyntax.TokenList();
+        result.asCSSString = bestValue; // optimize conversion
+        return result;
+    }
 };
 
 //
@@ -1802,7 +1807,7 @@ var cssCascade = {
         
         if(this.allCSSProperties) return this.allCSSProperties;
         
-        var s = getComputedStyle(document.body); var ps = new Array(s.length);
+        var s = getComputedStyle(document.documentElement); var ps = new Array(s.length);
         for(var i=s.length; i--; ) {
             ps[i] = s[i];
         }
@@ -1897,8 +1902,11 @@ var cssCascade = {
         // give IE a thumbs up for this!
         if(element.currentStyle) {
             
-            var bestValue = element.currentStyle[cssPropertyName];
-            return bestValue ? cssSyntax.parse("*{a:"+bestValue+"}").value[0].value[0].value : new cssSyntax.TokenList();
+            // ask IE to manage the style himself...
+            var bestValue = element.myStyle[cssPropertyName] || element.currentStyle[cssPropertyName];
+            
+            // return a parsed representation of the value
+            return cssSyntax.parseCSSValue(bestValue);
             
         } else {
             
@@ -1908,7 +1916,7 @@ var cssCascade = {
             // TODO: what if important rules override that?
             try {
                 if(bestValue = element.style.getPropertyValue(cssPropertyName) || element.myStyle[cssPropertyName]) {
-                    return cssSyntax.parse("*{a:"+bestValue+"}").value[0].value[0].value;
+                    return cssSyntax.parseCSSValue(bestValue);
                 }
             } catch(ex) {}
             
@@ -3366,9 +3374,20 @@ var cssRegionsHelpers = {
     //
     unmarkNodesAsRegion: function(nodes,fast) {
         nodes.forEach(function(node) {
+            
+            // restore regionOverset to its natural value
             node.regionOverset = 'fit';
-            node.cssRegionsWrapper && node.removeChild(node.cssRegionsWrapper); delete node.cssRegionsWrapper;
+            
+            // remove the current <cssregion> tag
+            try { node.cssRegionsWrapper && node.removeChild(node.cssRegionsWrapper); } 
+            catch(ex) { setImmediate(function() { throw ex })}; 
+            node.cssRegionsWrapper = undefined;
+            delete node.cssRegionsWrapper;
+            
+            // restore top-level texts that may have been hidden
             cssRegionsHelpers.unhideTextNodesFromFragmentSource([node]);
+            
+            // unmark as a region
             node.removeAttribute('data-css-region');
         });
     },
@@ -3498,6 +3517,7 @@ var cssRegionsHelpers = {
                     
                 case 1: // Element node
                     node.removeAttribute('data-css-regions-cloning');
+                    node.setAttribute('data-css-regions-cloned', true);
                     if(typeof(k)=="undefined") return;
                     
                 case 9: // Document node
@@ -3571,6 +3591,7 @@ var cssRegionsHelpers = {
                     
                     break;
                 case 1: // Element node
+                    node.removeAttribute('data-css-regions-cloned');
                     node.removeAttribute('data-css-regions-fragment-source');
                     if(node.tagName=="OL") cssRegionsHelpers.unexpandListValues(node);
                     if(typeof(k)!="undefined" && node.tagName=="LI") cssRegionsHelpers.expandListValues(node.parentNode);
@@ -4462,7 +4483,7 @@ var cssRegions = {
         //
         var s = document.createElement('style');
         s.setAttribute("data-css-no-polyfill", true);
-        s.textContent = "cssregion,[data-css-region]>*,[data-css-regions-fragment-source]:not([data-css-regions-cloning]){display:none !important}[data-css-region]>cssregion:last-of-type{display:inline !important}[data-css-region]{content:normal !important}[data-css-special-continued-fragment]{counter-reset:none !important;counter-increment:none !important;margin-bottom:0 !important;border-bottom-left-radius:0 !important;border-bottom-right-radius:0 !important}[data-css-continued-fragment]{counter-reset:none !important;counter-increment:none !important;margin-bottom:0 !important;padding-bottom:0 !important;border-bottom:none !important;border-bottom-left-radius:0 !important;border-bottom-right-radius:0 !important}[data-css-continued-fragment]::after{content:none !important;display:none !important}[data-css-special-starting-fragment]{text-indent:0 !important;margin-top:0 !important}[data-css-starting-fragment]{text-indent:0 !important;margin-top:0 !important;padding-top:0 !important;border-top:none !important;border-top-left-radius:0 !important;border-top-right-radius:0 !important}[data-css-starting-fragment]::before{content:none !important;display:none !important}";
+        s.textContent = "cssregion,[data-css-region]>*,[data-css-regions-fragment-source]:not([data-css-regions-cloning]),[data-css-regions-fragment-source][data-css-regions-cloned]{display:none !important}[data-css-region]>cssregion:last-of-type{display:inline !important}[data-css-region]{content:normal !important}[data-css-special-continued-fragment]{counter-reset:none !important;counter-increment:none !important;margin-bottom:0 !important;border-bottom-left-radius:0 !important;border-bottom-right-radius:0 !important}[data-css-continued-fragment]{counter-reset:none !important;counter-increment:none !important;margin-bottom:0 !important;padding-bottom:0 !important;border-bottom:none !important;border-bottom-left-radius:0 !important;border-bottom-right-radius:0 !important}[data-css-continued-fragment]::after{content:none !important;display:none !important}[data-css-special-starting-fragment]{text-indent:0 !important;margin-top:0 !important}[data-css-starting-fragment]{text-indent:0 !important;margin-top:0 !important;padding-top:0 !important;border-top:none !important;border-top-left-radius:0 !important;border-top-right-radius:0 !important}[data-css-starting-fragment]::before{content:none !important;display:none !important}";
         var head = document.head || document.getElementsByTagName('head')[0];
         head.appendChild(s);
         
@@ -4635,6 +4656,9 @@ cssRegions.Flow = function NamedFlow(name) {
             console.warn("Please don't add stylesheets as a response to region events. Operation cancelled.")
         }
     });
+    
+    // a small counter to avoid enter retry loops
+    This.failedLayoutCount = 0;
 }
     
 cssRegions.Flow.prototype.removeFromContent = function(element) {
@@ -4931,6 +4955,7 @@ cssRegions.Flow.prototype._relayout = function(){
         
         // mark layout has being done
         This.relayoutScheduled = false;
+        This.failedLayoutCount = 0;
         
     } catch(ex) {
         
@@ -4940,7 +4965,9 @@ cssRegions.Flow.prototype._relayout = function(){
 
         // but we cannot accept to fail, so we need to try again
         // until we finish a complete layout pass...
-        requestAnimationFrame(function() { This._relayout() });
+        This.failedLayoutCount++;
+        if(This.failedLayoutCount<7) {requestAnimationFrame(function() { This._relayout() });}
+        else {This.failedLayoutCount=0;}
         
     }
 }

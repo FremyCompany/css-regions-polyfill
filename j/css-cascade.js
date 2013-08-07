@@ -118,7 +118,7 @@ var cssCascade = {
         
         if(this.allCSSProperties) return this.allCSSProperties;
         
-        var s = getComputedStyle(document.body); var ps = new Array(s.length);
+        var s = getComputedStyle(document.documentElement); var ps = new Array(s.length);
         for(var i=s.length; i--; ) {
             ps[i] = s[i];
         }
@@ -213,8 +213,11 @@ var cssCascade = {
         // give IE a thumbs up for this!
         if(element.currentStyle) {
             
-            var bestValue = element.currentStyle[cssPropertyName];
-            return bestValue ? cssSyntax.parse("*{a:"+bestValue+"}").value[0].value[0].value : new cssSyntax.TokenList();
+            // ask IE to manage the style himself...
+            var bestValue = element.myStyle[cssPropertyName] || element.currentStyle[cssPropertyName];
+            
+            // return a parsed representation of the value
+            return cssSyntax.parseCSSValue(bestValue);
             
         } else {
             
@@ -224,7 +227,7 @@ var cssCascade = {
             // TODO: what if important rules override that?
             try {
                 if(bestValue = element.style.getPropertyValue(cssPropertyName) || element.myStyle[cssPropertyName]) {
-                    return cssSyntax.parse("*{a:"+bestValue+"}").value[0].value[0].value;
+                    return cssSyntax.parseCSSValue(bestValue);
                 }
             } catch(ex) {}
             
