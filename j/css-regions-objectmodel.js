@@ -152,7 +152,7 @@ cssRegions.Flow.prototype.generateContentFragment = function() {
                 // add the element
                 var el = element;
                 var elClone = el.cloneNode(true);
-                var elToInsert = el; if(elToInsert.tagName=="LI") {
+                var elToInsert = elClone; if(elToInsert.tagName=="LI") {
                     elToInsert = document.createElement(el.parentNode.tagName);
                     elToInsert.style.margin="0";
                     elToInsert.style.padding="0";
@@ -170,7 +170,7 @@ cssRegions.Flow.prototype.generateContentFragment = function() {
                 
                 // add the element
                 var elClone = el.cloneNode(true);
-                var elToInsert = el; if(elToInsert.tagName=="LI") {
+                var elToInsert = elClone; if(elToInsert.tagName=="LI") {
                     elToInsert = document.createElement(el.parentNode.tagName);
                     elToInsert.style.margin="0";
                     elToInsert.style.padding="0";
