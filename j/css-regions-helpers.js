@@ -508,6 +508,9 @@ var cssRegionsHelpers = {
                     importPseudo(node1,node2,":before");
                     importPseudo(node1,node2,":after");
                     
+                    // retarget events
+                    cssRegionsHelpers.retargetEvents(node1,node2);
+                    
                     
                 case 9: // Document node
                 case 11: // Document fragment node
@@ -532,6 +535,36 @@ var cssRegionsHelpers = {
         }
         
         visit(root1, root2, true);
+        
+    },
+    
+    retargetEvents: function retargetEvents(node1,node2) {
+        
+        var retargetEvent = "cssRegionsHelpers.retargetEvent(this,event)";
+        node2.setAttribute("onclick", retargetEvent);
+        node2.setAttribute("ondblclick", retargetEvent);
+        node2.setAttribute("onmousedown", retargetEvent);
+        node2.setAttribute("onmouseup", retargetEvent);
+        node2.setAttribute("onmousein", retargetEvent);
+        node2.setAttribute("onmouseout", retargetEvent);
+        node2.setAttribute("onmouseenter", retargetEvent);
+        node2.setAttribute("onmouseleave", retargetEvent);
+        
+    },
+    
+    retargetEvent: function retargetEvent(node2,e) {
+        
+        var node1 = document.querySelector('[data-css-regions-fragment-source="' + node2.getAttribute('data-css-regions-fragment-of') + '"]');
+        
+        // dispatch the event on the real node
+        var ne = basicObjectModel.cloneEvent(e);
+        node1.dispatchEvent(ne);
+        
+        // prevent the event to fire on the region
+        e.stopImmediatePropagation ? e.stopImmediatePropagation() : e.stopPropagation();
+        
+        // make sure to cancel the event if required
+        if(ne.isDefaultPrevented || ne.defaultPrevented) e.preventDefault();
         
     }
 }

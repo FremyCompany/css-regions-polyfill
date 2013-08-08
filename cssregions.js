@@ -406,6 +406,60 @@ Range.prototype.myGetExtensionRect = function() {
 
 var basicObjectModel = {
     
+    cloneMouseEvent: function cloneMouseEvent(e) {
+        var evt = document.createEvent("MouseEvent");
+        evt.initMouseEvent( 
+            e.type, 
+            e.canBubble||e.bubbles, 
+            e.cancelable, 
+            e.view, 
+            e.detail, 
+            e.screenX, 
+            e.screenY, 
+            e.clientX, 
+            e.clientY, 
+            e.ctrlKey, 
+            e.altKey, 
+            e.shiftKey, 
+            e.metaKey, 
+            e.button, 
+            e.relatedTarget
+        );
+        return evt;
+    },
+    
+    cloneKeyboardEvent: function cloneKeyboardEvent(e) {
+        // TODO: this doesn't work cross-browswer...
+        // see https://gist.github.com/termi/4654819/ for the huge code
+        return basicObjectModel.cloneCustomEvent(e);
+    },
+    
+    cloneCustomEvent: function cloneCustomEvent(e) {
+        var ne = document.createEvent("CustomEvent");
+        ne.initCustomEvent(e.type, e.canBubble||e.bubbles, e.cancelable, "detail" in e ? e.detail : e);
+        for(var prop in e) {
+            try {
+                if(e[prop] != ne[prop] && e[prop] != e.target) {
+                    try { ne[prop] = e[prop]; }
+                    catch (ex) { Object.defineProperty(ne,prop,{get:function() { return e[prop]} }) }
+                }
+            } catch(ex) {}
+        }
+        return ne;
+    },
+    
+    cloneEvent: function cloneEvent(e) {
+        
+        if(e instanceof MouseEvent) {
+            return basicObjectModel.cloneMouseEvent(e);
+        } else if(e instanceof KeyboardEvent) {
+            return basicObjectModel.cloneKeyboardEvent(e);
+        } else {
+            return basicObjectModel.cloneCustomEvent(e);
+        }
+        
+    },
+    
     EventTarget: {
         implementsIn: function(eventClass, static) {
             
@@ -3866,6 +3920,9 @@ var cssRegionsHelpers = {
                     importPseudo(node1,node2,":before");
                     importPseudo(node1,node2,":after");
                     
+                    // retarget events
+                    cssRegionsHelpers.retargetEvents(node1,node2);
+                    
                     
                 case 9: // Document node
                 case 11: // Document fragment node
@@ -3890,6 +3947,36 @@ var cssRegionsHelpers = {
         }
         
         visit(root1, root2, true);
+        
+    },
+    
+    retargetEvents: function retargetEvents(node1,node2) {
+        
+        var retargetEvent = "cssRegionsHelpers.retargetEvent(this,event)";
+        node2.setAttribute("onclick", retargetEvent);
+        node2.setAttribute("ondblclick", retargetEvent);
+        node2.setAttribute("onmousedown", retargetEvent);
+        node2.setAttribute("onmouseup", retargetEvent);
+        node2.setAttribute("onmousein", retargetEvent);
+        node2.setAttribute("onmouseout", retargetEvent);
+        node2.setAttribute("onmouseenter", retargetEvent);
+        node2.setAttribute("onmouseleave", retargetEvent);
+        
+    },
+    
+    retargetEvent: function retargetEvent(node2,e) {
+        
+        var node1 = document.querySelector('[data-css-regions-fragment-source="' + node2.getAttribute('data-css-regions-fragment-of') + '"]');
+        
+        // dispatch the event on the real node
+        var ne = basicObjectModel.cloneEvent(e);
+        node1.dispatchEvent(ne);
+        
+        // prevent the event to fire on the region
+        e.stopImmediatePropagation ? e.stopImmediatePropagation() : e.stopPropagation();
+        
+        // make sure to cancel the event if required
+        if(ne.isDefaultPrevented || ne.defaultPrevented) e.preventDefault();
         
     }
 }

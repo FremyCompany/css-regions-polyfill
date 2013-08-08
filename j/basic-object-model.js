@@ -2,6 +2,60 @@
 
 var basicObjectModel = {
     
+    cloneMouseEvent: function cloneMouseEvent(e) {
+        var evt = document.createEvent("MouseEvent");
+        evt.initMouseEvent( 
+            e.type, 
+            e.canBubble||e.bubbles, 
+            e.cancelable, 
+            e.view, 
+            e.detail, 
+            e.screenX, 
+            e.screenY, 
+            e.clientX, 
+            e.clientY, 
+            e.ctrlKey, 
+            e.altKey, 
+            e.shiftKey, 
+            e.metaKey, 
+            e.button, 
+            e.relatedTarget
+        );
+        return evt;
+    },
+    
+    cloneKeyboardEvent: function cloneKeyboardEvent(e) {
+        // TODO: this doesn't work cross-browswer...
+        // see https://gist.github.com/termi/4654819/ for the huge code
+        return basicObjectModel.cloneCustomEvent(e);
+    },
+    
+    cloneCustomEvent: function cloneCustomEvent(e) {
+        var ne = document.createEvent("CustomEvent");
+        ne.initCustomEvent(e.type, e.canBubble||e.bubbles, e.cancelable, "detail" in e ? e.detail : e);
+        for(var prop in e) {
+            try {
+                if(e[prop] != ne[prop] && e[prop] != e.target) {
+                    try { ne[prop] = e[prop]; }
+                    catch (ex) { Object.defineProperty(ne,prop,{get:function() { return e[prop]} }) }
+                }
+            } catch(ex) {}
+        }
+        return ne;
+    },
+    
+    cloneEvent: function cloneEvent(e) {
+        
+        if(e instanceof MouseEvent) {
+            return basicObjectModel.cloneMouseEvent(e);
+        } else if(e instanceof KeyboardEvent) {
+            return basicObjectModel.cloneKeyboardEvent(e);
+        } else {
+            return basicObjectModel.cloneCustomEvent(e);
+        }
+        
+    },
+    
     EventTarget: {
         implementsIn: function(eventClass, static) {
             
