@@ -1773,7 +1773,7 @@ var cssCascade = {
             for(var r = rules.length; r--; ) {
                 var rule = rules[r]; 
                 
-                // TODO: media queries hook
+                // media queries hook
                 if(rule.disabled) continue;
                 
                 if(rule instanceof cssSyntax.StyleRule) {
@@ -1961,7 +1961,7 @@ var cssCascade = {
                 
                 for(var i=rules.length; i--; ) {
                     
-                    // TODO: media queries hook
+                    // media queries hook
                     if(rules[i].disabled) continue;
                     
                     // find a relevant declaration
@@ -1970,7 +1970,7 @@ var cssCascade = {
                         for(var j=decls.length-1; j>=0; j--) {
                             if(decls[j].type=="DECLARATION") {
                                 if(decls[j].name==cssPropertyName) {
-                                    // TODO: only works if selectors containing a "," are deduplicated
+                                    // only works if selectors containing a "," are deduplicated
                                     var currentPriority = cssCascade.computeSelectorPriorityOf(rules[i].selector);
                                     
                                     if(isBestImportant) {
@@ -2019,7 +2019,7 @@ var cssCascade = {
     stylesheets: [],
     loadStyleSheet: function loadStyleSheet(cssText,i) {
         
-        // TODO: load only one, load in order
+        // load in order
         
         // parse the stylesheet content
         var rules = cssSyntax.parse(cssText).value;
@@ -2171,7 +2171,7 @@ var cssCascade = {
                 
             } else if(rules[i] instanceof cssSyntax.AtRule) {
                 
-                // TODO: handle @media
+                // handle @media
                 if(rules[i].name == "media" && window.matchMedia) {
                     
                     cssCascade.startMonitoringMedia(rules[i]);
@@ -3042,7 +3042,7 @@ var cssBreak = {
                 // displayed <br> elements
                 element.tagName==="BR" && elementDisplay!=="none"
                 
-            ) // TODO: break-after?
+            )
         );
     },
     
@@ -3290,8 +3290,6 @@ var cssBreak = {
         if(!(r instanceof Range)) return false;
         if(!(r.collapsed)) return false;
         
-        // TODO: work on that
-        
         // no ancestor up to the region has to be monolithic
         var ancestor = r.startContainer;
         while(ancestor && ancestor !== region) {
@@ -3351,8 +3349,6 @@ var cssBreak = {
             }
             
         }
-        
-        // TODO: some more stuff {check the spec}
         
         // all conditions are met!
         return true;
@@ -4225,7 +4221,7 @@ var cssRegions = {
                         
                     } else {
                         
-                        // TODO: get last line via client rects
+                        // get last line via client rects
                         var lines = Node.getClientRects(current);
                         
                         // if the text node did wrap into multiple lines
@@ -4447,7 +4443,7 @@ var cssRegions = {
         
         // remove bottom-{pbm} from all ancestors involved in the cut
         for(var i=allAncestors.length-1; i>=0; i--) {
-            allAncestors[i].setAttribute('data-css-continued-fragment',true); //TODO: this requires some css
+            allAncestors[i].setAttribute('data-css-continued-fragment',true);
         }
         if(typeof(borderCut)==="number") {
             allAncestors[0].removeAttribute('data-css-continued-fragment');
@@ -4525,13 +4521,13 @@ var cssRegions = {
             
         } else if(typeof(borderCut)==="number") {
             
-            // TODO: hum... there's an element missing here...
+            // hum... there's an element missing here... {never happens anymore}
             try { throw new Error() }
             catch(ex) { setImmediate(function() { throw ex; }) }
             
         } else if(typeof(topPaddingCut)==="number") {
             
-            // TODO: hum... there's an element missing here...
+            // hum... there's an element missing here... {never happens anymore}
             try { throw new Error() }
             catch(ex) { setImmediate(function() { throw ex; }) }
             
@@ -4642,7 +4638,21 @@ var cssRegions = {
         );
         cssCascade.startMonitoringProperties(
             ["break-before","break-after"], 
-            {onupdate:function(){/* TODO: update parent regions? */}}
+            {onupdate:function(element){
+                
+                // avoid fragments triggering update loops
+                if(element.getAttribute('data-css-regions-fragment-of')){return;}
+                
+                // update parent regions
+                while(element) {
+                    if(element.cssRegionsLastFlowIntoName) {
+                        cssRegions.flows[element.cssRegionsLastFlowIntoName].relayout();
+                        return;
+                    }
+                    element=element.parentNode;
+                }
+                
+            }}
         );
         
         
@@ -4734,7 +4744,7 @@ cssRegions.Flow = function NamedFlow(name) {
     
 cssRegions.Flow.prototype.removeFromContent = function(element) {
     
-    // TODO: clean up stuff
+    // clean up stuff
     this.removeEventListenersOf(element);
     
     // remove reference
@@ -4745,7 +4755,7 @@ cssRegions.Flow.prototype.removeFromContent = function(element) {
 
 cssRegions.Flow.prototype.removeFromRegions = function(element) {
     
-    // TODO: clean up stuff
+    // clean up stuff
     this.removeEventListenersOf(element);
     
     // remove reference
@@ -4947,9 +4957,6 @@ cssRegions.Flow.prototype._relayout = function(){
         // PREPARE FOR CONTENT CLONING
         //
         
-        // TODO: compute the style of all source elements
-        // TODO: generate stylesheets for those rules
-        
         // empty all the regions
         cssRegionsHelpers.markNodesAsRegion(This.regions);
         
@@ -4965,6 +4972,8 @@ cssRegions.Flow.prototype._relayout = function(){
         //
         
         // create a fresh list of the content
+        // compute the style of all source elements
+        // generate stylesheets for those rules
         var contentFragment = This.generateContentFragment();
         
         

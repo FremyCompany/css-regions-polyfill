@@ -326,7 +326,7 @@ var cssRegions = {
                         
                     } else {
                         
-                        // TODO: get last line via client rects
+                        // get last line via client rects
                         var lines = Node.getClientRects(current);
                         
                         // if the text node did wrap into multiple lines
@@ -548,7 +548,7 @@ var cssRegions = {
         
         // remove bottom-{pbm} from all ancestors involved in the cut
         for(var i=allAncestors.length-1; i>=0; i--) {
-            allAncestors[i].setAttribute('data-css-continued-fragment',true); //TODO: this requires some css
+            allAncestors[i].setAttribute('data-css-continued-fragment',true);
         }
         if(typeof(borderCut)==="number") {
             allAncestors[0].removeAttribute('data-css-continued-fragment');
@@ -626,13 +626,13 @@ var cssRegions = {
             
         } else if(typeof(borderCut)==="number") {
             
-            // TODO: hum... there's an element missing here...
+            // hum... there's an element missing here... {never happens anymore}
             try { throw new Error() }
             catch(ex) { setImmediate(function() { throw ex; }) }
             
         } else if(typeof(topPaddingCut)==="number") {
             
-            // TODO: hum... there's an element missing here...
+            // hum... there's an element missing here... {never happens anymore}
             try { throw new Error() }
             catch(ex) { setImmediate(function() { throw ex; }) }
             

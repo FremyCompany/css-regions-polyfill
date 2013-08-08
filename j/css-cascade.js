@@ -70,7 +70,7 @@ var cssCascade = {
             for(var r = rules.length; r--; ) {
                 var rule = rules[r]; 
                 
-                // TODO: media queries hook
+                // media queries hook
                 if(rule.disabled) continue;
                 
                 if(rule instanceof cssSyntax.StyleRule) {
@@ -258,7 +258,7 @@ var cssCascade = {
                 
                 for(var i=rules.length; i--; ) {
                     
-                    // TODO: media queries hook
+                    // media queries hook
                     if(rules[i].disabled) continue;
                     
                     // find a relevant declaration
@@ -267,7 +267,7 @@ var cssCascade = {
                         for(var j=decls.length-1; j>=0; j--) {
                             if(decls[j].type=="DECLARATION") {
                                 if(decls[j].name==cssPropertyName) {
-                                    // TODO: only works if selectors containing a "," are deduplicated
+                                    // only works if selectors containing a "," are deduplicated
                                     var currentPriority = cssCascade.computeSelectorPriorityOf(rules[i].selector);
                                     
                                     if(isBestImportant) {
@@ -316,7 +316,7 @@ var cssCascade = {
     stylesheets: [],
     loadStyleSheet: function loadStyleSheet(cssText,i) {
         
-        // TODO: load only one, load in order
+        // load in order
         
         // parse the stylesheet content
         var rules = cssSyntax.parse(cssText).value;
@@ -468,7 +468,7 @@ var cssCascade = {
                 
             } else if(rules[i] instanceof cssSyntax.AtRule) {
                 
-                // TODO: handle @media
+                // handle @media
                 if(rules[i].name == "media" && window.matchMedia) {
                     
                     cssCascade.startMonitoringMedia(rules[i]);

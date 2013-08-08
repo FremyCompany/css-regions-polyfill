@@ -95,7 +95,7 @@ var cssBreak = {
                 // displayed <br> elements
                 element.tagName==="BR" && elementDisplay!=="none"
                 
-            ) // TODO: break-after?
+            )
         );
     },
     
@@ -343,8 +343,6 @@ var cssBreak = {
         if(!(r instanceof Range)) return false;
         if(!(r.collapsed)) return false;
         
-        // TODO: work on that
-        
         // no ancestor up to the region has to be monolithic
         var ancestor = r.startContainer;
         while(ancestor && ancestor !== region) {
@@ -404,8 +402,6 @@ var cssBreak = {
             }
             
         }
-        
-        // TODO: some more stuff {check the spec}
         
         // all conditions are met!
         return true;

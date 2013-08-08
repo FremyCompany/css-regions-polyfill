@@ -51,7 +51,7 @@ cssRegions.Flow = function NamedFlow(name) {
     
 cssRegions.Flow.prototype.removeFromContent = function(element) {
     
-    // TODO: clean up stuff
+    // clean up stuff
     this.removeEventListenersOf(element);
     
     // remove reference
@@ -62,7 +62,7 @@ cssRegions.Flow.prototype.removeFromContent = function(element) {
 
 cssRegions.Flow.prototype.removeFromRegions = function(element) {
     
-    // TODO: clean up stuff
+    // clean up stuff
     this.removeEventListenersOf(element);
     
     // remove reference
@@ -264,9 +264,6 @@ cssRegions.Flow.prototype._relayout = function(){
         // PREPARE FOR CONTENT CLONING
         //
         
-        // TODO: compute the style of all source elements
-        // TODO: generate stylesheets for those rules
-        
         // empty all the regions
         cssRegionsHelpers.markNodesAsRegion(This.regions);
         
@@ -282,6 +279,8 @@ cssRegions.Flow.prototype._relayout = function(){
         //
         
         // create a fresh list of the content
+        // compute the style of all source elements
+        // generate stylesheets for those rules
         var contentFragment = This.generateContentFragment();
         
         
