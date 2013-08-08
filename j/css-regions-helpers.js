@@ -445,7 +445,7 @@ var cssRegionsHelpers = {
                             continue;
                         }
                         
-                        // otherwise, get the parent's specified value
+                        // otherwise, get the element's specified value
                         var cssValue = cssCascade.getSpecifiedStyle(node1, properties[p], matchedRules);
                         if(cssValue && cssValue.length) {
                             
@@ -460,14 +460,27 @@ var cssRegionsHelpers = {
                             // TODO: create a list of inherited properties
                             if(!(properties[p] in cssCascade.inheritingProperties)) continue;
                             
-                            var style = getComputedStyle(node1).getPropertyValue(properties[p]);
-                            node2.style.setProperty(properties[p], style);
-                            //var parentStyle = style; try { parentStyle = getComputedStyle(node1.parentNode).getPropertyValue(properties[p]) } catch(ex){}
-                            //var defaultStyle = cssCascade.getDefaultStyleForTag(node1.tagName).getPropertyValue(properties[p]);
+                            // if the property is computation-safe, use the computed value
+                            if((properties[p]=="font-size") || (!(properties[p] in cssCascade.computationUnsafeProperties) && properties[p][0]!='-')) {
+                                var style = getComputedStyle(node1).getPropertyValue(properties[p]);
+                                node2.style.setProperty(properties[p], style);
+                                //var parentStyle = style; try { parentStyle = getComputedStyle(node1.parentNode).getPropertyValue(properties[p]) } catch(ex){}
+                                //var defaultStyle = cssCascade.getDefaultStyleForTag(node1.tagName).getPropertyValue(properties[p]);
+                                
+                                //if(style === parentStyle) {
+                                //  node2.style.setProperty(properties[p], style)
+                                //}
+                                continue;
+                            }
                             
-                            //if(style === parentStyle) {
-                            //  node2.style.setProperty(properties[p], style)
-                            //}
+                            // otherwise, get the parent's specified value
+                            var cssValue = cssCascade.getSpecifiedStyle(node1, properties[p], matchedRules);
+                            if(cssValue && cssValue.length) {
+                                
+                                // if we have a specified value, let's use it
+                                node2.style.setProperty(properties[p], cssValue.toCSSString());
+                                
+                            }
                             
                         }
                         
