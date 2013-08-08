@@ -743,7 +743,21 @@ var cssRegions = {
         );
         cssCascade.startMonitoringProperties(
             ["break-before","break-after"], 
-            {onupdate:function(){/* TODO: update parent regions? */}}
+            {onupdate:function(element){
+                
+                // avoid fragments triggering update loops
+                if(element.getAttribute('data-css-regions-fragment-of')){return;}
+                
+                // update parent regions
+                while(element) {
+                    if(element.cssRegionsLastFlowIntoName) {
+                        cssRegions.flows[element.cssRegionsLastFlowIntoName].relayout();
+                        return;
+                    }
+                    element=element.parentNode;
+                }
+                
+            }}
         );
         
         
