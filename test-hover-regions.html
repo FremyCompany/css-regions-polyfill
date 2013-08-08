@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Testing hover regions</title>
+        <style>
+            
+            div { width: 100px; height: 100px; background: red; }
+            div > div { background: green; -webkit-flow-into: region2; }
+            div + div > div { background: lime; -webkit-flow-into: region1; }
+            
+            div > div:hover { background: orange; -webkit-flow-into: region1; }
+            div + div > div:hover { background: yellow; -webkit-flow-into: region2; }
+            
+            span { display: block; width: 1.3em; height: 1.3em; }
+            b { -webkit-flow-into: region3 }
+            b:hover { color: red }
+            
+        </style>
+    </head>
+    <body>
+        
+        <div style="position: absolute; top: 10px; left: 10px; -webkit-flow-from: region1;">
+            <div></div>
+        </div>
+    
+        <div style="position: absolute; top: 10px; left: 120px; -webkit-flow-from: region2;">
+            <div></div>
+        </div>
+            
+        <b>A A A</b>
+        <span style="position: absolute; top: 120px; left: 10px; -webkit-flow-from: region3;"></span>
+        <span style="position: absolute; top: 120px; left: 40px; -webkit-flow-from: region3;"></span>
+        <span style="position: absolute; top: 120px; left: 70px; -webkit-flow-from: region3;"></span>
+            
+    </body>
+</html>
