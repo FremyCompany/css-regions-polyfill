@@ -538,6 +538,10 @@ var cssRegionsHelpers = {
         
     },
     
+    //
+    // make sure the most critical events still fire in the fragment source
+    // even if the browser initially fire them on the fragments
+    //
     retargetEvents: function retargetEvents(node1,node2) {
         
         var retargetEvent = "cssRegionsHelpers.retargetEvent(this,event)";
@@ -552,9 +556,16 @@ var cssRegionsHelpers = {
         
     },
     
-    retargetEvent: function retargetEvent(node2,e) {
+    //
+    // single hub for event retargeting operations.
+    //
+    retargetEvent: function retargeEvent(node2,e) {
         
-        var node1 = document.querySelector('[data-css-regions-fragment-source="' + node2.getAttribute('data-css-regions-fragment-of') + '"]');
+        // get the node we should fire the event on
+        var node1 = (
+            (node2.cssRegionsFragmentSource) ||
+            (node2.cssRegionsFragmentSource=document.querySelector('[data-css-regions-fragment-source="' + node2.getAttribute('data-css-regions-fragment-of') + '"]'))
+        );
         
         // dispatch the event on the real node
         var ne = basicObjectModel.cloneEvent(e);

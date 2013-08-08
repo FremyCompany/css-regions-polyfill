@@ -255,6 +255,10 @@ Range.prototype.myMoveEndOneCharRight = function() {
     
 }
 
+//
+// Get the *real* bounding client rect of the range
+// { therefore we need to fix some browser bugs... }
+//
 Range.prototype.myGetSelectionRect = function() {
     
     // get the browser's claimed rect
@@ -369,7 +373,10 @@ Node.contains = function contains(parentNode,node) {
     }
 }
 
-// a special version for breaking algorithms
+//
+// get the bounding rect of the selection, including the bottom padding/marging of the previous element if required
+// { this is a special version for breaking algorithms that do not want to miss the previous element real size }
+//
 Range.prototype.myGetExtensionRect = function() {
     
     // this function returns the selection rect

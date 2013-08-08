@@ -2,6 +2,9 @@
 
 var basicObjectModel = {
     
+    //
+    // the following functions are about event cloning
+    //
     cloneMouseEvent: function cloneMouseEvent(e) {
         var evt = document.createEvent("MouseEvent");
         evt.initMouseEvent( 
@@ -56,6 +59,9 @@ var basicObjectModel = {
         
     },
     
+    //
+    // allows you to drop event support to any class easily
+    //
     EventTarget: {
         implementsIn: function(eventClass, static) {
             

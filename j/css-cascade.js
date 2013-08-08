@@ -4,6 +4,10 @@
 
 var cssCascade = {
     
+    //
+    // returns the priority of a unique selector (NO COMMA!)
+    // { the return value is an integer, with the same formula as webkit }
+    //
     computeSelectorPriorityOf: function computeSelectorPriorityOf(selector) {
         if(typeof selector == "string") selector = cssSyntax.parse(selector+"{}").value[0].selector;
         
@@ -60,6 +64,9 @@ var cssCascade = {
         
     },
     
+    //
+    // returns an array of the css rules matching an element
+    //
     findAllMatchingRules: function findAllMatchingRules(element) {
         
         // let's look for new results if needed...
@@ -199,6 +206,9 @@ var cssCascade = {
         "word-wrap": false,
     },
     
+    //
+    // returns the default style for a tag
+    //
     defaultStylesForTag: Object.create ? Object.create(null) : {},
     getDefaultStyleForTag: function getDefaultStyleForTag(tagName) {
         
@@ -216,6 +226,12 @@ var cssCascade = {
         return style;
     },
     
+    // 
+    // returns the specified style of an element. 
+    // REMARK: may or may not unwrap "inherit" and "initial" depending on implementation
+    // REMARK: giving "matchedRules" as a parameter allow you to mutualize the "findAllMatching" rules calls
+    // REMARK: giving "stringOnly" as a "true" parameter allows to return a fake token list which returns the good string value
+    // 
     getSpecifiedStyle: function getSpecifiedStyle(element, cssPropertyName, matchedRules, stringOnly) {
         
         // hook for css regions
@@ -313,6 +329,11 @@ var cssCascade = {
         
     },
     
+    
+    //
+    // start monitoring a new stylesheet
+    // (should usually not be used because stylesheets load automatically)
+    //
     stylesheets: [],
     loadStyleSheet: function loadStyleSheet(cssText,i) {
         
@@ -330,6 +351,10 @@ var cssCascade = {
         
     },
     
+    //
+    // start monitoring a new stylesheet
+    // (should usually not be used because stylesheets load automatically)
+    //
     loadStyleSheetTag: function loadStyleSheetTag(stylesheet,i) {
         
         if(stylesheet.hasAttribute('data-css-polyfilled')) {
@@ -376,6 +401,10 @@ var cssCascade = {
         
     },
     
+    //
+    // calling this function will load all currently existing stylesheets in the document
+    // (should usually not be used because stylesheets load automatically)
+    //
     selectorForStylesheets: "style:not([data-no-css-polyfill]):not([data-css-polyfilled]), link[rel=stylesheet]:not([data-no-css-polyfill]):not([data-css-polyfilled])",
     loadAllStyleSheets: function loadAllStyleSheets() {
         
@@ -398,6 +427,9 @@ var cssCascade = {
         }
     },
     
+    //
+    // this is where se store event handlers for monitored properties
+    //
     monitoredProperties: Object.create ? Object.create(null) : {},
     monitoredPropertiesHandler: {
         onupdate: function(element, rule) {
@@ -425,6 +457,10 @@ var cssCascade = {
         }
     },
     
+    //
+    // add an handler to some properties (aka fire when their value *MAY* be affected)
+    // REMARK: because this event does not promise the value changed, you may want to figure it out before relayouting
+    //
     startMonitoringProperties: function startMonitoringProperties(properties, handler) {
         
         for(var i=properties.length; i--; ) {
@@ -442,7 +478,11 @@ var cssCascade = {
         }
         
     },
-        
+    
+    //
+    // calling this function will detect monitored rules in the stylesheet
+    // (should usually not be used because stylesheets load automatically)
+    //
     startMonitoringStylesheet: function startMonitoringStylesheet(rules) {
         for(var i=0; i<rules.length; i++) {
             
@@ -480,6 +520,10 @@ var cssCascade = {
         }
     },
     
+    //
+    // calling this function will detect media query updates and fire events accordingly
+    // (should usually not be used because stylesheets load automatically)
+    //
     startMonitoringMedia: function startMonitoringMedia(atrule) {
         try {
             
@@ -499,6 +543,9 @@ var cssCascade = {
         }
     },
     
+    //
+    // define what happens when a media query status changes
+    //
     updateMedia: function(rules,disabled,update) {
         for(var i=rules.length; i--; ) {
             rules[i].disabled = disabled;
@@ -584,7 +631,10 @@ var cssCascade = {
         }
         
     },
-        
+    
+    //
+    // converts a css property name to a javascript name
+    //
     toCamelCase: function toCamelCase(variable) { 
         return variable.replace(
             /-([a-z])/g, 
@@ -594,6 +644,9 @@ var cssCascade = {
         );
     },
     
+    //
+    // add some magic code to support properties on the style interface
+    //
     polyfillStyleInterface: function(cssPropertyName) {
         
         var prop = {
@@ -633,6 +686,9 @@ var cssCascade = {
     
 };
 
+//
+// polyfill for browsers not support CSSStyleDeclaration.parentElement (all of them right now)
+//
 basicObjectModel.EventTarget.implementsIn(cssCascade);
 Object.defineProperty(Element.prototype,'myStyle',{
     get: function() {
@@ -642,6 +698,11 @@ Object.defineProperty(Element.prototype,'myStyle',{
     }
 });
 
+//
+// load all stylesheets at the time the script is loaded
+// then do it again when all stylesheets are downloaded
+// and again if some style tag is added to the DOM
+//
 cssCascade.loadAllStyleSheets();
 document.addEventListener("DOMContentLoaded", function() {
     cssCascade.loadAllStyleSheets();

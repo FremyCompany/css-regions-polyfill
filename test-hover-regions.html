@@ -4,7 +4,7 @@
         <title>Testing hover regions</title>
         <style>
             
-            div { width: 100px; height: 100px; background: red; }
+            div { width: 100px; height: 100px; background: blue; }
             div > div { background: green; -webkit-flow-into: region2; }
             div + div > div { background: lime; -webkit-flow-into: region1; }
             
@@ -14,6 +14,14 @@
             span { display: block; width: 1.3em; height: 1.3em; }
             b { -webkit-flow-into: region3 }
             b:hover { color: red }
+            
+            i { -webkit-flow-into: region4 }
+            i > i:hover { color: red }
+            i:hover { color: blue }
+            i:hover > i { color: green }
+            i:hover > i:hover { color: lime }
+            article { padding: 10px; background: #eee; }
+            article:hover { opacity: 0.5; }
             
         </style>
     </head>
@@ -31,6 +39,9 @@
         <span style="position: absolute; top: 120px; left: 10px; -webkit-flow-from: region3;"></span>
         <span style="position: absolute; top: 120px; left: 40px; -webkit-flow-from: region3;"></span>
         <span style="position: absolute; top: 120px; left: 70px; -webkit-flow-from: region3;"></span>
+        
+        <i>X<i>Y</i>W</i>
+        <article style="position: absolute; top: 160px; left: 10px; -webkit-flow-from: region4;"></article>
             
     </body>
 </html>
