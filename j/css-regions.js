@@ -30,7 +30,7 @@ var cssRegions = {
     // to break, otherwhise all the content will automatically overflow
     // this last region.
     //
-    layoutContent: function(regions, remainingContent, secondCall) {
+    layoutContent: function(regions, remainingContent, callback, startTime) {
         
         //
         // this function will iteratively fill all the regions
@@ -40,6 +40,7 @@ var cssRegions = {
         // validate args
         if(!regions) return;
         if(!regions.length) return;
+        if(!startTime) startTime = +Date();
         
         // get the next region
         var region = regions.pop();
@@ -49,7 +50,7 @@ var cssRegions = {
         while(true) {
             var regionDisplay = getComputedStyle(region).display;
             if(regionDisplay == "none" || regionDisplay.indexOf("inline") !== -1) {
-                if(region = regions.pop()) { continue } else { return !!remainingContent.hasChildNodes() };
+                if(region = regions.pop()) { continue } else { return callback(!!remainingContent.hasChildNodes()) };
             } else {
                 break;
             }
@@ -74,8 +75,8 @@ var cssRegions = {
             region.cssRegionsLastOffsetWidth = region.offsetWidth;
             
             region.cssRegionHost.regionOverset = 'empty';
-            cssRegions.layoutContent(regions, remainingContent);
-            return false;
+            cssRegions.layoutContent(regions, remainingContent, callback, startTime);
+            return callback(false);
             
         }
         
@@ -111,7 +112,17 @@ var cssRegions = {
             
             // layout the next regions
             // WE LET THE NEXT REGION DECIDE WHAT TO RETURN
-            return cssRegions.layoutContent(regions, remainingContent, true); // TODO: use do...while instead of recursion
+            if(startTime<60+Date()) {
+                
+                return cssRegions.layoutContent(regions, remainingContent, callback, startTime);
+                
+            } else {
+                
+                return setImmediate(function() {
+                    cssRegions.layoutContent(regions, remainingContent, callback, startTime);
+                });
+                
+            }
             
         } else {
             
@@ -125,7 +136,7 @@ var cssRegions = {
                 region.cssRegionHost.cssRegionsLastOffsetHeight = region.cssRegionHost.offsetHeight;
                 region.cssRegionHost.cssRegionsLastOffsetWidth = region.cssRegionHost.offsetWidth;
                 
-                return didOverflow;
+                return callback(didOverflow);
                 
             } else {
                 
@@ -134,7 +145,7 @@ var cssRegions = {
                 region.cssRegionHost.cssRegionsLastOffsetWidth = region.cssRegionHost.offsetWidth;
                 
                 // WE RETURN FALSE IF WE DIDN'T OVERFLOW
-                return region.cssRegionHost.offsetHeight != region.cssRegionHost.scrollHeight;
+                return callback(region.cssRegionHost.offsetHeight != region.cssRegionHost.scrollHeight);
                 
             }
             
@@ -244,7 +255,7 @@ var cssRegions = {
                 } else {
                     
                     // otherwise, go char-by-char
-                    r.myMoveOneCharRight(); rect = r.myGetExtensionRect();
+                    r.myMoveTowardRight(); rect = r.myGetExtensionRect();
                     
                 }
             }
@@ -386,7 +397,7 @@ var cssRegions = {
                 //console.dir(r.cloneRange()); 
                 
                 // move the position char-by-char
-                r.myMoveOneCharRight(); 
+                r.myMoveTowardRight(); 
                 
                 // but skip long islands of monolithic elements
                 // since we know we cannot break inside them anyway
@@ -705,6 +716,7 @@ var cssRegions = {
                     if(element.cssRegionsLastFlowInto != flowInto || element.cssRegionsLastFlowFrom != flowFrom) {
                         
                         // remove the element from previous regions
+                        var regionOverset = element.regionOverset;
                         var lastFlowFrom = (cssRegions.flows[element.cssRegionsLastFlowFromName]);
                         var lastFlowInto = (cssRegions.flows[element.cssRegionsLastFlowIntoName]);
                         lastFlowFrom && lastFlowFrom.removeFromRegions(element);
@@ -713,7 +725,7 @@ var cssRegions = {
                         // relayout those regions 
                         // (it's async so it will wait for us
                         // to add the element back if needed)
-                        lastFlowFrom && lastFlowFrom.relayout();
+                        lastFlowFrom && regionOverset!='empty' && lastFlowFrom.relayout();
                         lastFlowInto && lastFlowInto.relayout();
                         
                         // save some property values for later

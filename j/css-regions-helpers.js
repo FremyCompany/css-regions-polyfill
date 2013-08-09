@@ -488,6 +488,13 @@ var cssRegionsHelpers = {
                     
                     // now, let's work on ::after and ::before
                     function importPseudo(node1,node2,pseudo) {
+                        
+                        //
+                        // we'll need to use getSpecifiedStyle here as the pseudo thing is slow
+                        //
+                        var mayExist = !!cssCascade.findAllMatchingRulesWithPseudo(node1,pseudo.substr(1)).length;
+                        if(!mayExist) return;
+                        
                         var pseudoStyle = getComputedStyle(node1,pseudo);
                         if(pseudoStyle.content!='none'){
                             
@@ -557,6 +564,7 @@ var cssRegionsHelpers = {
     //
     retargetEvents: function retargetEvents(node1,node2) {
         
+        return;
         var retargetEvent = "cssRegionsHelpers.retargetEvent(this,event)";
         node2.setAttribute("onclick", retargetEvent);
         node2.setAttribute("ondblclick", retargetEvent);
@@ -580,15 +588,19 @@ var cssRegionsHelpers = {
             (node2.cssRegionsFragmentSource=document.querySelector('[data-css-regions-fragment-source="' + node2.getAttribute('data-css-regions-fragment-of') + '"]'))
         );
         
-        // dispatch the event on the real node
-        var ne = basicObjectModel.cloneEvent(e);
-        node1.dispatchEvent(ne);
+        if(node1) {
         
-        // prevent the event to fire on the region
-        e.stopImmediatePropagation ? e.stopImmediatePropagation() : e.stopPropagation();
+            // dispatch the event on the real node
+            var ne = basicObjectModel.cloneEvent(e);
+            node1.dispatchEvent(ne);
+            
+            // prevent the event to fire on the region
+            e.stopImmediatePropagation ? e.stopImmediatePropagation() : e.stopPropagation();
+            
+            // make sure to cancel the event if required
+            if(ne.isDefaultPrevented || ne.defaultPrevented) { e.preventDefault(); return false; }
         
-        // make sure to cancel the event if required
-        if(ne.isDefaultPrevented || ne.defaultPrevented) e.preventDefault();
+        }
         
     }
 }

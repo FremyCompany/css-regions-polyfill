@@ -192,6 +192,57 @@ Range.prototype.myMoveOneCharRight = function() {
 }
 
 
+///
+/// This functions is optimized to not yield inside a word in a text node
+///
+Range.prototype.myMoveTowardRight = function() {
+    var r = this;
+    
+    // move to the previous cursor location
+    var isTextNode = r.startContainer.nodeType==r.startContainer.TEXT_NODE;
+    var max = (isTextNode ? r.startContainer.nodeValue.length : r.startContainer.childNodes.length)
+    if(r.startOffset < max) {
+        
+        // if we can enter into the next sibling
+        var nextSibling = r.endContainer.childNodes[r.endOffset];
+        if(nextSibling && nextSibling.firstChild) {
+            
+            // enter the next sibling from its start
+            r.setStartBefore(nextSibling.firstChild);
+            
+        } else if(nextSibling && nextSibling.nodeType==nextSibling.TEXT_NODE && nextSibling.nodeValue!='') { // todo: lookup value
+            
+            // enter the next text node from its start
+            r.setStart(nextSibling, 0);
+            
+        } else if(isTextNode) {
+            
+            // move to the next non a-zA-Z symbol
+            var currentText = r.startContainer.nodeValue;
+            var currentOffset = r.startOffset;
+            var currentLetter = currentText[currentOffset++];
+            while(currentOffset < max && /^\w$/.test(currentLetter)) {
+                currentLetter = currentText[currentOffset++];
+            }
+            r.setStart(r.startContainer, currentOffset);
+            
+        } else {
+            
+            // else move before that element
+            r.setStart(r.startContainer, r.startOffset+1);
+            
+        }
+        
+    } else {
+        r.setStartAfter(r.endContainer);
+    }
+    
+    // shouldn't be needed but who knows...
+    r.setEnd(r.startContainer, r.startOffset);
+    
+}
+
+
 Range.prototype.myMoveEndOneCharLeft = function() {
     var r = this;
     

@@ -192,6 +192,57 @@ Range.prototype.myMoveOneCharRight = function() {
 }
 
 
+///
+/// This functions is optimized to not yield inside a word in a text node
+///
+Range.prototype.myMoveTowardRight = function() {
+    var r = this;
+    
+    // move to the previous cursor location
+    var isTextNode = r.startContainer.nodeType==r.startContainer.TEXT_NODE;
+    var max = (isTextNode ? r.startContainer.nodeValue.length : r.startContainer.childNodes.length)
+    if(r.startOffset < max) {
+        
+        // if we can enter into the next sibling
+        var nextSibling = r.endContainer.childNodes[r.endOffset];
+        if(nextSibling && nextSibling.firstChild) {
+            
+            // enter the next sibling from its start
+            r.setStartBefore(nextSibling.firstChild);
+            
+        } else if(nextSibling && nextSibling.nodeType==nextSibling.TEXT_NODE && nextSibling.nodeValue!='') { // todo: lookup value
+            
+            // enter the next text node from its start
+            r.setStart(nextSibling, 0);
+            
+        } else if(isTextNode) {
+            
+            // move to the next non a-zA-Z symbol
+            var currentText = r.startContainer.nodeValue;
+            var currentOffset = r.startOffset;
+            var currentLetter = currentText[currentOffset++];
+            while(currentOffset < max && /^\w$/.test(currentLetter)) {
+                currentLetter = currentText[currentOffset++];
+            }
+            r.setStart(r.startContainer, currentOffset);
+            
+        } else {
+            
+            // else move before that element
+            r.setStart(r.startContainer, r.startOffset+1);
+            
+        }
+        
+    } else {
+        r.setStartAfter(r.endContainer);
+    }
+    
+    // shouldn't be needed but who knows...
+    r.setEnd(r.startContainer, r.startOffset);
+    
+}
+
+
 Range.prototype.myMoveEndOneCharLeft = function() {
     var r = this;
     
@@ -1857,12 +1908,80 @@ var cssCascade = {
                     for(var sr = subrules.length; sr--; ) {
                         
                         var isMatching = false;
+                        var selector = subrules[sr].selector.toCSSString();
                         try {
-                            if(element.matchesSelector) isMatching=element.matchesSelector(subrules[sr].selector.toCSSString())
-                            else if(element.oMatchesSelector) isMatching=element.oMatchesSelector(subrules[sr].selector.toCSSString())
-                            else if(element.msMatchesSelector) isMatching=element.msMatchesSelector(subrules[sr].selector.toCSSString())
-                            else if(element.mozMatchesSelector) isMatching=element.mozMatchesSelector(subrules[sr].selector.toCSSString())
-                            else if(element.webkitMatchesSelector) isMatching=element.webkitMatchesSelector(subrules[sr].selector.toCSSString())
+                            if(element.matchesSelector) isMatching=element.matchesSelector(selector)
+                            else if(element.oMatchesSelector) isMatching=element.oMatchesSelector(selector)
+                            else if(element.msMatchesSelector) isMatching=element.msMatchesSelector(selector)
+                            else if(element.mozMatchesSelector) isMatching=element.mozMatchesSelector(selector)
+                            else if(element.webkitMatchesSelector) isMatching=element.webkitMatchesSelector(selector)
+                            else { throw new Error("wft u no element.matchesSelector?") }
+                        } catch(ex) { debugger; setImmediate(function() { throw ex; }) }
+                        
+                        if(isMatching) { results.push(subrules[sr]); }
+                        
+                    }
+                    
+                } else if(rule instanceof cssSyntax.AtRule && rule.name=="media") {
+                    
+                    visit(rule.value);
+                    
+                }
+                
+            }
+        }
+        
+        for(var s=cssCascade.stylesheets.length; s--; ) {
+            var rules = cssCascade.stylesheets[s];
+            visit(rules);
+        }
+        
+        return results;
+    },
+    
+    //
+    // returns an array of the css rules matching a pseudo-element
+    //
+    findAllMatchingRulesWithPseudo: function findAllMatchingRules(element,pseudo) {
+        
+        // let's look for new results if needed...
+        var results = [];
+        
+        // walk the whole stylesheet...
+        function visit(rules) {
+            for(var r = rules.length; r--; ) {
+                var rule = rules[r]; 
+                
+                // media queries hook
+                if(rule.disabled) continue;
+                
+                if(rule instanceof cssSyntax.StyleRule) {
+                    
+                    // consider each selector independtly
+                    var subrules = rule.subRules || cssCascade.splitRule(rule);
+                    for(var sr = subrules.length; sr--; ) {
+                        
+                        // WE ONLY ACCEPT SELECTORS ENDING WITH THE PSEUDO
+                        var selector = subrules[sr].selector.toCSSString().trim().replace(/\/\*\*\//,'');
+                        var newLength = selector.length-pseudo.length-1;
+                        if(newLength<=0) continue;
+                        
+                        if(selector.lastIndexOf('::'+pseudo)==newLength-1) {
+                            selector = selector.substr(0,newLength-1);
+                        } else if(selector.lastIndexOf(':'+pseudo)==newLength) {
+                            selector = selector.substr(0,newLength);
+                        } else {
+                            continue;
+                        }
+                        
+                        // look if the selector matches
+                        var isMatching = false;
+                        try {
+                            if(element.matchesSelector) isMatching=element.matchesSelector(selector)
+                            else if(element.oMatchesSelector) isMatching=element.oMatchesSelector(selector)
+                            else if(element.msMatchesSelector) isMatching=element.msMatchesSelector(selector)
+                            else if(element.mozMatchesSelector) isMatching=element.mozMatchesSelector(selector)
+                            else if(element.webkitMatchesSelector) isMatching=element.webkitMatchesSelector(selector)
                             else { throw new Error("wft u no element.matchesSelector?") }
                         } catch(ex) { debugger; setImmediate(function() { throw ex; }) }
                         
@@ -3974,6 +4093,13 @@ var cssRegionsHelpers = {
                     
                     // now, let's work on ::after and ::before
                     function importPseudo(node1,node2,pseudo) {
+                        
+                        //
+                        // we'll need to use getSpecifiedStyle here as the pseudo thing is slow
+                        //
+                        var mayExist = !!cssCascade.findAllMatchingRulesWithPseudo(node1,pseudo.substr(1)).length;
+                        if(!mayExist) return;
+                        
                         var pseudoStyle = getComputedStyle(node1,pseudo);
                         if(pseudoStyle.content!='none'){
                             
@@ -4043,6 +4169,7 @@ var cssRegionsHelpers = {
     //
     retargetEvents: function retargetEvents(node1,node2) {
         
+        return;
         var retargetEvent = "cssRegionsHelpers.retargetEvent(this,event)";
         node2.setAttribute("onclick", retargetEvent);
         node2.setAttribute("ondblclick", retargetEvent);
@@ -4066,15 +4193,19 @@ var cssRegionsHelpers = {
             (node2.cssRegionsFragmentSource=document.querySelector('[data-css-regions-fragment-source="' + node2.getAttribute('data-css-regions-fragment-of') + '"]'))
         );
         
-        // dispatch the event on the real node
-        var ne = basicObjectModel.cloneEvent(e);
-        node1.dispatchEvent(ne);
+        if(node1) {
         
-        // prevent the event to fire on the region
-        e.stopImmediatePropagation ? e.stopImmediatePropagation() : e.stopPropagation();
+            // dispatch the event on the real node
+            var ne = basicObjectModel.cloneEvent(e);
+            node1.dispatchEvent(ne);
+            
+            // prevent the event to fire on the region
+            e.stopImmediatePropagation ? e.stopImmediatePropagation() : e.stopPropagation();
+            
+            // make sure to cancel the event if required
+            if(ne.isDefaultPrevented || ne.defaultPrevented) { e.preventDefault(); return false; }
         
-        // make sure to cancel the event if required
-        if(ne.isDefaultPrevented || ne.defaultPrevented) e.preventDefault();
+        }
         
     }
 }
@@ -4110,7 +4241,7 @@ var cssRegions = {
     // to break, otherwhise all the content will automatically overflow
     // this last region.
     //
-    layoutContent: function(regions, remainingContent, secondCall) {
+    layoutContent: function(regions, remainingContent, callback, startTime) {
         
         //
         // this function will iteratively fill all the regions
@@ -4120,6 +4251,7 @@ var cssRegions = {
         // validate args
         if(!regions) return;
         if(!regions.length) return;
+        if(!startTime) startTime = +Date();
         
         // get the next region
         var region = regions.pop();
@@ -4129,7 +4261,7 @@ var cssRegions = {
         while(true) {
             var regionDisplay = getComputedStyle(region).display;
             if(regionDisplay == "none" || regionDisplay.indexOf("inline") !== -1) {
-                if(region = regions.pop()) { continue } else { return !!remainingContent.hasChildNodes() };
+                if(region = regions.pop()) { continue } else { return callback(!!remainingContent.hasChildNodes()) };
             } else {
                 break;
             }
@@ -4154,8 +4286,8 @@ var cssRegions = {
             region.cssRegionsLastOffsetWidth = region.offsetWidth;
             
             region.cssRegionHost.regionOverset = 'empty';
-            cssRegions.layoutContent(regions, remainingContent);
-            return false;
+            cssRegions.layoutContent(regions, remainingContent, callback, startTime);
+            return callback(false);
             
         }
         
@@ -4191,7 +4323,17 @@ var cssRegions = {
             
             // layout the next regions
             // WE LET THE NEXT REGION DECIDE WHAT TO RETURN
-            return cssRegions.layoutContent(regions, remainingContent, true); // TODO: use do...while instead of recursion
+            if(startTime<60+Date()) {
+                
+                return cssRegions.layoutContent(regions, remainingContent, callback, startTime);
+                
+            } else {
+                
+                return setImmediate(function() {
+                    cssRegions.layoutContent(regions, remainingContent, callback, startTime);
+                });
+                
+            }
             
         } else {
             
@@ -4205,7 +4347,7 @@ var cssRegions = {
                 region.cssRegionHost.cssRegionsLastOffsetHeight = region.cssRegionHost.offsetHeight;
                 region.cssRegionHost.cssRegionsLastOffsetWidth = region.cssRegionHost.offsetWidth;
                 
-                return didOverflow;
+                return callback(didOverflow);
                 
             } else {
                 
@@ -4214,7 +4356,7 @@ var cssRegions = {
                 region.cssRegionHost.cssRegionsLastOffsetWidth = region.cssRegionHost.offsetWidth;
                 
                 // WE RETURN FALSE IF WE DIDN'T OVERFLOW
-                return region.cssRegionHost.offsetHeight != region.cssRegionHost.scrollHeight;
+                return callback(region.cssRegionHost.offsetHeight != region.cssRegionHost.scrollHeight);
                 
             }
             
@@ -4324,7 +4466,7 @@ var cssRegions = {
                 } else {
                     
                     // otherwise, go char-by-char
-                    r.myMoveOneCharRight(); rect = r.myGetExtensionRect();
+                    r.myMoveTowardRight(); rect = r.myGetExtensionRect();
                     
                 }
             }
@@ -4466,7 +4608,7 @@ var cssRegions = {
                 //console.dir(r.cloneRange()); 
                 
                 // move the position char-by-char
-                r.myMoveOneCharRight(); 
+                r.myMoveTowardRight(); 
                 
                 // but skip long islands of monolithic elements
                 // since we know we cannot break inside them anyway
@@ -4785,6 +4927,7 @@ var cssRegions = {
                     if(element.cssRegionsLastFlowInto != flowInto || element.cssRegionsLastFlowFrom != flowFrom) {
                         
                         // remove the element from previous regions
+                        var regionOverset = element.regionOverset;
                         var lastFlowFrom = (cssRegions.flows[element.cssRegionsLastFlowFromName]);
                         var lastFlowInto = (cssRegions.flows[element.cssRegionsLastFlowIntoName]);
                         lastFlowFrom && lastFlowFrom.removeFromRegions(element);
@@ -4793,7 +4936,7 @@ var cssRegions = {
                         // relayout those regions 
                         // (it's async so it will wait for us
                         // to add the element back if needed)
-                        lastFlowFrom && lastFlowFrom.relayout();
+                        lastFlowFrom && regionOverset!='empty' && lastFlowFrom.relayout();
                         lastFlowInto && lastFlowInto.relayout();
                         
                         // save some property values for later
@@ -5168,59 +5311,64 @@ cssRegions.Flow.prototype._relayout = function(){
         //
         
         // layout this stuff
-        This.overset = cssRegions.layoutContent(regionStack, contentFragment);
-        This.firstEmptyRegionIndex = This.regions.length-1; while(This.regions[This.firstEmptyRegionIndex]) {
-            if(This.regions[This.firstEmptyRegionIndex].cssRegionsWrapper.firstChild) {
-                if((++This.firstEmptyRegionIndex)==This.regions.length) {
-                    This.firstEmptyRegionIndex = -1;
+        cssRegions.layoutContent(regionStack, contentFragment, function(overset) {
+            
+            This.overset = overset;
+            This.firstEmptyRegionIndex = This.regions.length-1; while(This.regions[This.firstEmptyRegionIndex]) {
+                if(This.regions[This.firstEmptyRegionIndex].cssRegionsWrapper.firstChild) {
+                    if((++This.firstEmptyRegionIndex)==This.regions.length) {
+                        This.firstEmptyRegionIndex = -1;
+                    }
+                    break;
+                } else {
+                    This.firstEmptyRegionIndex--; 
                 }
-                break;
-            } else {
-                This.firstEmptyRegionIndex--; 
             }
-        }
-        
-        
-        
-        //
-        // STEP 6: REGISTER TO UPDATE EVENTS
-        //
-        
-        // make sure regions update are taken in consideration
-        if(window.MutationObserver) {
-            This.addEventListenersTo(This.content);
-            This.addEventListenersTo(This.regions);
-        } else {
-            // the other browsers don't get this as acurately
-            // but that shouldn't be that of an issue for 99% of the cases
-            setImmediate(function() {
+            
+            
+            
+            //
+            // STEP 6: REGISTER TO UPDATE EVENTS
+            //
+            
+            // make sure regions update are taken in consideration
+            if(window.MutationObserver) {
                 This.addEventListenersTo(This.content);
-            });
-        }
+                This.addEventListenersTo(This.regions);
+            } else {
+                // the other browsers don't get this as acurately
+                // but that shouldn't be that of an issue for 99% of the cases
+                setImmediate(function() {
+                    This.addEventListenersTo(This.content);
+                });
+            }
+            
+            
+            
+            //
+            // STEP 7: FIRE SOME EVENTS
+            //
+            if(This.regions.length > 0) {
+                This.lastEventRAF = requestAnimationFrame(function() {
+                    
+                    // TODO: only fire when necessary but...
+                    This.dispatchEvent('regionfragmentchange');
+                    This.dispatchEvent('regionoversetchange');
+                    
+                });
+            }
+            
+            
+            // NOTE: we recover the scroll position in case the browser mess it up
+            document.documentElement.scrollTop = docElmScrollTop;
+            document.body.scrollTop = docBdyScrollTop;
+            
+            // mark layout has being done
+            This.relayoutScheduled = false;
+            This.failedLayoutCount = 0;
+            
+        })
         
-        
-        
-        //
-        // STEP 7: FIRE SOME EVENTS
-        //
-        if(This.regions.length > 0) {
-            This.lastEventRAF = requestAnimationFrame(function() {
-                
-                // TODO: only fire when necessary but...
-                This.dispatchEvent('regionfragmentchange');
-                This.dispatchEvent('regionoversetchange');
-                
-            });
-        }
-        
-        
-        // NOTE: we recover the scroll position in case the browser mess it up
-        document.documentElement.scrollTop = docElmScrollTop;
-        document.body.scrollTop = docBdyScrollTop;
-        
-        // mark layout has being done
-        This.relayoutScheduled = false;
-        This.failedLayoutCount = 0;
         
     } catch(ex) {
         

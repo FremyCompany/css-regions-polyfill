@@ -290,59 +290,64 @@ cssRegions.Flow.prototype._relayout = function(){
         //
         
         // layout this stuff
-        This.overset = cssRegions.layoutContent(regionStack, contentFragment);
-        This.firstEmptyRegionIndex = This.regions.length-1; while(This.regions[This.firstEmptyRegionIndex]) {
-            if(This.regions[This.firstEmptyRegionIndex].cssRegionsWrapper.firstChild) {
-                if((++This.firstEmptyRegionIndex)==This.regions.length) {
-                    This.firstEmptyRegionIndex = -1;
+        cssRegions.layoutContent(regionStack, contentFragment, function(overset) {
+            
+            This.overset = overset;
+            This.firstEmptyRegionIndex = This.regions.length-1; while(This.regions[This.firstEmptyRegionIndex]) {
+                if(This.regions[This.firstEmptyRegionIndex].cssRegionsWrapper.firstChild) {
+                    if((++This.firstEmptyRegionIndex)==This.regions.length) {
+                        This.firstEmptyRegionIndex = -1;
+                    }
+                    break;
+                } else {
+                    This.firstEmptyRegionIndex--; 
                 }
-                break;
-            } else {
-                This.firstEmptyRegionIndex--; 
             }
-        }
-        
-        
-        
-        //
-        // STEP 6: REGISTER TO UPDATE EVENTS
-        //
-        
-        // make sure regions update are taken in consideration
-        if(window.MutationObserver) {
-            This.addEventListenersTo(This.content);
-            This.addEventListenersTo(This.regions);
-        } else {
-            // the other browsers don't get this as acurately
-            // but that shouldn't be that of an issue for 99% of the cases
-            setImmediate(function() {
+            
+            
+            
+            //
+            // STEP 6: REGISTER TO UPDATE EVENTS
+            //
+            
+            // make sure regions update are taken in consideration
+            if(window.MutationObserver) {
                 This.addEventListenersTo(This.content);
-            });
-        }
+                This.addEventListenersTo(This.regions);
+            } else {
+                // the other browsers don't get this as acurately
+                // but that shouldn't be that of an issue for 99% of the cases
+                setImmediate(function() {
+                    This.addEventListenersTo(This.content);
+                });
+            }
+            
+            
+            
+            //
+            // STEP 7: FIRE SOME EVENTS
+            //
+            if(This.regions.length > 0) {
+                This.lastEventRAF = requestAnimationFrame(function() {
+                    
+                    // TODO: only fire when necessary but...
+                    This.dispatchEvent('regionfragmentchange');
+                    This.dispatchEvent('regionoversetchange');
+                    
+                });
+            }
+            
+            
+            // NOTE: we recover the scroll position in case the browser mess it up
+            document.documentElement.scrollTop = docElmScrollTop;
+            document.body.scrollTop = docBdyScrollTop;
+            
+            // mark layout has being done
+            This.relayoutScheduled = false;
+            This.failedLayoutCount = 0;
+            
+        })
         
-        
-        
-        //
-        // STEP 7: FIRE SOME EVENTS
-        //
-        if(This.regions.length > 0) {
-            This.lastEventRAF = requestAnimationFrame(function() {
-                
-                // TODO: only fire when necessary but...
-                This.dispatchEvent('regionfragmentchange');
-                This.dispatchEvent('regionoversetchange');
-                
-            });
-        }
-        
-        
-        // NOTE: we recover the scroll position in case the browser mess it up
-        document.documentElement.scrollTop = docElmScrollTop;
-        document.body.scrollTop = docBdyScrollTop;
-        
-        // mark layout has being done
-        This.relayoutScheduled = false;
-        This.failedLayoutCount = 0;
         
     } catch(ex) {
         

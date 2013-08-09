@@ -87,12 +87,80 @@ var cssCascade = {
                     for(var sr = subrules.length; sr--; ) {
                         
                         var isMatching = false;
+                        var selector = subrules[sr].selector.toCSSString();
                         try {
-                            if(element.matchesSelector) isMatching=element.matchesSelector(subrules[sr].selector.toCSSString())
-                            else if(element.oMatchesSelector) isMatching=element.oMatchesSelector(subrules[sr].selector.toCSSString())
-                            else if(element.msMatchesSelector) isMatching=element.msMatchesSelector(subrules[sr].selector.toCSSString())
-                            else if(element.mozMatchesSelector) isMatching=element.mozMatchesSelector(subrules[sr].selector.toCSSString())
-                            else if(element.webkitMatchesSelector) isMatching=element.webkitMatchesSelector(subrules[sr].selector.toCSSString())
+                            if(element.matchesSelector) isMatching=element.matchesSelector(selector)
+                            else if(element.oMatchesSelector) isMatching=element.oMatchesSelector(selector)
+                            else if(element.msMatchesSelector) isMatching=element.msMatchesSelector(selector)
+                            else if(element.mozMatchesSelector) isMatching=element.mozMatchesSelector(selector)
+                            else if(element.webkitMatchesSelector) isMatching=element.webkitMatchesSelector(selector)
+                            else { throw new Error("wft u no element.matchesSelector?") }
+                        } catch(ex) { debugger; setImmediate(function() { throw ex; }) }
+                        
+                        if(isMatching) { results.push(subrules[sr]); }
+                        
+                    }
+                    
+                } else if(rule instanceof cssSyntax.AtRule && rule.name=="media") {
+                    
+                    visit(rule.value);
+                    
+                }
+                
+            }
+        }
+        
+        for(var s=cssCascade.stylesheets.length; s--; ) {
+            var rules = cssCascade.stylesheets[s];
+            visit(rules);
+        }
+        
+        return results;
+    },
+    
+    //
+    // returns an array of the css rules matching a pseudo-element
+    //
+    findAllMatchingRulesWithPseudo: function findAllMatchingRules(element,pseudo) {
+        
+        // let's look for new results if needed...
+        var results = [];
+        
+        // walk the whole stylesheet...
+        function visit(rules) {
+            for(var r = rules.length; r--; ) {
+                var rule = rules[r]; 
+                
+                // media queries hook
+                if(rule.disabled) continue;
+                
+                if(rule instanceof cssSyntax.StyleRule) {
+                    
+                    // consider each selector independtly
+                    var subrules = rule.subRules || cssCascade.splitRule(rule);
+                    for(var sr = subrules.length; sr--; ) {
+                        
+                        // WE ONLY ACCEPT SELECTORS ENDING WITH THE PSEUDO
+                        var selector = subrules[sr].selector.toCSSString().trim().replace(/\/\*\*\//,'');
+                        var newLength = selector.length-pseudo.length-1;
+                        if(newLength<=0) continue;
+                        
+                        if(selector.lastIndexOf('::'+pseudo)==newLength-1) {
+                            selector = selector.substr(0,newLength-1);
+                        } else if(selector.lastIndexOf(':'+pseudo)==newLength) {
+                            selector = selector.substr(0,newLength);
+                        } else {
+                            continue;
+                        }
+                        
+                        // look if the selector matches
+                        var isMatching = false;
+                        try {
+                            if(element.matchesSelector) isMatching=element.matchesSelector(selector)
+                            else if(element.oMatchesSelector) isMatching=element.oMatchesSelector(selector)
+                            else if(element.msMatchesSelector) isMatching=element.msMatchesSelector(selector)
+                            else if(element.mozMatchesSelector) isMatching=element.mozMatchesSelector(selector)
+                            else if(element.webkitMatchesSelector) isMatching=element.webkitMatchesSelector(selector)
                             else { throw new Error("wft u no element.matchesSelector?") }
                         } catch(ex) { debugger; setImmediate(function() { throw ex; }) }
                         
