@@ -306,6 +306,11 @@ You can find his work here: http://christiancantrell.com/adobe/hlp/callout.html
             }
             
             function addPullQuotes() {
+                
+                var viewport = document.getElementById("viewport");
+                var quotes = document.createElement('aside'); quotes.style.display="none";
+                viewport.appendChild(quotes);
+                
                 var pqs = document.getElementsByClassName("pull_quote");
                 var currentSibling = null;
                 for (var i = 0; i < pqs.length; ++i) {
@@ -328,7 +333,7 @@ You can find his work here: http://christiancantrell.com/adobe/hlp/callout.html
                         quote.setAttribute("id", "pq_text_" + index);
                         quote.myStyle['flow-into'] = sibling.firstChild.myStyle["flow-from"];
                         quote.innerHTML = pq.innerHTML;
-                        document.getElementById("viewport").appendChild(quote);
+                        quotes.appendChild(quote);
                         var namedFlows = getNamedFlows();
                         region = namedFlows.namedItem("pq_"+index);
                         region.addEventListener("regionfragmentchange", adjustPullQuoteFontSize);
