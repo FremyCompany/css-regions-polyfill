@@ -1,0 +1,52 @@
+Stuff I polyfilled:
+
+	CSS Syntax
+		- CSS Parser with custom declarations
+			- @polyfill property flow-from { type: length; }
+			- @polyfill at-rule document { prelude: url; content: rules; }
+		- Event: on stylesheet status changed
+		- Event: on stylerule status changed
+	
+	CSS Cascade
+		- compute selector priority / order selectors by priority (latter>former)
+		- getAllMatchedRules (already impelemented in Chrome)
+		- getSpecifiedStyle / getRealComputedStyle
+		- getAllProperties / getAllInheritedProperties / ...
+		- getDefaultStyleFor(elementOrTagName, overrideParentElement)
+		- startMonitoringProperties (event on computed value change)
+	
+	CSS Selectors
+		- querySelectorLive
+	
+	CSS Object Model
+		- CSSStyleDeclaration.prototype.parentElement
+		- fast way to tell if a pseudo exists or not (very slow now)
+	
+	CSS Fragmentation
+		- getOverflowingContent (returns overflowing content as a dom range)
+		- isReplacedElement
+		- isInline
+		- isOutOfFlow
+		- isLineBreakingBefore
+		- isLineBreakingAfter
+		- isAtStartOfLine
+		- isAtEndOfLine
+		- isAccrossLines
+		- areOnTheSameLine
+		- ...
+	
+	DOM Range Extensions
+		- move char by char, word by word, line by line
+		- get valid selection rectangles for collapsed selections (sort of caret height)
+		- document.caretRangeFromPoint
+	
+	DOM Events
+		- Event.clone
+		- EventTarget.implementsIn (aka including EventTarget in your proto chain)
+		- would allow you to dispatch an event on any object
+			(right now only works for DOM objects...)
+		
+	Event Streams
+		- would be nice to have
+		- even if it's easy to polyfill them
+		

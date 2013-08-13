@@ -1,0 +1,72 @@
+Features:
+	
+	- Unprefixed flow-from/flow-to/break-before(region)/break-after(region)
+	
+	- Supports same-domain stylesheets and inline stylesheets (live support)
+	
+	- Live updated when the css matching state of rules is changed
+	
+	- Live (non-nested) media queries if matchMedia().addListener is supported
+		- you can use a polyfill for IE9, it will work
+	
+	- Best-in-class support for css-break-3
+		- some limitations about replaced elements and border radiuses
+		- but on average, it's still better than most browsers
+	
+	- Styling of fragments really inherit the styling of the element
+		- full support of all css selectors including DOM-related one like :last-of-type
+		
+	- Content pseudo-elements (::after/::before) styling and non-nested counters
+		- at least for most practical cases
+	
+	- Supports breaking <OL>/<LI> lists across fragments while keeping numbering
+	
+	- Original elements stays in the DOM, can be restored when the region styling is retracted
+	
+	- Mouse events fire correctly on the original elements
+	
+	- Optimized code requiring only up to 2 layout passes per region box
+	
+Known issues:
+	
+	- No region-specific styling (could be done, just being lazy here)
+	- No nested counters (would require computing all counters manually, could be slow)
+	- No Hover/Active pseudo-classes (basic cases could be supported via events)
+	- No dynamic elements like <INPUT>, <FORM> or <DETAIL> (unfixable)
+
+
+	
+Browsers:
+	
+	- Tier 1:
+		
+		- IE (10+)
+		- FireFox (recent)
+		- Safari (recent)
+		- Chrome (recent)
+		- Opera (13+)
+		
+	- Tier 2:
+		
+		- IE (9)
+			
+			may require additionnal polyfills for media queries
+			latest version not tested on IE9, not sure everything works
+			planning to fix any issue being reported, but I don't promise investigating myself
+		
+	- Not supported:
+		
+		- Opera (12-)
+			
+			sometimes enters into IE code, but fails to comply with IE behavior
+			
+			seems to have a few bugs in Range functions
+			webkit/blink had some bug there too but opera is not worth investigating
+			
+			planning to accept any pull request fixing bugs on opera
+			
+		- IE (8-)
+			
+			lacks too may features
+			
+			planning not to accept pull request for IE8
