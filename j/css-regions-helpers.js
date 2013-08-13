@@ -431,7 +431,7 @@ var cssRegionsHelpers = {
                 case 1: // Element node
                     
                     // firstly, setup a cache of all css properties on the element
-                    var matchedRules = node1.currentStyle ? undefined : cssCascade.findAllMatchingRules(node1)
+                    var matchedRules = (node1.currentStyle && !window.opera) ? undefined : cssCascade.findAllMatchingRules(node1)
                     
                     // and compute the value of all css properties
                     var properties = cssCascade.allCSSProperties || cssCascade.getAllCSSProperties();

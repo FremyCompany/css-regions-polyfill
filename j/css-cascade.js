@@ -310,7 +310,7 @@ var cssCascade = {
         }
         
         // give IE a thumbs up for this!
-        if(element.currentStyle) {
+        if(element.currentStyle && !window.opera) {
             
             // ask IE to manage the style himself...
             var bestValue = element.myStyle[cssPropertyName] || element.currentStyle[cssPropertyName];
@@ -722,7 +722,7 @@ var cssCascade = {
             get: function() {
                 
                 try { if(!this.parentElement) throw new Error("Please use the anHTMLElement.myStyle property to get polyfilled properties") }
-                catch(ex) { setImmediate(function() { throw ex; }) }
+                catch(ex) { setImmediate(function() { throw ex; }); return ''; }
                 
                 return this.parentElement.getAttribute('data-style-'+cssPropertyName);
                 
@@ -731,7 +731,7 @@ var cssCascade = {
             set: function(v) {
                 
                 try { if(!this.parentElement) throw new Error("Please use the anHTMLElement.myStyle property to set polyfilled properties") }
-                catch(ex) { setImmediate(function() { throw ex; }) }
+                catch(ex) { setImmediate(function() { throw ex; }); return; }
                 
                 if(this.parentElement.getAttribute('data-style-'+cssPropertyName) != v) {
                     this.parentElement.setAttribute('data-style-'+cssPropertyName,v);
