@@ -170,7 +170,7 @@ Since the implementation relies on cloning and breaking elements into fragments,
 
  
 # Testing the implementation
-Have a look at the `region-test-X.html` files at the root of the project. I've fixed all of them so they actually rely on the latest version of the project. Their complexity gradually increases.
+Have a look at the `region-test-X.html` files in the `tests` folder of the project. Their complexity gradually increases, but they may cover different part of the code each.
 
 <pre><a href="https://github.com/FremyCompany/css-regions-reflow/">https://github.com/FremyCompany/css-regions-reflow/</a>
 {please note I don't recommend to rely on raw-github}</pre>
@@ -178,5 +178,7 @@ Have a look at the `region-test-X.html` files at the root of the project. I've f
 Some of the tests allow you to dynamically modify the DOM by inserting content (left click) or new regions (right click). 
 
 The last region usually has "region-fragment: break" set to it, which means it won't overflow if you exceed it. However, as soon as you add a new region, this region will hold the remaining fragments (and will overflow since I didn't set "region-overflow" on the extra regions).
+
+You can also look at the `w3tests` folder which contain some of the w3c tests for css regions, to which I added the polyfill. To the notable exception of the selection tests, which actually test things not being explicitely defined in any spec, you should find most of them passing. I may add an implementation report as a readme on the folder at some point.
 
 <pre>Works in IE9+, FireFox, Safari and Chrome</pre>
