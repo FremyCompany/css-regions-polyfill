@@ -173,11 +173,10 @@ Since the implementation relies on cloning and breaking elements into fragments,
 Have a look at the `region-test-X.html` files at the root of the project. I've fixed all of them so they actually rely on the latest version of the project. Their complexity gradually increases.
 
 <pre><a href="https://github.com/FremyCompany/css-regions-reflow/">https://github.com/FremyCompany/css-regions-reflow/</a>
-{please note I don't recommend to rely on raw-github}
-{please don't communicate about this outside Adobe yet}</pre>
+{please note I don't recommend to rely on raw-github}</pre>
 
-The last test is the most interesting, as it allows you to dynamically modify the DOM by inserting content (left click) or new regions (right click). 
+Some of the tests allow you to dynamically modify the DOM by inserting content (left click) or new regions (right click). 
 
-The last region has "region-fragment: break" set to it, which means it won't overflow if you exceed it. However, as soon as you add a new region, this region will hold the remaining fragments (and will overflow since I didn't set "region-overflow" on thoses).
+The last region usually has "region-fragment: break" set to it, which means it won't overflow if you exceed it. However, as soon as you add a new region, this region will hold the remaining fragments (and will overflow since I didn't set "region-overflow" on the extra regions).
 
 <pre>Works in IE9+, FireFox, Safari and Chrome</pre>
