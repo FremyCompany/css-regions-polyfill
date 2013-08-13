@@ -534,7 +534,7 @@ cssRegions.enablePolyfillObjectModel = function() {
     cssCascade.polyfillStyleInterface('flow-from');
     cssCascade.polyfillStyleInterface('region-fragment');
     cssCascade.polyfillStyleInterface('break-before');
-    cssCascade.polyfillStyleInterface('break-afterx');
+    cssCascade.polyfillStyleInterface('break-after');
 
 }
 
