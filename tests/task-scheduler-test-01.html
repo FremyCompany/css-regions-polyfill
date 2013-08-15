@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Task Scheduler tests</title>
+        <script src="../src/task-scheduler.js"></script>
+    </head>
+    <body>
+        <script>
+            
+            var str = 'start ';
+            
+                var x = new JSTaskScheduler();
+                
+                x.pushTask(function() { str += ' x00 ' })
+                x.setTimeout(function() { str += ' x10 ' }, 10)
+                
+                var y = new JSTaskScheduler(x);
+                
+                y.pushTask(function() { str += ' y00 ' })
+                y.setTimeout(function() { str += ' y05 '}, 5)
+                y.setTimeout(function() { str += ' y10 '}, 10)
+                y.setTimeout(function() { str += ' y15 '}, 15)
+                
+                setTimeout(function() {
+                    alert(str);
+                }, 333);
+            
+        </script>
+    </body>
+</html>
