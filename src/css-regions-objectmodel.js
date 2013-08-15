@@ -47,6 +47,10 @@ cssRegions.Flow = function NamedFlow(name) {
     
     // a small counter to avoid enter retry loops
     This.failedLayoutCount = 0;
+    
+    // some other fields
+    This.lastEventRAF = 0;
+    This.restartLayout = false;
 }
     
 cssRegions.Flow.prototype.removeFromContent = function(element) {
@@ -213,8 +217,12 @@ cssRegions.Flow.prototype.generateContentFragment = function() {
 cssRegions.Flow.prototype.relayout = function() {
     var This = this;
     
+    // prevent previous relayouts from eventing
+    cancelAnimationFrame(This.lastEventRAF);
+    
     // batch relayout queries
     if(This.relayoutScheduled) { return; }
+    if(This.relayoutInProgress) { This.restartLayout=true; return; }
     This.relayoutScheduled = true;
     requestAnimationFrame(function() { This._relayout() });
     
@@ -231,6 +239,7 @@ cssRegions.Flow.prototype._relayout = function(){
         // this stuff. If you don't have them, ask me.
         //
         console.log("starting a new relayout for "+This.name);
+        This.relayoutInProgress=true; This.relayoutScheduled=false;
         //debugger;
         
         // NOTE: we recover the scroll position in case the browser mess it up
@@ -251,6 +260,10 @@ cssRegions.Flow.prototype._relayout = function(){
         //
         // STEP 2: RESTORE CONTENT/REGIONS TO A CLEAN STATE
         //
+        
+        // detect elements being removed of the document
+        This.regions = This.regions.filter(function(e) { return document.documentElement.contains(e); })
+        This.content = This.content.filter(function(e) { return document.documentElement.contains(e); })
         
         // cleanup previous layout
         cssRegionsHelpers.unmarkNodesAsRegion(This.lastRegions); This.lastRegions = This.regions.slice(0);
@@ -294,13 +307,26 @@ cssRegions.Flow.prototype._relayout = function(){
             
             This.overset = overset;
             This.firstEmptyRegionIndex = This.regions.length-1; while(This.regions[This.firstEmptyRegionIndex]) {
-                if(This.regions[This.firstEmptyRegionIndex].cssRegionsWrapper.firstChild) {
+                
+                // tell whether the region is empty
+                var isEmpty = false;
+                isEmpty = isEmpty || !This.regions[This.firstEmptyRegionIndex].cssRegionsWrapper;
+                isEmpty = isEmpty || !This.regions[This.firstEmptyRegionIndex].cssRegionsWrapper.firstChild;
+                
+                // if the region is not empty
+                if(!isEmpty) {
+                    
+                    // the first empty region if the next one, if it exists
                     if((++This.firstEmptyRegionIndex)==This.regions.length) {
                         This.firstEmptyRegionIndex = -1;
                     }
                     break;
+                    
                 } else {
+                    
+                    // else, let's try the previous region
                     This.firstEmptyRegionIndex--; 
+                    
                 }
             }
             
@@ -327,14 +353,31 @@ cssRegions.Flow.prototype._relayout = function(){
             //
             // STEP 7: FIRE SOME EVENTS
             //
-            if(This.regions.length > 0) {
-                This.lastEventRAF = requestAnimationFrame(function() {
+            if(This.regions.length > 0 && !This.restartLayout) {
+                
+                // before doing anything, let's check our stuff is consistent
+                var isBuggy = false;
+                isBuggy = isBuggy || This.regions.some(function(e) { return !document.documentElement.contains(e); })
+                isBuggy = isBuggy || This.content.some(function(e) { return !document.documentElement.contains(e); })
+                
+                if(isBuggy) {
                     
-                    // TODO: only fire when necessary but...
-                    This.dispatchEvent('regionfragmentchange');
-                    This.dispatchEvent('regionoversetchange');
+                    // if we found any bug, we will need to restart a layout
+                    console.warn("Buggy css regions layout: the page changed; we need to restart.");
+                    This.restartLayout = true; 
                     
-                });
+                } else {
+                    
+                    // if it was okay, let's fire some event
+                    This.lastEventRAF = requestAnimationFrame(function() {
+                        
+                        // TODO: only fire when necessary but...
+                        This.dispatchEvent('regionfragmentchange');
+                        This.dispatchEvent('regionoversetchange');
+                        
+                    });
+                    
+                }
             }
             
             
@@ -343,8 +386,14 @@ cssRegions.Flow.prototype._relayout = function(){
             document.body.scrollTop = docBdyScrollTop;
             
             // mark layout has being done
-            This.relayoutScheduled = false;
+            This.relayoutInProgress = false;
             This.failedLayoutCount = 0;
+            
+            // restart a layout if a request was queued during the current one
+            if(This.restartLayout) {
+                This.restartLayout = false;
+                This.relayout();
+            }
             
         })
         
@@ -359,7 +408,7 @@ cssRegions.Flow.prototype._relayout = function(){
         // until we finish a complete layout pass...
         This.failedLayoutCount++;
         if(This.failedLayoutCount<7) {requestAnimationFrame(function() { This._relayout() });}
-        else {This.failedLayoutCount=0;}
+        else {This.failedLayoutCount=0; This.relayoutScheduled=false; This.relayoutInProgress=false; This.restartLayout=false; }
         
     }
 }

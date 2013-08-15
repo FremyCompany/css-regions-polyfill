@@ -638,6 +638,186 @@ basicObjectModel.EventTarget.prototype.dispatchEvent = function(event_or_type) {
     
     return event.isDefaultPrevented;
 }
+"use strict";
+
+(function() {
+    
+    
+    //
+    // polyfill setImmediate
+    //
+    window.setImmediate = window.setImmediate || function(f) {
+        setTimeout(f, 0);
+    };
+    window.clearImmediate = window.clearImmediate || window.clearTimeout;
+    
+    
+    //
+    // polyfill requestAnimationFrame
+    //
+    window.requestAnimationFrame = window.requestAnimationFrame || function(f) {
+        return setTimeout(function() {
+            f(+new Date());
+        }, 16);
+    };
+    window.cancelAnimationFrame = window.cancelAnimationFrame || window.clearTimeout;
+
+    
+    // 
+    // polyfill performance.now()
+    //
+    if(window.performance && window.performance.now) {
+        var now = function() { return performance.now(); }
+    } else if(Date.now) {
+        var now = function() { return Date.now(); }
+    } else {
+        var now = function() { return +new Date(); }
+    }
+    
+    
+    // 
+    // Encapsulate a task
+    // 
+    function Task(action) {
+        this.call = action;
+    }
+    
+    // 
+    // Encapsulate task priority logic
+    // 
+    function TaskScheduler(parent) {
+        
+        this.isRunning = false;
+        this.isScheduledNow = false;
+        
+        this.taskQueue = [];
+        this.delayedTasks = 0;
+        this.childSchedulers = [];
+        this.parentScheduler = parent;
+        if(parent) { parent.childSchedulers.push(this); }
+        
+        var This = this;
+        This.tryRun = function() {
+            if(This.parentScheduler) {
+                This.parentScheduler.tryRun();
+            } else {
+                This.run();
+            }
+        }
+        This.run = function() {
+            
+            This.isRunning = true;
+            
+            // calling code should not face scheduler errors
+            try {
+                
+                // 
+                // walk through all tasks
+                // 
+                if(This.taskQueue.length !== 0) {
+                    
+                    var task; while(task=This.taskQueue.shift()) {
+                        
+                        // run the task
+                        // (the loop should not break if a task fails)
+                        try { task.call(); } 
+                        catch(ex) { setImmediate(function() { throw ex; }) }
+                        
+                    }
+                    
+                }
+                
+                // 
+                // let child schedulers execute if no task is pending
+                // 
+                if(This.delayedTasks === 0) {
+                    
+                    for(var i=0; i<This.childSchedulers.length; i++) {
+                        
+                        // run the scheduler
+                        // (the loop should not break if a scheduler fails)
+                        try { This.childSchedulers[i].run(); } 
+                        catch(ex) { setImmediate(function() { throw ex; }) }
+                        
+                    }
+                    
+                }
+                
+                //
+                // execute new immediates, if any
+                //
+                if(This.taskQueue.length !== 0) {
+                    
+                    This.run();
+                    
+                }
+                
+                
+            } catch(ex) { setImmediate(function() { throw ex; }) }
+            
+            This.isRunning = false;
+            
+        }
+        
+    }
+    
+    TaskScheduler.prototype.pushTask = function(f) {
+        
+        // push the task
+        this.taskQueue.push(f);
+        
+        // ensure the scheduler will run soon
+        this.scheduleNow();
+        
+    };
+    
+    TaskScheduler.prototype.pushDelayedTask = function(f, scheduler) {
+        
+        // ask for a delayed execution
+        var This = this;
+        var result = scheduler(function() {
+            
+            // push the task
+            This.pushTask(f);
+            This.delayedTasks--;
+            
+            // empty the queue
+            This.scheduleNow();
+            
+        });
+        
+        // record the future task
+        this.delayedTasks++;
+        
+        // return scheduler-relative info
+        return result;
+        
+    }
+    
+    // aliases for common web functions
+    TaskScheduler.prototype.setImmediate = TaskScheduler.prototype.pushTask;
+    TaskScheduler.prototype.setTimeout = function(f,d) {
+        this.pushDelayedTask(f, function(f) { setTimeout(f,d) })
+    }
+    TaskScheduler.prototype.requestAnimationFrame = function(f,d) {
+        this.pushDelayedTask(f, requestAnimationFrame);
+    }
+    
+    TaskScheduler.prototype.scheduleNow = function() {
+        
+        // avoid creating multiple running 
+        // version of the scheduler
+        if(this.isRunning) return;
+        if(this.isScheduledNow) return;
+        
+        // schedule a new run
+        setImmediate(this.tryRun);
+        
+    }
+    
+    window.JSTaskScheduler = TaskScheduler;
+    
+}());
 //
 // note: this file is based on Tab Atkins's CSS Parser
 // please include him (@tabatkins) if you open any issue for this file
@@ -2627,190 +2807,180 @@ document.addEventListener("DOMContentLoaded", function() {
 // - use arrays in myCompositeEventStream to avoid nested debouncings
 "use strict";
 
-window.setImmediate = window.setImmediate || function(f) {
-    setTimeout(f, 0);
-};
-window.requestAnimationFrame = window.requestAnimationFrame || function(f) {
-    return setTimeout(function() {
-        f(+new Date());
-    }, 16);
-};
-window.cancelAnimationFrame = window.cancelAnimationFrame || window.clearTimeout;
-
 ///
 /// event stream implementation
 /// please note this is required to 'live update' the qSA requests
 ///
 function myEventStream(connect, disconnect, reconnect) {
-	var self=this;
-	
-	// validate arguments
-	if(!disconnect) disconnect=function(){};
-	if(!reconnect) reconnect=connect;
-	
-	// high-level states
-	var isConnected=false;
-	var isDisconnected=false;
-	var shouldDisconnect=false;
-	
-	// global variables
-	var callback=null;
-	var yieldEvent = function() {
-		
-		// call the callback function, and pend disposal
-		shouldDisconnect=true;
-		try { callback && callback(self); } catch(ex) { setImmediate(function() { throw ex; }); }
-		
-		// if no action was taken, dispose
-		if(shouldDisconnect) { dispose(); }
-		
-	}
-	
-	// export the interface
-	var schedule = this.schedule = function(newCallback) {
-	
-		// do not allow to schedule on disconnected event streams
-		if(isDisconnected) { throw new Error("Cannot schedule on a disconnected event stream"); }
-		
-		// do not allow to schedule on already scheduled event streams
-		if(isConnected && !shouldDisconnect) { throw new Error("Cannot schedule on an already-scheduled event stream"); }
-		
-		// schedule the new callback
-		callback=newCallback; shouldDisconnect=false;
-		
-		// reconnect to the stream
-		if(isConnected) {
-			reconnect(yieldEvent);
-		} else {
-			connect(yieldEvent);
-			isConnected=true;
-		}
-	}
-	
-	var dispose = this.dispose = function() {
-	
-		// do not allow to dispose non-connected streams
-		if(isConnected) {
-		
-			// disconnect & save resources
-			disconnect(); 
-			self=null; yieldEvent=null; callback=null; 
-			isConnected=false; isDisconnected=true; shouldDisconnect=false;
-			
-		}
-	}
+    var self=this;
+    
+    // validate arguments
+    if(!disconnect) disconnect=function(){};
+    if(!reconnect) reconnect=connect;
+    
+    // high-level states
+    var isConnected=false;
+    var isDisconnected=false;
+    var shouldDisconnect=false;
+    
+    // global variables
+    var callback=null;
+    var yieldEvent = function() {
+        
+        // call the callback function, and pend disposal
+        shouldDisconnect=true;
+        try { callback && callback(self); } catch(ex) { setImmediate(function() { throw ex; }); }
+        
+        // if no action was taken, dispose
+        if(shouldDisconnect) { dispose(); }
+        
+    }
+    
+    // export the interface
+    var schedule = this.schedule = function(newCallback) {
+    
+        // do not allow to schedule on disconnected event streams
+        if(isDisconnected) { throw new Error("Cannot schedule on a disconnected event stream"); }
+        
+        // do not allow to schedule on already scheduled event streams
+        if(isConnected && !shouldDisconnect) { throw new Error("Cannot schedule on an already-scheduled event stream"); }
+        
+        // schedule the new callback
+        callback=newCallback; shouldDisconnect=false;
+        
+        // reconnect to the stream
+        if(isConnected) {
+            reconnect(yieldEvent);
+        } else {
+            connect(yieldEvent);
+            isConnected=true;
+        }
+    }
+    
+    var dispose = this.dispose = function() {
+    
+        // do not allow to dispose non-connected streams
+        if(isConnected) {
+        
+            // disconnect & save resources
+            disconnect(); 
+            self=null; yieldEvent=null; callback=null; 
+            isConnected=false; isDisconnected=true; shouldDisconnect=false;
+            
+        }
+    }
 }
 
 ///
 /// call a function every frame
 ///
 function myAnimationFrameEventStream(options) {
-	
-	// flag that says whether the observer is still needed or not
-	var rid = 0;
-		
-	// start the event stream
-	myEventStream.call(
-		this, 
-		function connect(yieldEvent) { rid = requestAnimationFrame(yieldEvent); },
-		function disconnect() { cancelAnimationFrame(rid); }
-	);
-	
+    
+    // flag that says whether the observer is still needed or not
+    var rid = 0;
+        
+    // start the event stream
+    myEventStream.call(
+        this, 
+        function connect(yieldEvent) { rid = requestAnimationFrame(yieldEvent); },
+        function disconnect() { cancelAnimationFrame(rid); }
+    );
+    
 }
 
 ///
 /// call a function every timeout
 ///
 function myTimeoutEventStream(options) {
-	
-	// flag that says whether the observer is still needed or not
-	var rid = 0; var timeout=(typeof(options)=="number") ? (+options) : ("timeout" in options ? +options.timeout : 333);
-		
-	// start the event stream
-	myEventStream.call(
-		this, 
-		function connect(yieldEvent) { rid = setTimeout(yieldEvent, timeout); },
-		function disconnect() { clearTimeout(rid); }
-	);
-	
+    
+    // flag that says whether the observer is still needed or not
+    var rid = 0; var timeout=(typeof(options)=="number") ? (+options) : ("timeout" in options ? +options.timeout : 333);
+        
+    // start the event stream
+    myEventStream.call(
+        this, 
+        function connect(yieldEvent) { rid = setTimeout(yieldEvent, timeout); },
+        function disconnect() { clearTimeout(rid); }
+    );
+    
 }
 
 ///
 /// call a function every time the mouse moves
 ///
 function myMouseEventStream() {
-	var self=this; var pointermove = (("PointerEvent" in window) ? "pointermove" : (("MSPointerEvent" in window) ? "MSPointerMove" : "mousemove"));
+    var self=this; var pointermove = (("PointerEvent" in window) ? "pointermove" : (("MSPointerEvent" in window) ? "MSPointerMove" : "mousemove"));
 
-	// flag that says whether the event is still observered or not
-	var scheduled = false; var interval=0;
-	
-	// handle the synchronous nature of mutation events
-	var yieldEvent=null;
-	var yieldEventDelayed = function() {
-		if(scheduled) return;
-		window.removeEventListener(pointermove, yieldEventDelayed, true);
-		scheduled = requestAnimationFrame(yieldEvent);
-	}
-	
-	// start the event stream
-	myEventStream.call(
-		this, 
-		function connect(newYieldEvent) {
-			yieldEvent=newYieldEvent;
-			window.addEventListener(pointermove, yieldEventDelayed, true);
-		},
-		function disconnect() { 
-			window.removeEventListener(pointermove, yieldEventDelayed, true);
-			cancelAnimationFrame(scheduled); yieldEventDelayed=null; yieldEvent=null; scheduled=false;
-		},
-		function reconnect(newYieldEvent) { 
-			yieldEvent=newYieldEvent; scheduled=false;
-			window.addEventListener(pointermove, yieldEventDelayed, true);
-		}
-	);
-	
+    // flag that says whether the event is still observered or not
+    var scheduled = false; var interval=0;
+    
+    // handle the synchronous nature of mutation events
+    var yieldEvent=null;
+    var yieldEventDelayed = function() {
+        if(scheduled) return;
+        window.removeEventListener(pointermove, yieldEventDelayed, true);
+        scheduled = requestAnimationFrame(yieldEvent);
+    }
+    
+    // start the event stream
+    myEventStream.call(
+        this, 
+        function connect(newYieldEvent) {
+            yieldEvent=newYieldEvent;
+            window.addEventListener(pointermove, yieldEventDelayed, true);
+        },
+        function disconnect() { 
+            window.removeEventListener(pointermove, yieldEventDelayed, true);
+            cancelAnimationFrame(scheduled); yieldEventDelayed=null; yieldEvent=null; scheduled=false;
+        },
+        function reconnect(newYieldEvent) { 
+            yieldEvent=newYieldEvent; scheduled=false;
+            window.addEventListener(pointermove, yieldEventDelayed, true);
+        }
+    );
+    
 }
 
 ///
 /// call a function every time the mouse is clicked/unclicked
 ///
 function myMouseButtonEventStream() {
-	var self=this; 
-	var pointerup = (("PointerEvent" in window) ? "pointerup" : (("MSPointerEvent" in window) ? "MSPointerUp" : "mouseup"));
-	var pointerdown = (("PointerEvent" in window) ? "pointerdown" : (("MSPointerEvent" in window) ? "MSPointerDown" : "mousedown"));
+    var self=this; 
+    var pointerup = (("PointerEvent" in window) ? "pointerup" : (("MSPointerEvent" in window) ? "MSPointerUp" : "mouseup"));
+    var pointerdown = (("PointerEvent" in window) ? "pointerdown" : (("MSPointerEvent" in window) ? "MSPointerDown" : "mousedown"));
 
-	// flag that says whether the event is still observered or not
-	var scheduled = false; var interval=0;
-	
-	// handle the synchronous nature of mutation events
-	var yieldEvent=null;
-	var yieldEventDelayed = function() {
-		if(scheduled) return;
-		window.removeEventListener(pointerup, yieldEventDelayed, true);
-		window.removeEventListener(pointerdown, yieldEventDelayed, true);
-		scheduled = requestAnimationFrame(yieldEvent);
-	}
-	
-	// start the event stream
-	myEventStream.call(
-		this, 
-		function connect(newYieldEvent) {
-			yieldEvent=newYieldEvent;
-			window.addEventListener(pointerup, yieldEventDelayed, true);
-			window.addEventListener(pointerdown, yieldEventDelayed, true);
-		},
-		function disconnect() { 
-			window.removeEventListener(pointerup, yieldEventDelayed, true);
-			window.removeEventListener(pointerdown, yieldEventDelayed, true);
-			cancelAnimationFrame(scheduled); yieldEventDelayed=null; yieldEvent=null; scheduled=false;
-		},
-		function reconnect(newYieldEvent) { 
-			yieldEvent=newYieldEvent; scheduled=false;
-			window.addEventListener(pointerup, yieldEventDelayed, true);
-			window.addEventListener(pointerdown, yieldEventDelayed, true);
-		}
-	);
-	
+    // flag that says whether the event is still observered or not
+    var scheduled = false; var interval=0;
+    
+    // handle the synchronous nature of mutation events
+    var yieldEvent=null;
+    var yieldEventDelayed = function() {
+        if(scheduled) return;
+        window.removeEventListener(pointerup, yieldEventDelayed, true);
+        window.removeEventListener(pointerdown, yieldEventDelayed, true);
+        scheduled = requestAnimationFrame(yieldEvent);
+    }
+    
+    // start the event stream
+    myEventStream.call(
+        this, 
+        function connect(newYieldEvent) {
+            yieldEvent=newYieldEvent;
+            window.addEventListener(pointerup, yieldEventDelayed, true);
+            window.addEventListener(pointerdown, yieldEventDelayed, true);
+        },
+        function disconnect() { 
+            window.removeEventListener(pointerup, yieldEventDelayed, true);
+            window.removeEventListener(pointerdown, yieldEventDelayed, true);
+            cancelAnimationFrame(scheduled); yieldEventDelayed=null; yieldEvent=null; scheduled=false;
+        },
+        function reconnect(newYieldEvent) { 
+            yieldEvent=newYieldEvent; scheduled=false;
+            window.addEventListener(pointerup, yieldEventDelayed, true);
+            window.addEventListener(pointerdown, yieldEventDelayed, true);
+        }
+    );
+    
 }
 
 ///
@@ -2818,127 +2988,127 @@ function myMouseButtonEventStream() {
 ///
 var myDOMUpdateEventStream;
 if("MutationObserver" in window) {
-	myDOMUpdateEventStream = function myDOMUpdateEventStream(options) {
-		 
-		// configuration of the observer
-		if(options) {
-			var target = "target" in options ? options.target : document.documentElement;
-			var config = { 
-				subtree: "subtree" in options ? !!options.subtree : true, 
-				attributes: "attributes" in options ? !!options.attributes : true, 
-				childList: "childList" in options ? !!options.childList : true, 
-				characterData: "characterData" in options ? !!options.characterData : false
-			};
-		} else {
-			var target = document.documentElement;
-			var config = { 
-				subtree: true, 
-				attributes: true, 
-				childList: true, 
-				characterData: false
-			};
-		}
-							
-		// start the event stream
-		var observer = null;
-		myEventStream.call(
-			this, 
-			function connect(yieldEvent) { if(config) { observer=new MutationObserver(yieldEvent); observer.observe(target,config); target=null; config=null; } },
-			function disconnect() { observer && observer.disconnect(); observer=null; },
-			function reconnect() { observer.takeRecords(); }
-		);
+    myDOMUpdateEventStream = function myDOMUpdateEventStream(options) {
+         
+        // configuration of the observer
+        if(options) {
+            var target = "target" in options ? options.target : document.documentElement;
+            var config = { 
+                subtree: "subtree" in options ? !!options.subtree : true, 
+                attributes: "attributes" in options ? !!options.attributes : true, 
+                childList: "childList" in options ? !!options.childList : true, 
+                characterData: "characterData" in options ? !!options.characterData : false
+            };
+        } else {
+            var target = document.documentElement;
+            var config = { 
+                subtree: true, 
+                attributes: true, 
+                childList: true, 
+                characterData: false
+            };
+        }
+                            
+        // start the event stream
+        var observer = null;
+        myEventStream.call(
+            this, 
+            function connect(yieldEvent) { if(config) { observer=new MutationObserver(yieldEvent); observer.observe(target,config); target=null; config=null; } },
+            function disconnect() { observer && observer.disconnect(); observer=null; },
+            function reconnect() { observer.takeRecords(); }
+        );
 
-	}
+    }
 } else if("MutationEvent" in window) {
-	myDOMUpdateEventStream = function myDOMUpdateEventStream(options) {
-		var self=this;
+    myDOMUpdateEventStream = function myDOMUpdateEventStream(options) {
+        var self=this;
 
-		// flag that says whether the event is still observered or not
-		var scheduled = false;
+        // flag that says whether the event is still observered or not
+        var scheduled = false;
         
         // configuration of the observer
-		if(options) {
-			var target = "target" in options ? options.target : document.documentElement;
-		} else {
-			var target = document.documentElement;
-		}
-		
-		// handle the synchronous nature of mutation events
-		var yieldEvent=null;
-		var yieldEventDelayed = function() {
-			if(scheduled || !yieldEventDelayed) return;
-			document.removeEventListener("DOMContentLoaded", yieldEventDelayed, false);
-			document.removeEventListener("DOMContentLoaded", yieldEventDelayed, false);
-			target.removeEventListener("DOMSubtreeModified", yieldEventDelayed, false);
-			scheduled = requestAnimationFrame(yieldEvent);
-		}
-		
-		// start the event stream
-		myEventStream.call(
-			this, 
-			function connect(newYieldEvent) {
-				yieldEvent=newYieldEvent;
-				document.addEventListener("DOMContentLoaded", yieldEventDelayed, false);
-				target.addEventListener("DOMSubtreeModified", yieldEventDelayed, false);
-			},
-			function disconnect() { 
-				document.removeEventListener("DOMContentLoaded", yieldEventDelayed, false);
-				target.removeEventListener("DOMSubtreeModified", yieldEventDelayed, false);
-				cancelAnimationFrame(scheduled); yieldEventDelayed=null; yieldEvent=null; scheduled=false;
-			},
-			function reconnect(newYieldEvent) { 
-				yieldEvent=newYieldEvent; scheduled=false;
-				target.addEventListener("DOMSubtreeModified", yieldEventDelayed, false);
-			}
-		);
-		
-	}
+        if(options) {
+            var target = "target" in options ? options.target : document.documentElement;
+        } else {
+            var target = document.documentElement;
+        }
+        
+        // handle the synchronous nature of mutation events
+        var yieldEvent=null;
+        var yieldEventDelayed = function() {
+            if(scheduled || !yieldEventDelayed) return;
+            document.removeEventListener("DOMContentLoaded", yieldEventDelayed, false);
+            document.removeEventListener("DOMContentLoaded", yieldEventDelayed, false);
+            target.removeEventListener("DOMSubtreeModified", yieldEventDelayed, false);
+            scheduled = requestAnimationFrame(yieldEvent);
+        }
+        
+        // start the event stream
+        myEventStream.call(
+            this, 
+            function connect(newYieldEvent) {
+                yieldEvent=newYieldEvent;
+                document.addEventListener("DOMContentLoaded", yieldEventDelayed, false);
+                target.addEventListener("DOMSubtreeModified", yieldEventDelayed, false);
+            },
+            function disconnect() { 
+                document.removeEventListener("DOMContentLoaded", yieldEventDelayed, false);
+                target.removeEventListener("DOMSubtreeModified", yieldEventDelayed, false);
+                cancelAnimationFrame(scheduled); yieldEventDelayed=null; yieldEvent=null; scheduled=false;
+            },
+            function reconnect(newYieldEvent) { 
+                yieldEvent=newYieldEvent; scheduled=false;
+                target.addEventListener("DOMSubtreeModified", yieldEventDelayed, false);
+            }
+        );
+        
+    }
 } else {
-	myDOMUpdateEventStream = myAnimationFrameEventStream;
+    myDOMUpdateEventStream = myAnimationFrameEventStream;
 }
 
 ///
 /// call a function every time the focus shifts
 ///
 function myFocusEventStream() {
-	var self=this;
-	
-	// handle the filtering nature of focus events
-	var yieldEvent=null; var previousActiveElement=null; var previousHasFocus=false; var rid=0;
-	var yieldEventDelayed = function() {
-		
-		// if the focus didn't change
-		if(previousActiveElement==document.activeElement && previousHasFocus==document.hasFocus()) {
-			
-			// then do not generate an event
-			setTimeout(yieldEventDelayed, 333); // focus that didn't move is expected to stay
-			
-		} else {
-			
-			// else, generate one & save config
-			previousActiveElement=document.activeElement;
-			previousHasFocus=document.hasFocus();
-			yieldEvent();
-			
-		}
-	}
-	
-	// start the event stream
-	myEventStream.call(
-		this, 
-		function connect(newYieldEvent) {
-			yieldEvent=newYieldEvent;
-			rid=setTimeout(yieldEventDelayed, 500); // let the document load
-		},
-		function disconnect() { 
-			clearTimeout(rid); yieldEventDelayed=null; yieldEvent=null; rid=0;
-		},
-		function reconnect(newYieldEvent) { 
-			yieldEvent=newYieldEvent;
-			rid=setTimeout(yieldEventDelayed, 100); // focus by tab navigation moves fast
-		}
-	);
-	
+    var self=this;
+    
+    // handle the filtering nature of focus events
+    var yieldEvent=null; var previousActiveElement=null; var previousHasFocus=false; var rid=0;
+    var yieldEventDelayed = function() {
+        
+        // if the focus didn't change
+        if(previousActiveElement==document.activeElement && previousHasFocus==document.hasFocus()) {
+            
+            // then do not generate an event
+            setTimeout(yieldEventDelayed, 333); // focus that didn't move is expected to stay
+            
+        } else {
+            
+            // else, generate one & save config
+            previousActiveElement=document.activeElement;
+            previousHasFocus=document.hasFocus();
+            yieldEvent();
+            
+        }
+    }
+    
+    // start the event stream
+    myEventStream.call(
+        this, 
+        function connect(newYieldEvent) {
+            yieldEvent=newYieldEvent;
+            rid=setTimeout(yieldEventDelayed, 500); // let the document load
+        },
+        function disconnect() { 
+            clearTimeout(rid); yieldEventDelayed=null; yieldEvent=null; rid=0;
+        },
+        function reconnect(newYieldEvent) { 
+            yieldEvent=newYieldEvent;
+            rid=setTimeout(yieldEventDelayed, 100); // focus by tab navigation moves fast
+        }
+    );
+    
 }
 
 ///
@@ -2946,36 +3116,36 @@ function myFocusEventStream() {
 /// because sometimes you need more than one event source
 ///
 function myCompositeEventStream(stream1, stream2) {
-	var self=this;
-	
-	// fields
-	var yieldEvent=null; var s1=false, s2=false;
-	var yieldEventWrapper=function(s) { 
-		if(s==stream1) s1=true;
-		if(s==stream2) s2=true;
-		if(s1&&s2) return;
-		yieldEvent(self);
-	}
-	
-	// start the event stream
-	myEventStream.call(
-		this, 
-		function connect(newYieldEvent) {
-			yieldEvent=newYieldEvent;
-			stream1.schedule(yieldEventWrapper);
-			stream2.schedule(yieldEventWrapper);
-		},
-		function disconnect() { 
-			stream1.dispose();
-			stream2.dispose();
-		},
-		function reconnect(newYieldEvent) { 
-			yieldEvent=newYieldEvent;
-			s1 && stream1.schedule(yieldEventWrapper);
-			s2 && stream2.schedule(yieldEventWrapper);
-			s1 = s2 = false;
-		}
-	);
+    var self=this;
+    
+    // fields
+    var yieldEvent=null; var s1=false, s2=false;
+    var yieldEventWrapper=function(s) { 
+        if(s==stream1) s1=true;
+        if(s==stream2) s2=true;
+        if(s1&&s2) return;
+        yieldEvent(self);
+    }
+    
+    // start the event stream
+    myEventStream.call(
+        this, 
+        function connect(newYieldEvent) {
+            yieldEvent=newYieldEvent;
+            stream1.schedule(yieldEventWrapper);
+            stream2.schedule(yieldEventWrapper);
+        },
+        function disconnect() { 
+            stream1.dispose();
+            stream2.dispose();
+        },
+        function reconnect(newYieldEvent) { 
+            yieldEvent=newYieldEvent;
+            s1 && stream1.schedule(yieldEventWrapper);
+            s2 && stream2.schedule(yieldEventWrapper);
+            s1 = s2 = false;
+        }
+    );
 }
 
 
@@ -2992,160 +3162,183 @@ window.myQuerySelectorLive = function(selector, handler, root) {
     
     // restrict the selector coverage to some part of the DOM only
     var root = root || document;
-	
-	// TODO: make use of "mutatedAncestorElement" to update only elements inside the mutated zone
-	
-	var currentElms = [];
-	var loop = function loop(eventStream) {
-		
-		// schedule next run
-		eventStream.schedule(loop);
-		
-		// update elements matching the selector
-		var newElms = [];
-		var oldElms = currentElms.slice(0);
-		var temps = root.querySelectorAll(selector);
-		for(var i=newElms.length=temps.length; i;) { newElms.push(temps[--i]); }
-		currentElms = newElms.slice(0); temps=null;
-		
-		// now pop and match until both lists are exhausted
-		// (we use the fact the returned elements are in document order)
-		var el1 = oldElms.pop();
-		var el2 = newElms.pop();
-		while(el1 || el2) {
-			if(el1===el2) {
-			
-				// MATCH: pop both elements
-				el1 = oldElms.pop();
-				el2 = newElms.pop();
-				
-			} else if (el2 && /*el1 is after el2*/(!el1||(el2.compareDocumentPosition(el1) & (1|2|8|32))===0)) {
-				
-				// INSERT: raise onadded, pop new elements
-				try { handler.onadded && handler.onadded(el2); } catch(ex) { setImmediate(function() {throw ex})}
-				el2 = newElms.pop();
-				
-			} else {
-			
-				// DELETE: raise onremoved, pop old elements
-				try { handler.onremoved && handler.onremoved(el1); } catch(ex) { setImmediate(function() {throw ex})}
-				el1 = oldElms.pop();
-				
-			}
-		}
-		
-	};
-	
-	// use the event stream that best matches our needs
-	var simpleSelector = selector.replace(/:(dir|lang|root|empty|blank|nth-child|nth-last-child|first-child|last-child|only-child|nth-of-type|nth-last-of-child|fist-of-type|last-of-type|only-of-type|not|matches|default)\b/gi,'')
-	var eventStream; if(simpleSelector.indexOf(':') == -1) {
-		
-		// static stuff only
-		eventStream = new myDOMUpdateEventStream(root); 
-		
-	} else {
-		
-		// dynamic stuff too
-		eventStream = new myDOMUpdateEventStream(root); 
-		if(myDOMUpdateEventStream != myAnimationFrameEventStream) {
-		
-			// detect the presence of focus-related pseudo-classes
-			var reg = /:(focus|active)\b/gi;
-			if(reg.test(simpleSelector)) {
-				
-				// mouse events should be listened
-				eventStream = new myCompositeEventStream(
-					new myFocusEventStream(),
-					eventStream
-				);
-				
-				// simplify simpleSelector
-				var reg = /:(focus)\b/gi;
-				simpleSelector = simpleSelector.replace(reg, ''); // :active has other hooks
-				
-			}
-			
-			// detect the presence of mouse-button-related pseudo-classes
-			var reg = /:(active)\b/gi;
-			if(reg.test(simpleSelector)) {
-				
-				// mouse events should be listened
-				eventStream = new myCompositeEventStream(
-					new myMouseButtonEventStream(),
-					eventStream
-				);
-				
-				// simplify simpleSelector
-				simpleSelector = simpleSelector.replace(reg, '');
-				
-			}
+    
+    // TODO: make use of "mutatedAncestorElement" to update only elements inside the mutated zone
+    
+    var currentElms = [];
+    var loop = function loop(eventStream) {
+        
+        // schedule next run
+        eventStream.schedule(loop);
+        
+        // update elements matching the selector
+        var newElms = [];
+        var oldElms = currentElms.slice(0);
+        var temps = root.querySelectorAll(selector);
+        for(var i=newElms.length=temps.length; i;) { newElms.push(temps[--i]); }
+        currentElms = newElms.slice(0); temps=null;
+        
+        // first let's clear all elements that have been removed from the document
+        oldElms = oldElms.filter(function(e) {
+            
+            // check whether the current element is still there
+            var isStillInDocument = (
+                e===document.documentElement 
+                || document.documentElement.contains(e)
+            );
+            
+            if(isStillInDocument) {
+                
+                // NEED_COMPARE: we will compare this element to the new list
+                return true;
+                
+            } else {
+                
+                // DELETE: raise onremoved, pop old elements
+                try { handler.onremoved && handler.onremoved(e); } catch(ex) { setImmediate(function() {throw ex})}
+                return false;
+                
+            }
+            
+        });
+        
+        // now pop and match until both lists are exhausted
+        // (we use the fact the returned elements are in document order)
+        var el1 = oldElms.pop();
+        var el2 = newElms.pop();
+        while(el1 || el2) {
+            if(el1===el2) {
+            
+                // MATCH: pop both elements
+                el1 = oldElms.pop();
+                el2 = newElms.pop();
+                
+            } else if (el2 && /*el1 is after el2*/(!el1||(el2.compareDocumentPosition(el1) & (1|2|8|32))===0)) {
+                
+                // INSERT: raise onadded, pop new elements
+                try { handler.onadded && handler.onadded(el2); } catch(ex) { setImmediate(function() {throw ex})}
+                el2 = newElms.pop();
+                
+            } else {
+            
+                // DELETE: raise onremoved, pop old elements
+                try { handler.onremoved && handler.onremoved(el1); } catch(ex) { setImmediate(function() {throw ex})}
+                el1 = oldElms.pop();
+                
+            }
+        }
+        
+    };
+    
+    // use the event stream that best matches our needs
+    var simpleSelector = selector.replace(/:(dir|lang|root|empty|blank|nth-child|nth-last-child|first-child|last-child|only-child|nth-of-type|nth-last-of-child|fist-of-type|last-of-type|only-of-type|not|matches|default)\b/gi,'')
+    var eventStream; if(simpleSelector.indexOf(':') == -1) {
+        
+        // static stuff only
+        eventStream = new myDOMUpdateEventStream(root); 
+        
+    } else {
+        
+        // dynamic stuff too
+        eventStream = new myDOMUpdateEventStream(root); 
+        if(myDOMUpdateEventStream != myAnimationFrameEventStream) {
+        
+            // detect the presence of focus-related pseudo-classes
+            var reg = /:(focus|active)\b/gi;
+            if(reg.test(simpleSelector)) {
+                
+                // mouse events should be listened
+                eventStream = new myCompositeEventStream(
+                    new myFocusEventStream(),
+                    eventStream
+                );
+                
+                // simplify simpleSelector
+                var reg = /:(focus)\b/gi;
+                simpleSelector = simpleSelector.replace(reg, ''); // :active has other hooks
+                
+            }
+            
+            // detect the presence of mouse-button-related pseudo-classes
+            var reg = /:(active)\b/gi;
+            if(reg.test(simpleSelector)) {
+                
+                // mouse events should be listened
+                eventStream = new myCompositeEventStream(
+                    new myMouseButtonEventStream(),
+                    eventStream
+                );
+                
+                // simplify simpleSelector
+                simpleSelector = simpleSelector.replace(reg, '');
+                
+            }
 
-			// detect the presence of user input pseudo-classes
-			var reg = /:(target|checked|indeterminate|valid|invalid|in-range|out-of-range|user-error)\b/gi;
-			if(reg.test(simpleSelector)) {
-				
-				// slowly dynamic stuff do happen
-				eventStream = new myCompositeEventStream(
-					new myTimeoutEventStream(250),
-					eventStream
-				);
-				
-				// simplify simpleSelector
-				simpleSelector = simpleSelector.replace(reg, '');
+            // detect the presence of user input pseudo-classes
+            var reg = /:(target|checked|indeterminate|valid|invalid|in-range|out-of-range|user-error)\b/gi;
+            if(reg.test(simpleSelector)) {
+                
+                // slowly dynamic stuff do happen
+                eventStream = new myCompositeEventStream(
+                    new myTimeoutEventStream(250),
+                    eventStream
+                );
+                
+                // simplify simpleSelector
+                simpleSelector = simpleSelector.replace(reg, '');
 
-				var reg = /:(any-link|link|visited|local-link|enabled|disabled|read-only|read-write|required|optional)\b/gi;
-				// simplify simpleSelector
-				simpleSelector = simpleSelector.replace(reg, '');
-				
-			}
-			
-			// detect the presence of nearly-static pseudo-classes
-			var reg = /:(any-link|link|visited|local-link|enabled|disabled|read-only|read-write|required|optional)\b/gi;
-			if(reg.test(simpleSelector)) {
-				
-				// nearly static stuff do happen
-				eventStream = new myCompositeEventStream(
-					new myTimeoutEventStream(333),
-					eventStream
-				);
-				
-				// simplify simpleSelector
-				simpleSelector = simpleSelector.replace(reg, '');
-				
-			}
-			
-			// detect the presence of mouse-related pseudo-classes
-			var reg = /:(hover)\b/gi;
-			if(reg.test(simpleSelector)) {
-				
-				// mouse events should be listened
-				eventStream = new myCompositeEventStream(
-					new myMouseEventStream(),
-					eventStream
-				);
-				
-				// simplify simpleSelector
-				simpleSelector = simpleSelector.replace(reg, '');
-				
-			}
-			
-			// detect the presence of unknown pseudo-classes
-			if(simpleSelector.indexOf(':') !== -1) {
-				
-				// other stuff do happen, too (let's give up on events)
-				eventStream = new myAnimationFrameEventStream(); 
-				
-			}
-			
-		}
-		
-	}
-	
-	// start handling changes
-	loop(eventStream);
-	
-}
-
+                var reg = /:(any-link|link|visited|local-link|enabled|disabled|read-only|read-write|required|optional)\b/gi;
+                // simplify simpleSelector
+                simpleSelector = simpleSelector.replace(reg, '');
+                
+            }
+            
+            // detect the presence of nearly-static pseudo-classes
+            var reg = /:(any-link|link|visited|local-link|enabled|disabled|read-only|read-write|required|optional)\b/gi;
+            if(reg.test(simpleSelector)) {
+                
+                // nearly static stuff do happen
+                eventStream = new myCompositeEventStream(
+                    new myTimeoutEventStream(333),
+                    eventStream
+                );
+                
+                // simplify simpleSelector
+                simpleSelector = simpleSelector.replace(reg, '');
+                
+            }
+            
+            // detect the presence of mouse-related pseudo-classes
+            var reg = /:(hover)\b/gi;
+            if(reg.test(simpleSelector)) {
+                
+                // mouse events should be listened
+                eventStream = new myCompositeEventStream(
+                    new myMouseEventStream(),
+                    eventStream
+                );
+                
+                // simplify simpleSelector
+                simpleSelector = simpleSelector.replace(reg, '');
+                
+            }
+            
+            // detect the presence of unknown pseudo-classes
+            if(simpleSelector.indexOf(':') !== -1) {
+                
+                // other stuff do happen, too (let's give up on events)
+                eventStream = new myAnimationFrameEventStream(); 
+                
+            }
+            
+        }
+        
+    }
+    
+    // start handling changes
+    loop(eventStream);
+    
+}    
 
 /////////////////////////////////////////////////////////////////
 ////                                                         ////
@@ -3158,40 +3351,38 @@ window.myQuerySelectorLive = function(selector, handler, root) {
 ///
 function getCommonAncestor(nodes) {
 
-	// validate arguments
-	if (!nodes || !nodes.length) { return null; }
-	if (nodes.length < 2) { return nodes[0]; }
+    // validate arguments
+    if (!nodes || !nodes.length) { return null; }
+    if (nodes.length < 2) { return nodes[0]; }
 
-	// start bubbling from the first node
-	var currentNode = nodes[0];
-	
-	// while we still have a candidate ancestor
-	bubbling: while(currentNode && currentNode.nodeType!=9) {
-		
-		// walk all other intial nodes
-		var i = nodes.length;    
-		while (--i) {
-			
-			// if the curent node doesn't contain any of those nodes
-			if (!currentNode.contains(nodes[i])) {
-				
-				// consider the parent node instead
-				currentNode = currentNode.parentNode;
-				continue bubbling;
-				
-			}
-			
-		}
-		
-		// if all were contained in the current node:
-		// we found the solution
-		return currentNode;
-	}
+    // start bubbling from the first node
+    var currentNode = nodes[0];
+    
+    // while we still have a candidate ancestor
+    bubbling: while(currentNode && currentNode.nodeType!=9) {
+        
+        // walk all other intial nodes
+        var i = nodes.length;    
+        while (--i) {
+            
+            // if the curent node doesn't contain any of those nodes
+            if (!currentNode.contains(nodes[i])) {
+                
+                // consider the parent node instead
+                currentNode = currentNode.parentNode;
+                continue bubbling;
+                
+            }
+            
+        }
+        
+        // if all were contained in the current node:
+        // we found the solution
+        return currentNode;
+    }
 
-	return null;
+    return null;
 }
-
-
 "use strict";
 
 var cssBreak = {
@@ -4248,8 +4439,8 @@ var cssRegions = {
         //
         
         // validate args
-        if(!regions) return;
-        if(!regions.length) return;
+        if(!regions) return callback(!!remainingContent.hasChildNodes());
+        if(!regions.length) return callback(!!remainingContent.hasChildNodes());
         if(!startTime) startTime = Date.now();
         
         // get the next region
@@ -4361,6 +4552,8 @@ var cssRegions = {
             }
             
         }
+        
+        return callback(true);
         
     },
     
@@ -5082,6 +5275,10 @@ cssRegions.Flow = function NamedFlow(name) {
     
     // a small counter to avoid enter retry loops
     This.failedLayoutCount = 0;
+    
+    // some other fields
+    This.lastEventRAF = 0;
+    This.restartLayout = false;
 }
     
 cssRegions.Flow.prototype.removeFromContent = function(element) {
@@ -5248,8 +5445,12 @@ cssRegions.Flow.prototype.generateContentFragment = function() {
 cssRegions.Flow.prototype.relayout = function() {
     var This = this;
     
+    // prevent previous relayouts from eventing
+    cancelAnimationFrame(This.lastEventRAF);
+    
     // batch relayout queries
     if(This.relayoutScheduled) { return; }
+    if(This.relayoutInProgress) { This.restartLayout=true; return; }
     This.relayoutScheduled = true;
     requestAnimationFrame(function() { This._relayout() });
     
@@ -5266,6 +5467,7 @@ cssRegions.Flow.prototype._relayout = function(){
         // this stuff. If you don't have them, ask me.
         //
         console.log("starting a new relayout for "+This.name);
+        This.relayoutInProgress=true; This.relayoutScheduled=false;
         //debugger;
         
         // NOTE: we recover the scroll position in case the browser mess it up
@@ -5286,6 +5488,10 @@ cssRegions.Flow.prototype._relayout = function(){
         //
         // STEP 2: RESTORE CONTENT/REGIONS TO A CLEAN STATE
         //
+        
+        // detect elements being removed of the document
+        This.regions = This.regions.filter(function(e) { return document.documentElement.contains(e); })
+        This.content = This.content.filter(function(e) { return document.documentElement.contains(e); })
         
         // cleanup previous layout
         cssRegionsHelpers.unmarkNodesAsRegion(This.lastRegions); This.lastRegions = This.regions.slice(0);
@@ -5329,13 +5535,26 @@ cssRegions.Flow.prototype._relayout = function(){
             
             This.overset = overset;
             This.firstEmptyRegionIndex = This.regions.length-1; while(This.regions[This.firstEmptyRegionIndex]) {
-                if(This.regions[This.firstEmptyRegionIndex].cssRegionsWrapper.firstChild) {
+                
+                // tell whether the region is empty
+                var isEmpty = false;
+                isEmpty = isEmpty || !This.regions[This.firstEmptyRegionIndex].cssRegionsWrapper;
+                isEmpty = isEmpty || !This.regions[This.firstEmptyRegionIndex].cssRegionsWrapper.firstChild;
+                
+                // if the region is not empty
+                if(!isEmpty) {
+                    
+                    // the first empty region if the next one, if it exists
                     if((++This.firstEmptyRegionIndex)==This.regions.length) {
                         This.firstEmptyRegionIndex = -1;
                     }
                     break;
+                    
                 } else {
+                    
+                    // else, let's try the previous region
                     This.firstEmptyRegionIndex--; 
+                    
                 }
             }
             
@@ -5362,14 +5581,31 @@ cssRegions.Flow.prototype._relayout = function(){
             //
             // STEP 7: FIRE SOME EVENTS
             //
-            if(This.regions.length > 0) {
-                This.lastEventRAF = requestAnimationFrame(function() {
+            if(This.regions.length > 0 && !This.restartLayout) {
+                
+                // before doing anything, let's check our stuff is consistent
+                var isBuggy = false;
+                isBuggy = isBuggy || This.regions.some(function(e) { return !document.documentElement.contains(e); })
+                isBuggy = isBuggy || This.content.some(function(e) { return !document.documentElement.contains(e); })
+                
+                if(isBuggy) {
                     
-                    // TODO: only fire when necessary but...
-                    This.dispatchEvent('regionfragmentchange');
-                    This.dispatchEvent('regionoversetchange');
+                    // if we found any bug, we will need to restart a layout
+                    console.warn("Buggy css regions layout: the page changed; we need to restart.");
+                    This.restartLayout = true; 
                     
-                });
+                } else {
+                    
+                    // if it was okay, let's fire some event
+                    This.lastEventRAF = requestAnimationFrame(function() {
+                        
+                        // TODO: only fire when necessary but...
+                        This.dispatchEvent('regionfragmentchange');
+                        This.dispatchEvent('regionoversetchange');
+                        
+                    });
+                    
+                }
             }
             
             
@@ -5378,8 +5614,14 @@ cssRegions.Flow.prototype._relayout = function(){
             document.body.scrollTop = docBdyScrollTop;
             
             // mark layout has being done
-            This.relayoutScheduled = false;
+            This.relayoutInProgress = false;
             This.failedLayoutCount = 0;
+            
+            // restart a layout if a request was queued during the current one
+            if(This.restartLayout) {
+                This.restartLayout = false;
+                This.relayout();
+            }
             
         })
         
@@ -5394,7 +5636,7 @@ cssRegions.Flow.prototype._relayout = function(){
         // until we finish a complete layout pass...
         This.failedLayoutCount++;
         if(This.failedLayoutCount<7) {requestAnimationFrame(function() { This._relayout() });}
-        else {This.failedLayoutCount=0;}
+        else {This.failedLayoutCount=0; This.relayoutScheduled=false; This.relayoutInProgress=false; This.restartLayout=false; }
         
     }
 }

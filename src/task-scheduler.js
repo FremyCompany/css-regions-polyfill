@@ -1,7 +1,28 @@
 "use strict";
 
 (function() {
+    
+    
+    //
+    // polyfill setImmediate
+    //
+    window.setImmediate = window.setImmediate || function(f) {
+        setTimeout(f, 0);
+    };
+    window.clearImmediate = window.clearImmediate || window.clearTimeout;
+    
+    
+    //
+    // polyfill requestAnimationFrame
+    //
+    window.requestAnimationFrame = window.requestAnimationFrame || function(f) {
+        return setTimeout(function() {
+            f(+new Date());
+        }, 16);
+    };
+    window.cancelAnimationFrame = window.cancelAnimationFrame || window.clearTimeout;
 
+    
     // 
     // polyfill performance.now()
     //
@@ -10,22 +31,9 @@
     } else if(Date.now) {
         var now = function() { return Date.now(); }
     } else {
-        var now = function() { return Date().getTime(); }
+        var now = function() { return +new Date(); }
     }
     
-    //
-    // polyfill setImmediate
-    //
-    var setImmediate = window.setImmediate || function(f) {
-        setTimeout(f,0);
-    }
-    
-    //
-    // polyfill rAF
-    //
-    var requestAnimationFrame = window.requestAnimationFrame || function(f) {
-        setTimeout(f,16);
-    }
     
     // 
     // Encapsulate a task
@@ -134,7 +142,7 @@
             This.delayedTasks--;
             
             // empty the queue
-            This.tryRun();
+            This.scheduleNow();
             
         });
         

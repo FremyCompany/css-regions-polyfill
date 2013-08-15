@@ -38,8 +38,8 @@ var cssRegions = {
         //
         
         // validate args
-        if(!regions) return;
-        if(!regions.length) return;
+        if(!regions) return callback(!!remainingContent.hasChildNodes());
+        if(!regions.length) return callback(!!remainingContent.hasChildNodes());
         if(!startTime) startTime = Date.now();
         
         // get the next region
@@ -151,6 +151,8 @@ var cssRegions = {
             }
             
         }
+        
+        return callback(true);
         
     },
     
