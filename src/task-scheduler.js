@@ -6,18 +6,32 @@
     // polyfill performance.now()
     //
     if(window.performance && window.performance.now) {
-        var now = function() { return performance.now(); 
+        var now = function() { return performance.now(); }
     } else if(Date.now) {
         var now = function() { return Date.now(); }
     } else {
         var now = function() { return Date().getTime(); }
     }
     
+    //
+    // polyfill setImmediate
+    //
+    var setImmediate = window.setImmediate || function(f) {
+        setTimeout(f,0);
+    }
+    
+    //
+    // polyfill rAF
+    //
+    var requestAnimationFrame = window.requestAnimationFrame || function(f) {
+        setTimeout(f,16);
+    }
+    
     // 
     // Encapsulate a task
     // 
     function Task(action) {
-        this.start = action;
+        this.call = action;
     }
     
     // 
@@ -58,7 +72,7 @@
                         
                         // run the task
                         // (the loop should not break if a task fails)
-                        try { task.start(); } 
+                        try { task.call(); } 
                         catch(ex) { setImmediate(function() { throw ex; }) }
                         
                     }
@@ -68,16 +82,25 @@
                 // 
                 // let child schedulers execute if no task is pending
                 // 
-                if(This.delayedTasks !== 0) {
+                if(This.delayedTasks === 0) {
                     
                     for(var i=0; i<This.childSchedulers.length; i++) {
                         
                         // run the scheduler
                         // (the loop should not break if a scheduler fails)
-                        try { child.run(); } 
+                        try { This.childSchedulers[i].run(); } 
                         catch(ex) { setImmediate(function() { throw ex; }) }
                         
                     }
+                    
+                }
+                
+                //
+                // execute new immediates, if any
+                //
+                if(This.taskQueue.length !== 0) {
+                    
+                    This.run();
                     
                 }
                 
@@ -126,10 +149,10 @@
     // aliases for common web functions
     TaskScheduler.prototype.setImmediate = TaskScheduler.prototype.pushTask;
     TaskScheduler.prototype.setTimeout = function(f,d) {
-        TaskScheduler.prototype.pushDelayedTask(f, function(f) { setTimeout(f,d) })
+        this.pushDelayedTask(f, function(f) { setTimeout(f,d) })
     }
     TaskScheduler.prototype.requestAnimationFrame = function(f,d) {
-        TaskScheduler.prototype.pushDelayedTask(f, requestAnimationFrame);
+        this.pushDelayedTask(f, requestAnimationFrame);
     }
     
     TaskScheduler.prototype.scheduleNow = function() {
@@ -143,5 +166,7 @@
         setImmediate(this.tryRun);
         
     }
+    
+    window.JSTaskScheduler = TaskScheduler;
     
 }());
