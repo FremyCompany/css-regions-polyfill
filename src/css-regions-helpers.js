@@ -564,7 +564,6 @@ var cssRegionsHelpers = {
     //
     retargetEvents: function retargetEvents(node1,node2) {
         
-        return;
         var retargetEvent = "cssRegionsHelpers.retargetEvent(this,event)";
         node2.setAttribute("onclick", retargetEvent);
         node2.setAttribute("ondblclick", retargetEvent);
