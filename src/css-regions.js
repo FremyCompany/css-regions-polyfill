@@ -40,7 +40,7 @@ var cssRegions = {
         // validate args
         if(!regions) return;
         if(!regions.length) return;
-        if(!startTime) startTime = +Date();
+        if(!startTime) startTime = Date.now();
         
         // get the next region
         var region = regions.pop();
@@ -112,14 +112,15 @@ var cssRegions = {
             
             // layout the next regions
             // WE LET THE NEXT REGION DECIDE WHAT TO RETURN
-            if(startTime<60+Date()) {
+            if(startTime+200 > Date.now()) {
                 
                 return cssRegions.layoutContent(regions, remainingContent, callback, startTime);
                 
             } else {
                 
+                console.log(startTime); console.log(Date.now());
                 return setImmediate(function() {
-                    cssRegions.layoutContent(regions, remainingContent, callback, startTime);
+                    cssRegions.layoutContent(regions, remainingContent, callback);
                 });
                 
             }
