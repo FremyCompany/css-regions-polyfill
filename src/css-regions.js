@@ -794,12 +794,26 @@ var cssRegions = {
         // 
         // [4] make sure we react to window resizes
         //
+        //
+        var checkAssumptions = function() {
+            
+            // specify the function did run
+            checkAssumptions.timeout = 0;
+            
+            // rerun the layout
+            var flows = document.getNamedFlows();
+            for(var i=0; i<flows.length; i++) {
+                flows[i].relayoutIfSizeChanged();
+            }
+            
+        }
         window.addEventListener("resize",
             function() {
-               var flows = document.getNamedFlows();
-                for(var i=0; i<flows.length; i++) {
-                    flows[i].relayoutIfSizeChanged();
-                } 
+                
+                // only run the resize code every 200ms
+                if(checkAssumptions.timeout) { return; }
+                checkAssumptions.timeout = setTimeout(checkAssumptions, 200);
+                
             }
         );
         
