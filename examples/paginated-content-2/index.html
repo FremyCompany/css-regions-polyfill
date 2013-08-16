@@ -185,12 +185,14 @@
                 } else {
                     console.log('adding quotes')
                     story.removeEventListener("regionfragmentchange", onMainFlowUpdate);
+                    story.addEventListener("regionfragmentchange", addPullQuotes);
                     addPullQuotes();
                 }
             }
             
             function doLayout() {
                 
+                story.removeEventListener("regionfragmentchange", addPullQuotes);
                 story.addEventListener("regionfragmentchange", onMainFlowUpdate);
                 
                 // Now clear out the viewport.
@@ -339,6 +341,7 @@
             function addPullQuotes() {
                 
                 var viewport = document.getElementById("viewport");
+                var quotes = viewport.lastChild; if(quotes){viewport.removeChild(quotes)}
                 var quotes = document.createElement('aside'); quotes.style.display="none";
                 viewport.appendChild(quotes);
                 
@@ -422,7 +425,7 @@
 
 <div id="viewport" class="tweenable"></div>
 
-<div id="content">
+<div id="content-wrapper" style="display: none"><div id="content">
 
 <div class="title" id="storyTitle">A Connecticut Yankee in King Arthur's Court</div>
 <p><span class="dropcap">C</span>amelot--Camelot, said I to myself. "I don't seem to remember hearing of it before. Name of the asylum, likely."</p>
@@ -457,7 +460,7 @@
 <p>"And according to your notions, what year is it now?"</p>
 <p><span class="pull_quote">"528--nineteenth of June."</span></p>
 
-</div>
+</div></div>
 
 </body>
 </html>
