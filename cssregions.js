@@ -466,8 +466,9 @@ Range.prototype.myGetExtensionRect = function() {
         var onlyWhiteSpaceBefore = /^(\s|\n)*$/.test(this.endContainer.nodeValue.substr(0,this.endOffset));
         if(onlyWhiteSpaceBefore) {
             
-            // if we are in the fucking whitespace land, abort
-            return this.endContainer.parentNode.getBoundingClientRect();
+            // if we are in the fucking whitespace land, return first line
+            var prevSibRect = Node.getClientRects(this.endContainer)[0];
+            return prevSibRect;
             
         } else {
             
@@ -4642,6 +4643,31 @@ var cssRegions = {
             } catch (ex) {}
         }
         
+        // helper for logging info
+        /*console.log("extracting overflow")
+        console.log(pos.bottom)*/
+        function debug() {
+            /*console.dir({
+                startContainer: r.startContainer,
+                startOffset: r.startOffset,
+                browserBCR: r.getBoundingClientRect(),
+                computedBCR: rect
+            });*/
+        }
+        
+        function fixNullRect() {
+            if(rect.bottom==0 && rect.top==0 && rect.left==0 && rect.right==0) {
+                rect = {
+                    width: 0,
+                    heigth: 0,
+                    top: -document.body.scrollTop,
+                    bottom: -document.body.scrollTop,
+                    left: -document.body.scrollLeft,
+                    right: -document.body.scrollLeft
+                }
+            }
+        }
+        
         // if the caret is outside the region
         if(!r || (region !== r.endContainer && !Node.contains(region,r.endContainer))) {
             
@@ -4666,15 +4692,8 @@ var cssRegions = {
         do {
             
             // store the current selection rect for fast access
-            var rect = r.myGetExtensionRect();
-            
-            //console.log('start negotiation');
-            //console.dir({
-            //    startContainer: r.startContainer,
-            //    startOffset: r.startOffset,
-            //    browserBCR: r.getBoundingClientRect(),
-            //    computedBCR: rect
-            //});
+            var rect = r.myGetExtensionRect(); fixNullRect();
+            debug();
             
             //
             // note: maybe the text is right-to-left
@@ -4683,6 +4702,8 @@ var cssRegions = {
             
             // move the end point char by char until it's completely in the region
             while(!(r.endContainer==region && r.endOffset==r.endContainer.childNodes.length) && rect.bottom<=pos.top+sizingH) {
+                
+                debug();
                 
                 // look if we can optimize by moving fast forward
                 var nextSibling = r.endContainer.childNodes[r.endOffset];
@@ -4693,11 +4714,12 @@ var cssRegions = {
                     r.setStartAfter(nextSibling)
                     r.setEndAfter(nextSibling)
                     rect = nextSiblingRect
+                    fixNullRect()
                     
                 } else {
                     
                     // otherwise, go char-by-char
-                    r.myMoveTowardRight(); rect = r.myGetExtensionRect();
+                    r.myMoveTowardRight(); rect = r.myGetExtensionRect(); fixNullRect();
                     
                 }
             }
@@ -4709,8 +4731,10 @@ var cssRegions = {
             
             // move the end point char by char until it's completely in the region
             while(!(r.endContainer==region && r.endOffset==0) && rect.bottom>pos.top+sizingH) {
-                r.myMoveOneCharLeft(); rect = r.myGetExtensionRect();
+                debug(); r.myMoveOneCharLeft(); rect = r.myGetExtensionRect(); fixNullRect();
             }
+            
+            debug()
             
             //
             // note: if we optimized via hit-testing, this may be wrong
@@ -4789,7 +4813,7 @@ var cssRegions = {
                             var previousLineBottom = lines[lines.length-2].bottom;
                             r.setEnd(current, current.nodeValue.length);
                             while(rect.bottom>previousLineBottom) {
-                                r.myMoveOneCharLeft(); rect = r.myGetExtensionRect();
+                                r.myMoveOneCharLeft(); rect = r.myGetExtensionRect(); fixNullRect();
                             }
                             
                             // make sure we didn't exit the text node by mistake
