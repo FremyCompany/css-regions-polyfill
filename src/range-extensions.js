@@ -466,8 +466,9 @@ Range.prototype.myGetExtensionRect = function() {
         var onlyWhiteSpaceBefore = /^(\s|\n)*$/.test(this.endContainer.nodeValue.substr(0,this.endOffset));
         if(onlyWhiteSpaceBefore) {
             
-            // if we are in the fucking whitespace land, abort
-            return this.endContainer.parentNode.getBoundingClientRect();
+            // if we are in the fucking whitespace land, return first line
+            var prevSibRect = Node.getClientRects(this.endContainer)[0];
+            return prevSibRect;
             
         } else {
             
