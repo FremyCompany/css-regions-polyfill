@@ -137,7 +137,7 @@
                 defaultPullQuoteSize = 1,
                 story;
                 
-            var textPerSquarePixels = 0.003;
+            var textPerSquarePixels = 0.002;
                 
             function getNamedFlow(name){
                return document.getNamedFlow ? document.getNamedFlow(name) : document.getNamedFlows().namedItem(name);
@@ -341,7 +341,7 @@
             function addPullQuotes() {
                 
                 var viewport = document.getElementById("viewport");
-                var quotes = viewport.lastChild; if(quotes){viewport.removeChild(quotes)}
+                var quotes = viewport.getElementsByTagName('aside')[0]; if(quotes){viewport.removeChild(quotes)}
                 var quotes = document.createElement('aside'); quotes.style.display="none";
                 viewport.appendChild(quotes);
                 
