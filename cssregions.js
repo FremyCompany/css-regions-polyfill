@@ -4439,8 +4439,8 @@ var cssRegions = {
         //
         
         // validate args
-        if(!regions) return callback(!!remainingContent.hasChildNodes());
-        if(!regions.length) return callback(!!remainingContent.hasChildNodes());
+        if(!regions) return callback.ondone(!!remainingContent.hasChildNodes());
+        if(!regions.length) return callback.ondone(!!remainingContent.hasChildNodes());
         if(!startTime) startTime = Date.now();
         
         // get the next region
@@ -4451,7 +4451,7 @@ var cssRegions = {
         while(true) {
             var regionDisplay = getComputedStyle(region).display;
             if(regionDisplay == "none" || regionDisplay.indexOf("inline") !== -1) {
-                if(region = regions.pop()) { continue } else { return callback(!!remainingContent.hasChildNodes()) };
+                if(region = regions.pop()) { continue } else { return callback.ondone(!!remainingContent.hasChildNodes()) };
             } else {
                 break;
             }
@@ -4472,12 +4472,12 @@ var cssRegions = {
         // avoid doing the layout of empty regions
         if(!remainingContent.hasChildNodes()) {
             
-            region.cssRegionsLastOffsetHeight = region.offsetHeight;
-            region.cssRegionsLastOffsetWidth = region.offsetWidth;
+            region.cssRegionHost.cssRegionsLastOffsetHeight = region.cssRegionHost.offsetHeight;
+            region.cssRegionHost.cssRegionsLastOffsetWidth = region.cssRegionHost.offsetWidth;
             
             region.cssRegionHost.regionOverset = 'empty';
             cssRegions.layoutContent(regions, remainingContent, callback, startTime);
-            return callback(false);
+            return callback.ondone(false);
             
         }
         
@@ -4520,7 +4520,7 @@ var cssRegions = {
             } else {
                 
                 console.log(startTime); console.log(Date.now());
-                return setImmediate(function() {
+                return callback.onprogress(function() {
                     cssRegions.layoutContent(regions, remainingContent, callback);
                 });
                 
@@ -4538,7 +4538,7 @@ var cssRegions = {
                 region.cssRegionHost.cssRegionsLastOffsetHeight = region.cssRegionHost.offsetHeight;
                 region.cssRegionHost.cssRegionsLastOffsetWidth = region.cssRegionHost.offsetWidth;
                 
-                return callback(didOverflow);
+                return callback.ondone(didOverflow);
                 
             } else {
                 
@@ -4547,7 +4547,7 @@ var cssRegions = {
                 region.cssRegionHost.cssRegionsLastOffsetWidth = region.cssRegionHost.offsetWidth;
                 
                 // WE RETURN FALSE IF WE DIDN'T OVERFLOW
-                return callback(region.cssRegionHost.offsetHeight != region.cssRegionHost.scrollHeight);
+                return callback.ondone(region.cssRegionHost.offsetHeight != region.cssRegionHost.scrollHeight);
                 
             }
             
@@ -5456,7 +5456,7 @@ cssRegions.Flow.prototype.relayout = function() {
     
 }
 
-cssRegions.Flow.prototype._relayout = function(){
+cssRegions.Flow.prototype._relayout = function(data){
     var This=this;
     
     try {
@@ -5471,8 +5471,8 @@ cssRegions.Flow.prototype._relayout = function(){
         //debugger;
         
         // NOTE: we recover the scroll position in case the browser mess it up
-        var docElmScrollTop = document.documentElement.scrollTop;
-        var docBdyScrollTop = document.body.scrollTop;
+        var docElmScrollTop = data && data.docElmScrollTop ? data.docElmScrollTop : document.documentElement.scrollTop;
+        var docBdyScrollTop = data && data.docBdyScrollTop ? data.docBdyScrollTop : document.body.scrollTop;
         
         
         //
@@ -5531,39 +5531,65 @@ cssRegions.Flow.prototype._relayout = function(){
         //
         
         // layout this stuff
-        cssRegions.layoutContent(regionStack, contentFragment, function(overset) {
-            
+        cssRegions.layoutContent(regionStack, contentFragment, {
+        	ondone: ondone,
+			onprogress: function(continueLayout) {
+				
+	            // NOTE: we recover the scroll position in case the browser mess it up
+	            document.documentElement.scrollTop = docElmScrollTop;
+	            document.body.scrollTop = docBdyScrollTop;
+				
+				// NOTE: if the current layout goes nowhere, start a new one already
+	            if(This.restartLayout) {
+		            This.relayoutInProgress = false;
+		            This.failedLayoutCount = 0;
+	                This.restartLayout = false;
+	                This._relayout({
+	                	docElmScrollTop: docElmScrollTop,
+						docBdyScrollTop: docBdyScrollTop
+	                });
+	            } else {
+	            	
+					setImmediate(continueLayout);
+					
+	            }
+				
+			}
+        })
+		
+		function ondone(overset) {
+
             This.overset = overset;
             This.firstEmptyRegionIndex = This.regions.length-1; while(This.regions[This.firstEmptyRegionIndex]) {
-                
+
                 // tell whether the region is empty
                 var isEmpty = false;
                 isEmpty = isEmpty || !This.regions[This.firstEmptyRegionIndex].cssRegionsWrapper;
                 isEmpty = isEmpty || !This.regions[This.firstEmptyRegionIndex].cssRegionsWrapper.firstChild;
-                
+
                 // if the region is not empty
                 if(!isEmpty) {
-                    
+    
                     // the first empty region if the next one, if it exists
                     if((++This.firstEmptyRegionIndex)==This.regions.length) {
                         This.firstEmptyRegionIndex = -1;
                     }
                     break;
-                    
+    
                 } else {
-                    
+    
                     // else, let's try the previous region
                     This.firstEmptyRegionIndex--; 
-                    
+    
                 }
             }
-            
-            
-            
+
+
+
             //
             // STEP 6: REGISTER TO UPDATE EVENTS
             //
-            
+
             // make sure regions update are taken in consideration
             if(window.MutationObserver) {
                 This.addEventListenersTo(This.content);
@@ -5575,55 +5601,55 @@ cssRegions.Flow.prototype._relayout = function(){
                     This.addEventListenersTo(This.content);
                 });
             }
-            
-            
-            
+
+
+
             //
             // STEP 7: FIRE SOME EVENTS
             //
             if(This.regions.length > 0 && !This.restartLayout) {
-                
+
                 // before doing anything, let's check our stuff is consistent
                 var isBuggy = false;
                 isBuggy = isBuggy || This.regions.some(function(e) { return !document.documentElement.contains(e); })
                 isBuggy = isBuggy || This.content.some(function(e) { return !document.documentElement.contains(e); })
-                
+
                 if(isBuggy) {
-                    
+    
                     // if we found any bug, we will need to restart a layout
                     console.warn("Buggy css regions layout: the page changed; we need to restart.");
                     This.restartLayout = true; 
-                    
+    
                 } else {
-                    
+    
                     // if it was okay, let's fire some event
                     This.lastEventRAF = requestAnimationFrame(function() {
-                        
+        
                         // TODO: only fire when necessary but...
                         This.dispatchEvent('regionfragmentchange');
                         This.dispatchEvent('regionoversetchange');
-                        
+        
                     });
-                    
+    
                 }
             }
-            
-            
+
+
             // NOTE: we recover the scroll position in case the browser mess it up
             document.documentElement.scrollTop = docElmScrollTop;
             document.body.scrollTop = docBdyScrollTop;
-            
+
             // mark layout has being done
             This.relayoutInProgress = false;
             This.failedLayoutCount = 0;
-            
+
             // restart a layout if a request was queued during the current one
             if(This.restartLayout) {
                 This.restartLayout = false;
                 This.relayout();
             }
-            
-        })
+
+        }
         
         
     } catch(ex) {

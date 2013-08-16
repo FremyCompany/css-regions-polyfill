@@ -38,8 +38,8 @@ var cssRegions = {
         //
         
         // validate args
-        if(!regions) return callback(!!remainingContent.hasChildNodes());
-        if(!regions.length) return callback(!!remainingContent.hasChildNodes());
+        if(!regions) return callback.ondone(!!remainingContent.hasChildNodes());
+        if(!regions.length) return callback.ondone(!!remainingContent.hasChildNodes());
         if(!startTime) startTime = Date.now();
         
         // get the next region
@@ -50,7 +50,7 @@ var cssRegions = {
         while(true) {
             var regionDisplay = getComputedStyle(region).display;
             if(regionDisplay == "none" || regionDisplay.indexOf("inline") !== -1) {
-                if(region = regions.pop()) { continue } else { return callback(!!remainingContent.hasChildNodes()) };
+                if(region = regions.pop()) { continue } else { return callback.ondone(!!remainingContent.hasChildNodes()) };
             } else {
                 break;
             }
@@ -71,12 +71,12 @@ var cssRegions = {
         // avoid doing the layout of empty regions
         if(!remainingContent.hasChildNodes()) {
             
-            region.cssRegionsLastOffsetHeight = region.offsetHeight;
-            region.cssRegionsLastOffsetWidth = region.offsetWidth;
+            region.cssRegionHost.cssRegionsLastOffsetHeight = region.cssRegionHost.offsetHeight;
+            region.cssRegionHost.cssRegionsLastOffsetWidth = region.cssRegionHost.offsetWidth;
             
             region.cssRegionHost.regionOverset = 'empty';
             cssRegions.layoutContent(regions, remainingContent, callback, startTime);
-            return callback(false);
+            return callback.ondone(false);
             
         }
         
@@ -119,7 +119,7 @@ var cssRegions = {
             } else {
                 
                 console.log(startTime); console.log(Date.now());
-                return setImmediate(function() {
+                return callback.onprogress(function() {
                     cssRegions.layoutContent(regions, remainingContent, callback);
                 });
                 
@@ -137,7 +137,7 @@ var cssRegions = {
                 region.cssRegionHost.cssRegionsLastOffsetHeight = region.cssRegionHost.offsetHeight;
                 region.cssRegionHost.cssRegionsLastOffsetWidth = region.cssRegionHost.offsetWidth;
                 
-                return callback(didOverflow);
+                return callback.ondone(didOverflow);
                 
             } else {
                 
@@ -146,7 +146,7 @@ var cssRegions = {
                 region.cssRegionHost.cssRegionsLastOffsetWidth = region.cssRegionHost.offsetWidth;
                 
                 // WE RETURN FALSE IF WE DIDN'T OVERFLOW
-                return callback(region.cssRegionHost.offsetHeight != region.cssRegionHost.scrollHeight);
+                return callback.ondone(region.cssRegionHost.offsetHeight != region.cssRegionHost.scrollHeight);
                 
             }
             
