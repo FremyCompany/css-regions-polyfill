@@ -443,6 +443,7 @@ Range.prototype.myGetExtensionRect = function() {
         // correct with the new take
         var prevSibRect = Node.getBoundingClientRect(previousSibling);
         var adjustedBottom = Math.max(rect.bottom,prevSibRect.bottom);
+        if(adjustedBottom == rect.bottom) return rect;
         return {
             
             left: rect.left,
