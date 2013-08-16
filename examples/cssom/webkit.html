@@ -19,7 +19,6 @@ limitations under the License.
     <title>CSSOM Example</title>
 
     <link rel="stylesheet" href="../support.css" />
-    <script src="../../cssregions.js"></script>
 
     <style>
         body {
@@ -30,13 +29,12 @@ limitations under the License.
         }
 
         #source {
-            flow-into: article;
+            -webkit-flow-into: article;
             clear: both;
         }
 
         .myregions {
-            flow-from: article;
-            region-fragment: break;
+            -webkit-flow-from: article;
             float: left;
             width: 25%;
             min-width: 200px;
