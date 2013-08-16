@@ -440,6 +440,7 @@ Range.prototype.myGetExtensionRect = function() {
     var previousSibling = this.endContainer.childNodes[this.endOffset-1];
     if(previousSibling) {
         
+        // correct with the new take
         var prevSibRect = Node.getBoundingClientRect(previousSibling);
         var adjustedBottom = Math.max(rect.bottom,prevSibRect.bottom);
         return {
@@ -454,7 +455,7 @@ Range.prototype.myGetExtensionRect = function() {
             
         };
         
-    } else if(this.endContainer.nodeType === 3) {
+    } else if(this.bottom==0 && this.endContainer.nodeType === 3) {
         
         // note that if we are in a text node, 
         // we may want to cover all the previous
@@ -472,7 +473,21 @@ Range.prototype.myGetExtensionRect = function() {
             // otherwhise, let's rely on previous chars
             var auxiliaryRange = this.cloneRange();
             auxiliaryRange.setStart(this.endContainer,0);
-            return auxiliaryRange.getBoundingClientRect();
+            
+            // correct with the new take
+            var prevSibRect = auxiliaryRange.getBoundingClientRect();
+            var adjustedBottom = Math.max(rect.bottom,prevSibRect.bottom);
+            return {
+                
+                left: rect.left,
+                right: rect.right,
+                width: rect.width,
+                
+                top: rect.top,
+                bottom: adjustedBottom,
+                height: adjustedBottom - rect.top
+                
+            };
             
         }
         
