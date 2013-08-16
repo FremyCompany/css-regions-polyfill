@@ -454,6 +454,28 @@ Range.prototype.myGetExtensionRect = function() {
             
         };
         
+    } else if(this.endContainer.nodeType === 3) {
+        
+        // note that if we are in a text node, 
+        // we may want to cover all the previous
+        // text in the node to avoid whitespace
+        // related bugs
+        
+        var onlyWhiteSpaceBefore = /^(\s|\n)*$/.test(this.endContainer.nodeValue.substr(0,this.endOffset));
+        if(onlyWhiteSpaceBefore) {
+            
+            // if we are in the fucking whitespace land, abort
+            return this.endContainer.parentNode.getBoundingClientRect();
+            
+        } else {
+            
+            // otherwhise, let's rely on previous chars
+            var auxiliaryRange = this.cloneRange();
+            auxiliaryRange.setStart(this.endContainer,0);
+            return auxiliaryRange.getBoundingClientRect();
+            
+        }
+        
     } else {
         
         return rect;
