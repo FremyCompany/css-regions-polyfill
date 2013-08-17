@@ -5260,24 +5260,74 @@ var cssRegions = {
         // [4] make sure we react to window resizes
         //
         //
-        var checkAssumptions = function() {
+        var lastWindowResize = 0;
+        var relayoutModifiedFlows = function() {
             
             // specify the function did run
-            checkAssumptions.timeout = 0;
+            relayoutModifiedFlows.timeout = 0;
             
             // rerun the layout
             var flows = document.getNamedFlows();
             for(var i=0; i<flows.length; i++) {
-                flows[i].relayoutIfSizeChanged();
+                if(flows[i].lastRelayout > lastWindowResize) continue;
+                if(flows[i].relayoutInProgress) {
+                    flows[i].relayout();
+                } else {
+                    flows[i].relayoutIfSizeChanged();
+                }
+            }
+            
+        }
+        var hasOngoingLayouts = function() {
+            
+            var flows = document.getNamedFlows();
+            for(var i=0; i<flows.length; i++) {
+                if(flows[i].lastRelayout > lastWindowResize) continue;
+                if(flows[i].relayoutInProgress) {
+                    return true;
+                }
+            }
+            
+            return false;
+            
+        }
+        var restartOngoingLayouts = function() {
+            
+            var flows = document.getNamedFlows();
+            for(var i=0; i<flows.length; i++) {
+                if(flows[i].lastRelayout > lastWindowResize) continue;
+                if(flows[i].relayoutInProgress) {
+                    flows[i].relayout();
+                }
             }
             
         }
         window.addEventListener("resize",
             function() {
                 
-                // only run the resize code every 200ms
-                if(checkAssumptions.timeout) { return; }
-                checkAssumptions.timeout = setTimeout(checkAssumptions, 200);
+                // update the last layout flag
+                lastWindowResize = +new Date();
+                
+                // if we aren't planning a resfresh already
+                if(!relayoutModifiedFlows.timeout) { 
+                    
+                    // if we are already busy
+                    if(hasOngoingLayouts()) {
+                        
+                        // restart all layouts now
+                        setTimeout(restartOngoingLayouts, 16);
+                        
+                        // wait half a second before restarting them from now
+                        relayoutModifiedFlows.timeout = setTimeout(relayoutModifiedFlows, 500);
+                        
+                    } else {
+                        
+                        // debounce by running the resize code every 200ms
+                        relayoutModifiedFlows.timeout = setTimeout(relayoutModifiedFlows, 200);
+                        
+                    }
+                    
+                }
                 
             }
         );
@@ -5530,6 +5580,7 @@ cssRegions.Flow.prototype._relayout = function(data){
         //
         console.log("starting a new relayout for "+This.name);
         This.relayoutInProgress=true; This.relayoutScheduled=false;
+        This.lastRelayout = +new Date();
         //debugger;
         
         // NOTE: we recover the scroll position in case the browser mess it up

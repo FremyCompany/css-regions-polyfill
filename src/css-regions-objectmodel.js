@@ -240,6 +240,7 @@ cssRegions.Flow.prototype._relayout = function(data){
         //
         console.log("starting a new relayout for "+This.name);
         This.relayoutInProgress=true; This.relayoutScheduled=false;
+        This.lastRelayout = +new Date();
         //debugger;
         
         // NOTE: we recover the scroll position in case the browser mess it up
