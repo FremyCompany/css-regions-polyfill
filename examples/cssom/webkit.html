@@ -30,6 +30,7 @@ limitations under the License.
 
         #source {
             -webkit-flow-into: article;
+            shape-inside: 0;
             clear: both;
         }
 
@@ -83,6 +84,12 @@ limitations under the License.
 
 
 <script>
+    
+    if(!document.getNamedFlow) {
+        document.getNamedFlow = function(name) {
+            return document.webkitGetNamedFlows().namedItem(name)
+        }
+    }
     
     function init(){
         
