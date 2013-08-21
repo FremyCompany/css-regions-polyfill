@@ -5645,7 +5645,6 @@ cssRegions.Flow.prototype._relayout = function(data){
         
         // layout this stuff
         cssRegions.layoutContent(regionStack, contentFragment, {
-        	ondone: ondone,
 			onprogress: function(continueLayout) {
 				
 	            // NOTE: we recover the scroll position in case the browser mess it up
@@ -5654,6 +5653,7 @@ cssRegions.Flow.prototype._relayout = function(data){
 				
 				// NOTE: if the current layout goes nowhere, start a new one already
 	            if(This.restartLayout) {
+					
 		            This.relayoutInProgress = false;
 		            This.failedLayoutCount = 0;
 	                This.restartLayout = false;
@@ -5661,116 +5661,115 @@ cssRegions.Flow.prototype._relayout = function(data){
 	                	docElmScrollTop: docElmScrollTop,
 						docBdyScrollTop: docBdyScrollTop
 	                });
+					
 	            } else {
 	            	
 					setImmediate(continueLayout);
 					
 	            }
 				
-			}
-        })
-		
-		function ondone(overset) {
-
-            This.overset = overset;
-            This.firstEmptyRegionIndex = This.regions.length-1; while(This.regions[This.firstEmptyRegionIndex]) {
-
-                // tell whether the region is empty
-                var isEmpty = false;
-                isEmpty = isEmpty || !This.regions[This.firstEmptyRegionIndex].cssRegionsWrapper;
-                isEmpty = isEmpty || !This.regions[This.firstEmptyRegionIndex].cssRegionsWrapper.firstChild;
-
-                // if the region is not empty
-                if(!isEmpty) {
-    
-                    // the first empty region if the next one, if it exists
-                    if((++This.firstEmptyRegionIndex)==This.regions.length) {
-                        This.firstEmptyRegionIndex = -1;
+			},
+            ondone: function onLayoutDone(overset) {
+            
+                This.overset = overset;
+                This.firstEmptyRegionIndex = This.regions.length-1; while(This.regions[This.firstEmptyRegionIndex]) {
+                
+                    // tell whether the region is empty
+                    var isEmpty = false;
+                    isEmpty = isEmpty || !This.regions[This.firstEmptyRegionIndex].cssRegionsWrapper;
+                    isEmpty = isEmpty || !This.regions[This.firstEmptyRegionIndex].cssRegionsWrapper.firstChild;
+                    
+                    // if the region is not empty
+                    if(!isEmpty) {
+                        
+                        // the first empty region if the next one, if it exists
+                        if((++This.firstEmptyRegionIndex)==This.regions.length) {
+                            This.firstEmptyRegionIndex = -1;
+                        }
+                        break;
+                        
+                    } else {
+                         
+                        // else, let's try the previous region
+                        This.firstEmptyRegionIndex--; 
+                        
                     }
-                    break;
-    
-                } else {
-    
-                    // else, let's try the previous region
-                    This.firstEmptyRegionIndex--; 
-    
                 }
-            }
-
-
-
-            //
-            // STEP 6: REGISTER TO UPDATE EVENTS
-            //
-
-            // make sure regions update are taken in consideration
-            if(window.MutationObserver) {
-                This.addEventListenersTo(This.content);
-                This.addEventListenersTo(This.regions);
-            } else {
-                // the other browsers don't get this as acurately
-                // but that shouldn't be that of an issue for 99% of the cases
-                setImmediate(function() {
+                
+                
+                
+                //
+                // STEP 6: REGISTER TO UPDATE EVENTS
+                //
+                
+                // make sure regions update are taken in consideration
+                if(window.MutationObserver) {
                     This.addEventListenersTo(This.content);
-                });
-            }
-
-
-
-            //
-            // STEP 7: FIRE SOME EVENTS
-            //
-            if(This.regions.length > 0 && !This.restartLayout) {
-
-                // before doing anything, let's check our stuff is consistent
-                var isBuggy = false;
-                isBuggy = isBuggy || This.regions.some(function(e) { return !document.documentElement.contains(e); })
-                isBuggy = isBuggy || This.content.some(function(e) { return !document.documentElement.contains(e); })
-
-                if(isBuggy) {
-    
-                    // if we found any bug, we will need to restart a layout
-                    console.warn("Buggy css regions layout: the page changed; we need to restart.");
-                    This.restartLayout = true; 
-    
+                    This.addEventListenersTo(This.regions);
                 } else {
-    
-                    // if it was okay, let's fire some event
-                    This.lastEventRAF = requestAnimationFrame(function() {
-        
-                        // TODO: only fire when necessary but...
-                        This.dispatchEvent('regionfragmentchange');
-                        This.dispatchEvent('regionoversetchange');
-        
+                    // the other browsers don't get this as acurately
+                    // but that shouldn't be that of an issue for 99% of the cases
+                    setImmediate(function() {
+                        This.addEventListenersTo(This.content);
                     });
-    
                 }
+                
+                
+                
+                //
+                // STEP 7: FIRE SOME EVENTS
+                //
+                if(This.regions.length > 0 && !This.restartLayout) {
+                    
+                    // before doing anything, let's check our stuff is consistent
+                    var isBuggy = false;
+                    isBuggy = isBuggy || This.regions.some(function(e) { return !document.documentElement.contains(e); })
+                    isBuggy = isBuggy || This.content.some(function(e) { return !document.documentElement.contains(e); })
+                    
+                    if(isBuggy) {
+                        
+                        // if we found any bug, we will need to restart a layout
+                        console.warn("Buggy css regions layout: the page changed; we need to restart.");
+                        This.restartLayout = true; 
+                        
+                    } else {
+                        
+                        // if it was okay, let's fire some event
+                        This.lastEventRAF = requestAnimationFrame(function() {
+                        
+                            // TODO: only fire when necessary but...
+                            This.dispatchEvent('regionfragmentchange');
+                            This.dispatchEvent('regionoversetchange');
+                            
+                        });
+                        
+                    }
+                }
+                
+                
+                // NOTE: we recover the scroll position in case the browser mess it up
+                document.documentElement.scrollTop = docElmScrollTop;
+                document.body.scrollTop = docBdyScrollTop;
+                
+                // mark layout has being done
+                This.relayoutInProgress = false;
+                This.failedLayoutCount = 0;
+                
+                // restart a layout if a request was queued during the current one
+                if(This.restartLayout) {
+                    This.restartLayout = false;
+                    This.relayout();
+                }
+                
             }
-
-
-            // NOTE: we recover the scroll position in case the browser mess it up
-            document.documentElement.scrollTop = docElmScrollTop;
-            document.body.scrollTop = docBdyScrollTop;
-
-            // mark layout has being done
-            This.relayoutInProgress = false;
-            This.failedLayoutCount = 0;
-
-            // restart a layout if a request was queued during the current one
-            if(This.restartLayout) {
-                This.restartLayout = false;
-                This.relayout();
-            }
-
-        }
-        
+        });
         
     } catch(ex) {
         
         // sometimes IE fails for no valid reason 
         // (other than the page is still loading)
         setImmediate(function() { throw ex; });
-
+        
         // but we cannot accept to fail, so we need to try again
         // until we finish a complete layout pass...
         This.failedLayoutCount++;
