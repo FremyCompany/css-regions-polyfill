@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
     <!--
@@ -127,6 +126,10 @@
         </style>
 
         <script>
+            window.console = window.console || {
+                log: function(x) { alert(x); }
+                dir: function(x) { alert(JSON.stringify(x)); }
+            }
             window.onerror = function() {
                 alert([].slice.call(arguments,0).join("\n"))
             }
