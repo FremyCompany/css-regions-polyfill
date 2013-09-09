@@ -30,7 +30,6 @@ limitations under the License.
 
         #source {
             -webkit-flow-into: article;
-            shape-inside: 0;
             clear: both;
         }
 
@@ -44,6 +43,35 @@ limitations under the License.
             background-color: #b0dcff;
             height: auto;
         }
+        
+        .myregions:first-child {
+            width: 25%;
+            -webkit-shape-inside: rectangle(10%, 10%, 80%, 80%);
+            -webkit-shape-inside: ellipse(30%,30%,40%,40%);
+            -webkit-shape-inside: circle(30%, 30%, 40%);
+            -webkit-shape-inside: polygon(0% 0%, 75% 0%, 100% 100%, 0% 100%);
+            -webkit-shape-inside: polygon(0% 0%, 50% 0%, 100% 100%, 0% 100%);
+            -webkit-shape-outside: polygon(0px 0px, 200px 0px, 200px 200px, 0px 200px);
+        }
+        
+        .myregions {
+            
+            -webkit-shape-inside: auto; font-size: 100%; 
+            
+            -webkit-shape-outside: 
+                blurp(
+                    0px 0px 3px
+                ); 
+                
+        }
+        
+        .myregions:hover {
+            -webkit-shape-inside: polygon(0% 0%, 100% 0%, 100% 100%);
+        }
+        
+        #nonsense {
+            -webkit-shape-inside: polygon(0% 0%, 100% 0%, 100% 100%);
+        }
 
         .region-small-height {
             background-color: #dedede;
@@ -54,6 +82,13 @@ limitations under the License.
         p {
             line-height: 1.6em;
             margin-top: 0px;
+        }
+        
+        #SOME-MORE
+        #NON-SENSICAL
+        #SELECTOR
+        {
+            shape-inside: 
         }
 
     </style>
