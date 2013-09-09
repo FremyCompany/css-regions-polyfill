@@ -324,7 +324,7 @@ Range.prototype.myGetSelectionRect = function() {
     if(this.collapsed && rect.top===0 && rect.bottom===0) {
         
         // select one char and infer location
-        var clone = this.cloneRange(); var collapseToLeft=false; clone.collapse(); 
+        var clone = this.cloneRange(); var collapseToLeft=false; clone.collapse(false); 
         
         // the case where no char before is tricky...
         if(clone.startOffset==0) {
