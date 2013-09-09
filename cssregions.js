@@ -313,28 +313,22 @@ Range.prototype.myMoveEndOneCharRight = function() {
 Range.prototype.myGetSelectionRect = function() {
     
     // get the browser's claimed rect
-    var rect = this.getBoundingClientRect(); 
+    var rect = this.getBoundingClientRect();
 	
+	// HACK FOR ANDROID BROWSER AND OLD WEBKIT
 	if(!rect) { 
-		function elm(x) { return { tagName:x.tagName, className:x.className, id:x.id, innerHTML:(x.innerHTML||'#text').substr(0,100)} }
-		console.log(JSON.stringify({
-			startContainer :elm(this.startContainer),
-			startOffset    :this.startOffset,
-			endContainer   :elm(this.endContainer),
-			endOffset      :this.endOffset			
-		})); 
 		rect={top:0,right:0,bottom:0,left:0,width:0,height:0}; 
 	}
-
+    
     // if the value seems wrong... (some browsers don't like collapsed selections)
     if(this.collapsed && rect.top===0 && rect.bottom===0) {
-    
+        
         // select one char and infer location
         var clone = this.cloneRange(); var collapseToLeft=false; clone.collapse(); 
-    
+        
         // the case where no char before is tricky...
         if(clone.startOffset==0) {
-        
+            
             // let's move on char to the right
             clone.myMoveTowardRight();
             collapseToLeft=true;
@@ -344,49 +338,49 @@ Range.prototype.myGetSelectionRect = function() {
             // iterate this process until we have one true
             // char selected
             clone.setStart(clone.endContainer, 0); 
-        
+            
         } else {
-        
+            
             // else, just select the char before
             clone.setStart(this.startContainer, this.startOffset-1);
             collapseToLeft=false;
-        
+            
         }
-    
+        
         // get some real rect
         var rect = clone.myGetSelectionRect();
-    
+        
         // compute final value
         if(collapseToLeft) {
             return {
-            
+                
                 left: rect.left,
                 right: rect.left,
                 width: 0,
-            
+                
                 top: rect.top,
                 bottom: rect.bottom,
                 height: rect.height
-            
+                
             }
         } else {
             return {
-            
+                
                 left: rect.right,
                 right: rect.right,
                 width: 0,
-            
+                
                 top: rect.top,
                 bottom: rect.bottom,
                 height: rect.height
-            
+                
             }
         }
-    
+        
     } else {
         return rect;
     }
-
+    
 }
 
 // not sure it's needed but still
@@ -408,17 +402,14 @@ Node.getBoundingClientRect = function getBoundingClientRect(element) {
         
     }
 	
+	// HACK FOR ANDROID BROWSER AND OLD WEBKIT
 	if(!rect) { 
-		function elm(x) { return { tagName:x.tagName, className:x.className, id:x.id, innerHTML:(x.innerHTML||'#text').substr(0,100)} }
-		console.log(JSON.stringify({
-			__             :'Node.getBoundingClientRect',
-			element        :elm(element)
-		})); 
 		rect={top:0,right:0,bottom:0,left:0,width:0,height:0}; 
 	}
 	
 	return rect;
 };
+
 
 // make getCR working on text nodes & stuff
 Node.getClientRects = function getClientRects(firstChild) {
@@ -5814,7 +5805,7 @@ cssRegions.Flow.prototype._relayout = function(data){
         
         // sometimes IE fails for no valid reason 
         // (other than the page is still loading)
-        setImmediate(function() { console.log(ex.stack); throw ex; });
+        setImmediate(function() { throw ex; });
         
         // but we cannot accept to fail, so we need to try again
         // until we finish a complete layout pass...
