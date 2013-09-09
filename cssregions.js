@@ -511,7 +511,7 @@ if(!window.console) {
 	    dir: function(x) { try { this.log(JSON.stringify(x)); } catch(ex) { this.log(x) } }
 	}
 	window.onerror = function() {
-	    console.log([].slice.call(arguments,0).join("\n"))
+	    alert([].slice.call(arguments,0).join("\n"))
 	}
 	
 }
