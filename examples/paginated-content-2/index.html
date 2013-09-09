@@ -127,8 +127,8 @@
 
         <script>
             window.console = window.console || {
-                log: function(x) { alert(x); },
-                dir: function(x) { alert(JSON.stringify(x)); }
+                log: function(x) { if(false) alert(x); },
+                dir: function(x) { this.log(JSON.stringify(x)); }
             }
             window.onerror = function() {
                 alert([].slice.call(arguments,0).join("\n"))
