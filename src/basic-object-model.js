@@ -1,5 +1,23 @@
 "use script";
 
+//
+// some code for console polyfilling
+//
+if(!window.console) {
+	
+	window.console = {
+	    log: function(x) { if(false) alert(x); },
+	    dir: function(x) { try { this.log(JSON.stringify(x)); } catch(ex) { this.log(x) } }
+	}
+	window.onerror = function() {
+	    console.log([].slice.call(arguments,0).join("\n"))
+	}
+	
+}
+
+//
+// some other basic om code
+//
 var basicObjectModel = {
     
     //

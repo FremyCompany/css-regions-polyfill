@@ -127,15 +127,6 @@
 
         </style>
 
-        <script>
-            window.console = window.console || {
-                log: function(x) { if(false) alert(x); },
-                dir: function(x) { try { this.log(JSON.stringify(x)); } catch(ex) { this.log(x) } }
-            }
-            window.onerror = function() {
-                console.log([].slice.call(arguments,0).join("\n"))
-            }
-        </script>
         <script src="../../cssregions.js"></script>
         <script type="text/javascript">
             
