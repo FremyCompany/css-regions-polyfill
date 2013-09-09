@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+<head>
+    <title>Test DOM Ranges</title>
+</head>
+<body>
+    <div>
+        Some text
+    </div>
+    <pre><script>
+    
+    var div = document.querySelector('div');
+    var x = document.createRange();
+
+    x.selectNodeContents(div);
+    document.writeln(x.getBoundingClientRect());
+    document.writeln(JSON.stringify(x.getBoundingClientRect()));
+    document.writeln('');
+    
+
+    x.setStart(div.firstChild, 0);
+    x.setEnd(div.firstChild, 1);
+    document.writeln(x.getBoundingClientRect());
+    document.writeln(JSON.stringify(x.getBoundingClientRect()));
+    document.writeln('');
+    
+
+    x.setStart(div.firstChild, 0);
+    x.setEnd(div.firstChild, 11);
+    document.writeln(x.getBoundingClientRect());
+    document.writeln(JSON.stringify(x.getBoundingClientRect()));
+    document.writeln('');
+    </script></pre>
+</body>
+</html>

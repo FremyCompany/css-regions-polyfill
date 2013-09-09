@@ -314,18 +314,23 @@ Range.prototype.myGetSelectionRect = function() {
     
     // get the browser's claimed rect
     var rect = this.getBoundingClientRect();
+	
+	// HACK FOR ANDROID BROWSER AND OLD WEBKIT
+	if(!rect) { 
+		rect={top:0,right:0,bottom:0,left:0,width:0,height:0}; 
+	}
     
     // if the value seems wrong... (some browsers don't like collapsed selections)
     if(this.collapsed && rect.top===0 && rect.bottom===0) {
         
         // select one char and infer location
-        var clone = this.cloneRange(); var collapseToLeft=false;
+        var clone = this.cloneRange(); var collapseToLeft=false; clone.collapse(); 
         
         // the case where no char before is tricky...
         if(clone.startOffset==0) {
             
             // let's move on char to the right
-            clone.myMoveOneCharRight();
+            clone.myMoveTowardRight();
             collapseToLeft=true;
 
             // note: some browsers don't like selections
@@ -383,20 +388,28 @@ if(!window.Element) window.Element=window.HTMLElement;
 if(!window.Node) window.Node = {};
 
 // make getBCR working on text nodes & stuff
-Node.getBoundingClientRect = function getBoundingClientRect(firstChild) {
-    if (firstChild.getBoundingClientRect) {
+Node.getBoundingClientRect = function getBoundingClientRect(element) {
+    if (element.getBoundingClientRect) {
         
-        return firstChild.getBoundingClientRect();
+        var rect = element.getBoundingClientRect();
         
     } else {
         
         var range = document.createRange();
-        range.selectNode(firstChild);
+        range.selectNode(element);
         
-        return range.getBoundingClientRect();
+        var rect = range.getBoundingClientRect();
         
     }
+	
+	// HACK FOR ANDROID BROWSER AND OLD WEBKIT
+	if(!rect) { 
+		rect={top:0,right:0,bottom:0,left:0,width:0,height:0}; 
+	}
+	
+	return rect;
 };
+
 
 // make getCR working on text nodes & stuff
 Node.getClientRects = function getClientRects(firstChild) {
