@@ -4677,13 +4677,17 @@ var cssRegions = {
         
         function fixNullRect() {
             if(rect.bottom==0 && rect.top==0 && rect.left==0 && rect.right==0) {
+				
+				var scrollTop = -(document.documentElement.scrollTop || document.body.scrollTop);
+				var scrollLeft = -(document.documentElement.scrollLeft || document.body.scrollLeft);
+				
                 rect = {
                     width: 0,
                     heigth: 0,
-                    top: -document.body.scrollTop,
-                    bottom: -document.body.scrollTop,
-                    left: -document.body.scrollLeft,
-                    right: -document.body.scrollLeft
+                    top: scrollTop,
+                    bottom: scrollTop,
+                    left: scrollLeft,
+                    right: scrollLeft
                 }
             }
         }
