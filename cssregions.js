@@ -4040,6 +4040,7 @@ var cssRegionsHelpers = {
                     if(node.hasAttribute('data-css-regions-cloning')) {
                         node.removeAttribute('data-css-regions-cloning');
                         node.setAttribute('data-css-regions-cloned', true);
+						if(node.currentStyle) node.currentStyle.display.toString(); // IEFIX FOR BAD STYLE RECALC
                     }
                     if(typeof(k)=="undefined") return;
                     
@@ -4116,6 +4117,7 @@ var cssRegionsHelpers = {
                 case 1: // Element node
                     node.removeAttribute('data-css-regions-cloned');
                     node.removeAttribute('data-css-regions-fragment-source');
+					if(node.currentStyle) node.currentStyle.display.toString(); // IEFIX FOR BAD STYLE RECALC
                     if(node.tagName=="OL") cssRegionsHelpers.unexpandListValues(node);
                     if(typeof(k)!="undefined" && node.tagName=="LI") cssRegionsHelpers.unexpandListValues(node.parentNode);
                     
