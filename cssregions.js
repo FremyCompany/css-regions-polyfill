@@ -5792,7 +5792,7 @@ cssRegions.Flow.prototype._relayout = function(data){
         
         // sometimes IE fails for no valid reason 
         // (other than the page is still loading)
-        setImmediate(function() { throw ex; });
+        setImmediate(function() { console.log(ex.stack); throw ex; });
         
         // but we cannot accept to fail, so we need to try again
         // until we finish a complete layout pass...
