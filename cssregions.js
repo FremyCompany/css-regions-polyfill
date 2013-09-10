@@ -518,16 +518,50 @@ Range.prototype.myGetExtensionRect = function() {
 // some code for console polyfilling
 //
 if(!window.console) {
-	
+		
 	window.console = {
-	    log: function(x) { if(false) alert(x); },
-	    dir: function(x) { try { this.log(JSON.stringify(x)); } catch(ex) { this.log(x) } }
+	    log: function(x) { if(window.debug) alert(x); },
+	    dir: function(x) { try { 
+			
+			function elm(e) {
+				if(e.innerHTML) {
+					return {
+						tagName: e.tagName,
+						className: e.className,
+						id: e.id,
+						innerHTML: e.innerHTML.substr(0,100)
+					}
+				} else {
+					return {
+						nodeName: e.nodeName,
+						nodeValue: e.nodeValue
+					}
+				}
+			};
+			
+			function jsonify(o){
+			    var seen=[];
+			    var jso=JSON.stringify(o, function(k,v){
+			        if (typeof v =='object') {
+			            if ( !seen.indexOf(v) ) { return '__cycle__'; }
+						if ( v instanceof window.Node) { return elm(v); }
+			            seen.push(v);
+			        } return v;
+			    });
+			    return jso;
+			};
+			
+			this.log(jsonify(x)); 
+			
+		} catch(ex) { this.log(x) } }
 	}
+	
 	window.onerror = function() {
-	    alert([].slice.call(arguments,0).join("\n"))
+	    console.log([].slice.call(arguments,0).join("\n"))
 	}
 	
 }
+
 
 //
 // some other basic om code
@@ -4548,7 +4582,10 @@ var cssRegions = {
             region.cssRegionHost.cssRegionsLastOffsetWidth = region.cssRegionHost.offsetWidth;
             
             region.cssRegionHost.regionOverset = 'empty';
-            cssRegions.layoutContent(regions, remainingContent, callback, startTime);
+			
+			var dummyCallback = { ondone:function(){}, onprogress:function(f){f()} };
+            cssRegions.layoutContent(regions, remainingContent, dummyCallback, startTime);
+			
             return callback.ondone(false);
             
         }
@@ -4558,76 +4595,112 @@ var cssRegions = {
         
         // check if we have more regions to process
         if(regions.length !== 0) {
+			
+            return this.layoutContentInNextRegionsWhenReady(region, regions, remainingContent, callback, startTime);
             
-            // check if there was an overflow
-            if(region.cssRegionHost.scrollHeight != region.cssRegionHost.offsetHeight) {
-                
-                // the remaining content is what was overflowing
-                remainingContent = this.extractOverflowingContent(region);
-                
-            } else {
-                
-                // there's nothing more to insert
-                remainingContent = document.createDocumentFragment();
-                
-            }
+        } else {
             
-            // if any content didn't fit
-            if(remainingContent.hasChildNodes()) {
-                region.cssRegionHost.regionOverset = 'overset';
-            } else {
-                region.cssRegionHost.regionOverset = 'fit';
-            }
+            return this.layoutContentInLastRegionWhenReady(region, regions, remainingContent, callback, startTime);
+            
+        }
+                
+    },
+	
+	layoutContentInNextRegionsWhenReady: function(region, regions, remainingContent, callback, startTime) {
+				
+		// delays until all images are loaded
+		var imgs = region.getElementsByTagName('img');
+		for(var imgs_index=imgs.length; imgs_index--; ) {
+			if(!imgs[imgs_index].complete) {
+				return setTimeout(
+					function() {
+		            	this.layoutContentInNextRegionsWhenReady(region, regions, remainingContent, callback, startTime+32);
+					}.bind(this), 
+					16
+				);
+			}
+		}
+		
+        // check if there was an overflow
+        if(region.cssRegionHost.scrollHeight != region.cssRegionHost.offsetHeight) {
+            
+            // the remaining content is what was overflowing
+            remainingContent = this.extractOverflowingContent(region);
+            
+        } else {
+            
+            // there's nothing more to insert
+            remainingContent = document.createDocumentFragment();
+            
+        }
+        
+        // if any content didn't fit
+        if(remainingContent.hasChildNodes()) {
+            region.cssRegionHost.regionOverset = 'overset';
+        } else {
+            region.cssRegionHost.regionOverset = 'fit';
+        }
+        
+        // update flags
+        region.cssRegionHost.cssRegionsLastOffsetHeight = region.cssRegionHost.offsetHeight;
+        region.cssRegionHost.cssRegionsLastOffsetWidth = region.cssRegionHost.offsetWidth;
+        
+        // layout the next regions
+        // WE LET THE NEXT REGION DECIDE WHAT TO RETURN
+        if(startTime+200 > Date.now()) {
+            
+            return cssRegions.layoutContent(regions, remainingContent, callback, startTime);
+            
+        } else {
+            
+            console.log(startTime); console.log(Date.now());
+            return callback.onprogress(function() {
+                cssRegions.layoutContent(regions, remainingContent, callback);
+            });
+            
+        }
+		
+	},
+	
+	layoutContentInLastRegionWhenReady: function(region, regions, remainingContent, callback, startTime) {
+		
+		// delays until all images are loaded
+		var imgs = region.getElementsByTagName('img');
+		for(var imgs_index=imgs.length; imgs_index--; ) {
+			if(!imgs[imgs_index].complete) {
+				return setTimeout(
+					function() {
+		            	this.layoutContentInLastRegionWhenReady(region, regions, remainingContent, callback, startTime+32);
+					}.bind(this), 
+					32
+				);
+			}
+		}
+		
+        // support region-fragment: break
+        if(cssCascade.getSpecifiedStyle(region.cssRegionHost,"region-fragment",undefined,true).toCSSString().trim().toLowerCase()=="break") {
+            
+            // WE RETURN TRUE IF WE DID OVERFLOW
+            var didOverflow = (this.extractOverflowingContent(region).hasChildNodes());
             
             // update flags
             region.cssRegionHost.cssRegionsLastOffsetHeight = region.cssRegionHost.offsetHeight;
             region.cssRegionHost.cssRegionsLastOffsetWidth = region.cssRegionHost.offsetWidth;
             
-            // layout the next regions
-            // WE LET THE NEXT REGION DECIDE WHAT TO RETURN
-            if(startTime+200 > Date.now()) {
-                
-                return cssRegions.layoutContent(regions, remainingContent, callback, startTime);
-                
-            } else {
-                
-                console.log(startTime); console.log(Date.now());
-                return callback.onprogress(function() {
-                    cssRegions.layoutContent(regions, remainingContent, callback);
-                });
-                
-            }
+            return callback.ondone(didOverflow);
             
         } else {
             
-            // support region-fragment: break
-            if(cssCascade.getSpecifiedStyle(region.cssRegionHost,"region-fragment",undefined,true).toCSSString().trim().toLowerCase()=="break") {
-                
-                // WE RETURN TRUE IF WE DID OVERFLOW
-                var didOverflow = (this.extractOverflowingContent(region).hasChildNodes());
-                
-                // update flags
-                region.cssRegionHost.cssRegionsLastOffsetHeight = region.cssRegionHost.offsetHeight;
-                region.cssRegionHost.cssRegionsLastOffsetWidth = region.cssRegionHost.offsetWidth;
-                
-                return callback.ondone(didOverflow);
-                
-            } else {
-                
-                // update flags
-                region.cssRegionHost.cssRegionsLastOffsetHeight = region.cssRegionHost.offsetHeight;
-                region.cssRegionHost.cssRegionsLastOffsetWidth = region.cssRegionHost.offsetWidth;
-                
-                // WE RETURN FALSE IF WE DIDN'T OVERFLOW
-                return callback.ondone(region.cssRegionHost.offsetHeight != region.cssRegionHost.scrollHeight);
-                
-            }
+            // update flags
+            region.cssRegionHost.cssRegionsLastOffsetHeight = region.cssRegionHost.offsetHeight;
+            region.cssRegionHost.cssRegionsLastOffsetWidth = region.cssRegionHost.offsetWidth;
+            
+            // WE RETURN FALSE IF WE DIDN'T OVERFLOW
+            return callback.ondone(region.cssRegionHost.offsetHeight != region.cssRegionHost.scrollHeight);
             
         }
-        
-        return callback(true);
-        
-    },
+	},
+
     
     //
     // this function returns a document fragment containing the content

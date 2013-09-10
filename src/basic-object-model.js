@@ -4,16 +4,50 @@
 // some code for console polyfilling
 //
 if(!window.console) {
-	
+		
 	window.console = {
-	    log: function(x) { if(false) alert(x); },
-	    dir: function(x) { try { this.log(JSON.stringify(x)); } catch(ex) { this.log(x) } }
+	    log: function(x) { if(window.debug) alert(x); },
+	    dir: function(x) { try { 
+			
+			function elm(e) {
+				if(e.innerHTML) {
+					return {
+						tagName: e.tagName,
+						className: e.className,
+						id: e.id,
+						innerHTML: e.innerHTML.substr(0,100)
+					}
+				} else {
+					return {
+						nodeName: e.nodeName,
+						nodeValue: e.nodeValue
+					}
+				}
+			};
+			
+			function jsonify(o){
+			    var seen=[];
+			    var jso=JSON.stringify(o, function(k,v){
+			        if (typeof v =='object') {
+			            if ( !seen.indexOf(v) ) { return '__cycle__'; }
+						if ( v instanceof window.Node) { return elm(v); }
+			            seen.push(v);
+			        } return v;
+			    });
+			    return jso;
+			};
+			
+			this.log(jsonify(x)); 
+			
+		} catch(ex) { this.log(x) } }
 	}
+	
 	window.onerror = function() {
-	    alert([].slice.call(arguments,0).join("\n"))
+	    console.log([].slice.call(arguments,0).join("\n"))
 	}
 	
 }
+
 
 //
 // some other basic om code
