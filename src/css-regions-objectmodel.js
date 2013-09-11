@@ -41,7 +41,7 @@ cssRegions.Flow = function NamedFlow(name) {
             This.lastStylesheetAdded = +Date();
             This.relayout();
         } else {
-            console.warn("Please don't add stylesheets as a response to region events. Operation cancelled.")
+            cssConsole.warn("Please don't add stylesheets as a response to region events. Operation cancelled.")
         }
     });
     
@@ -238,7 +238,7 @@ cssRegions.Flow.prototype._relayout = function(data){
         // drawings I made before attempting to understand
         // this stuff. If you don't have them, ask me.
         //
-        console.log("starting a new relayout for "+This.name);
+        cssConsole.log("starting a new relayout for "+This.name);
         This.relayoutInProgress=true; This.relayoutScheduled=false;
         This.lastRelayout = +new Date();
         //debugger;
@@ -389,7 +389,7 @@ cssRegions.Flow.prototype._relayout = function(data){
                     if(isBuggy) {
                         
                         // if we found any bug, we will need to restart a layout
-                        console.warn("Buggy css regions layout: the page changed; we need to restart.");
+                        cssConsole.warn("Buggy css regions layout: the page changed; we need to restart.");
                         This.restartLayout = true; 
                         
                     } else {

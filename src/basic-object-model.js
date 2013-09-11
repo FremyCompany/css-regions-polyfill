@@ -6,7 +6,10 @@
 if(!window.console) {
 		
 	window.console = {
-	    log: function(x) { if(window.debug) alert(x); },
+		backlog: '',
+		
+	    log: function(x) { this.backlog+=x+'\n'; if(window.debug) alert(x); },
+		
 	    dir: function(x) { try { 
 			
 			function elm(e) {
@@ -39,13 +42,23 @@ if(!window.console) {
 			
 			this.log(jsonify(x)); 
 			
-		} catch(ex) { this.log(x) } }
-	}
+		} catch(ex) { this.log(x) } },
+		
+		warn: function(x) { this.log(x) }
+		
+	};
 	
 	window.onerror = function() {
 	    console.log([].slice.call(arguments,0).join("\n"))
-	}
+	};
 	
+}
+
+window.cssConsole = {
+	enabled: (!!window.debug), warnEnabled: (true),
+	log: function(x) { if(this.enabled) console.log(x) },
+	dir: function(x) { if(this.enabled) console.dir(x) },
+	warn: function(x) { if(this.warnEnabled) console.warn(x) },
 }
 
 

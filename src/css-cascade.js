@@ -447,14 +447,14 @@ var cssCascade = {
                         if(this.status==200||this.status==0) {
                             cssCascade.loadStyleSheet(this.responseText,this.ruleIndex)
                         } else {
-                            console.log("css-cascade polyfill failled to load: " + this.href);
+                            cssConsole.log("css-cascade polyfill failled to load: " + this.href);
                         }
                     }
                 };
                 xhr.send();
                 
             } catch(ex) {
-                console.log("css-cascade polyfill failled to load: " + stylesheet.href);
+                cssConsole.log("css-cascade polyfill failled to load: " + stylesheet.href);
             }
             
         } else {

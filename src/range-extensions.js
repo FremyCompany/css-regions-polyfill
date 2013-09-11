@@ -97,7 +97,6 @@ if(!document.caretRangeFromPoint) {
                 var ix = x; if(true) {
                     try {
                         r.moveToPoint(ix,iy+y-IYDepth); 
-                        console.log(ix+","+iy+" from "+x+","+y);
                         return TextRangeUtils.convertToDOMRange(r);
                     } catch(ex) {}
                 }

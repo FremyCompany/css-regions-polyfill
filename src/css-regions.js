@@ -146,7 +146,6 @@ var cssRegions = {
             
         } else {
             
-            console.log(startTime); console.log(Date.now());
             return callback.onprogress(function() {
                 cssRegions.layoutContent(regions, remainingContent, callback);
             });
@@ -237,16 +236,16 @@ var cssRegions = {
             );
         } catch (ex) {
             try {
-                console.error(ex.message);
-                console.dir(ex);
+                cssConsole.error(ex.message);
+                cssConsole.dir(ex);
             } catch (ex) {}
         }
         
         // helper for logging info
-        /*console.log("extracting overflow")
-        console.log(pos.bottom)*/
+        /*cssConsole.log("extracting overflow")
+        cssConsole.log(pos.bottom)*/
         function debug() {
-            /*console.dir({
+            /*cssConsole.dir({
                 startContainer: r.startContainer,
                 startOffset: r.startOffset,
                 browserBCR: r.getBoundingClientRect(),
@@ -379,7 +378,7 @@ var cssRegions = {
         
         // if the selection is not in the region anymore, add the whole region
         if(!r || (region !== r.endContainer && !Node.contains(region,r.endContainer))) {
-            console.dir(r.cloneRange()); debugger;
+            cssConsole.dir(r.cloneRange()); debugger;
             r.setStart(region,region.childNodes.length);
             r.setEnd(region,region.childNodes.length);
         }
@@ -447,7 +446,7 @@ var cssRegions = {
         
         // if the selection is not in the region anymore, add the whole region
         if(!r || (region !== r.endContainer && !Node.contains(region,r.endContainer))) {
-            console.dir(r.cloneRange()); debugger;
+            cssConsole.dir(r.cloneRange()); debugger;
             r.setStart(region,region.childNodes.length);
             r.setEnd(region,region.childNodes.length);
         }
@@ -463,7 +462,7 @@ var cssRegions = {
             // find the first allowed break point
             do {
                 
-                //console.dir(r.cloneRange()); 
+                //cssConsole.dir(r.cloneRange()); 
                 
                 // move the position char-by-char
                 r.myMoveTowardRight(); 
@@ -487,7 +486,7 @@ var cssRegions = {
         
         // if the selection is not in the region anymore, add the whole region
         if(!r || region !== r.endContainer && !Node.contains(region,r.endContainer)) {
-            console.dir(r.cloneRange()); debugger;
+            cssConsole.dir(r.cloneRange()); debugger;
             r.setStart(region,region.childNodes.length);
             r.setEnd(region,region.childNodes.length);
         }
@@ -753,7 +752,7 @@ var cssRegions = {
                     if(element.getAttributeNode('data-css-regions-fragment-of')) return;
                     
                     // log some message in the console for debug
-                    console.dir({message:"onupdate",element:element,selector:rule.selector.toCSSString(),rule:rule});
+                    cssConsole.dir({message:"onupdate",element:element,selector:rule.selector.toCSSString(),rule:rule});
                     var temp = null;
                     
                     //

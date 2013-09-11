@@ -97,7 +97,6 @@ if(!document.caretRangeFromPoint) {
                 var ix = x; if(true) {
                     try {
                         r.moveToPoint(ix,iy+y-IYDepth); 
-                        console.log(ix+","+iy+" from "+x+","+y);
                         return TextRangeUtils.convertToDOMRange(r);
                     } catch(ex) {}
                 }
@@ -520,7 +519,10 @@ Range.prototype.myGetExtensionRect = function() {
 if(!window.console) {
 		
 	window.console = {
-	    log: function(x) { if(window.debug) alert(x); },
+		backlog: '',
+		
+	    log: function(x) { this.backlog+=x+'\n'; if(window.debug) alert(x); },
+		
 	    dir: function(x) { try { 
 			
 			function elm(e) {
@@ -553,13 +555,23 @@ if(!window.console) {
 			
 			this.log(jsonify(x)); 
 			
-		} catch(ex) { this.log(x) } }
-	}
+		} catch(ex) { this.log(x) } },
+		
+		warn: function(x) { this.log(x) }
+		
+	};
 	
 	window.onerror = function() {
 	    console.log([].slice.call(arguments,0).join("\n"))
-	}
+	};
 	
+}
+
+window.cssConsole = {
+	enabled: (!!window.debug), warnEnabled: (true),
+	log: function(x) { if(this.enabled) console.log(x) },
+	dir: function(x) { if(this.enabled) console.dir(x) },
+	warn: function(x) { if(this.warnEnabled) console.warn(x) },
 }
 
 
@@ -2552,14 +2564,14 @@ var cssCascade = {
                         if(this.status==200||this.status==0) {
                             cssCascade.loadStyleSheet(this.responseText,this.ruleIndex)
                         } else {
-                            console.log("css-cascade polyfill failled to load: " + this.href);
+                            cssConsole.log("css-cascade polyfill failled to load: " + this.href);
                         }
                     }
                 };
                 xhr.send();
                 
             } catch(ex) {
-                console.log("css-cascade polyfill failled to load: " + stylesheet.href);
+                cssConsole.log("css-cascade polyfill failled to load: " + stylesheet.href);
             }
             
         } else {
@@ -4653,7 +4665,6 @@ var cssRegions = {
             
         } else {
             
-            console.log(startTime); console.log(Date.now());
             return callback.onprogress(function() {
                 cssRegions.layoutContent(regions, remainingContent, callback);
             });
@@ -4744,16 +4755,16 @@ var cssRegions = {
             );
         } catch (ex) {
             try {
-                console.error(ex.message);
-                console.dir(ex);
+                cssConsole.error(ex.message);
+                cssConsole.dir(ex);
             } catch (ex) {}
         }
         
         // helper for logging info
-        /*console.log("extracting overflow")
-        console.log(pos.bottom)*/
+        /*cssConsole.log("extracting overflow")
+        cssConsole.log(pos.bottom)*/
         function debug() {
-            /*console.dir({
+            /*cssConsole.dir({
                 startContainer: r.startContainer,
                 startOffset: r.startOffset,
                 browserBCR: r.getBoundingClientRect(),
@@ -4886,7 +4897,7 @@ var cssRegions = {
         
         // if the selection is not in the region anymore, add the whole region
         if(!r || (region !== r.endContainer && !Node.contains(region,r.endContainer))) {
-            console.dir(r.cloneRange()); debugger;
+            cssConsole.dir(r.cloneRange()); debugger;
             r.setStart(region,region.childNodes.length);
             r.setEnd(region,region.childNodes.length);
         }
@@ -4954,7 +4965,7 @@ var cssRegions = {
         
         // if the selection is not in the region anymore, add the whole region
         if(!r || (region !== r.endContainer && !Node.contains(region,r.endContainer))) {
-            console.dir(r.cloneRange()); debugger;
+            cssConsole.dir(r.cloneRange()); debugger;
             r.setStart(region,region.childNodes.length);
             r.setEnd(region,region.childNodes.length);
         }
@@ -4970,7 +4981,7 @@ var cssRegions = {
             // find the first allowed break point
             do {
                 
-                //console.dir(r.cloneRange()); 
+                //cssConsole.dir(r.cloneRange()); 
                 
                 // move the position char-by-char
                 r.myMoveTowardRight(); 
@@ -4994,7 +5005,7 @@ var cssRegions = {
         
         // if the selection is not in the region anymore, add the whole region
         if(!r || region !== r.endContainer && !Node.contains(region,r.endContainer)) {
-            console.dir(r.cloneRange()); debugger;
+            cssConsole.dir(r.cloneRange()); debugger;
             r.setStart(region,region.childNodes.length);
             r.setEnd(region,region.childNodes.length);
         }
@@ -5260,7 +5271,7 @@ var cssRegions = {
                     if(element.getAttributeNode('data-css-regions-fragment-of')) return;
                     
                     // log some message in the console for debug
-                    console.dir({message:"onupdate",element:element,selector:rule.selector.toCSSString(),rule:rule});
+                    cssConsole.dir({message:"onupdate",element:element,selector:rule.selector.toCSSString(),rule:rule});
                     var temp = null;
                     
                     //
@@ -5491,7 +5502,7 @@ cssRegions.Flow = function NamedFlow(name) {
             This.lastStylesheetAdded = +Date();
             This.relayout();
         } else {
-            console.warn("Please don't add stylesheets as a response to region events. Operation cancelled.")
+            cssConsole.warn("Please don't add stylesheets as a response to region events. Operation cancelled.")
         }
     });
     
@@ -5688,7 +5699,7 @@ cssRegions.Flow.prototype._relayout = function(data){
         // drawings I made before attempting to understand
         // this stuff. If you don't have them, ask me.
         //
-        console.log("starting a new relayout for "+This.name);
+        cssConsole.log("starting a new relayout for "+This.name);
         This.relayoutInProgress=true; This.relayoutScheduled=false;
         This.lastRelayout = +new Date();
         //debugger;
@@ -5839,7 +5850,7 @@ cssRegions.Flow.prototype._relayout = function(data){
                     if(isBuggy) {
                         
                         // if we found any bug, we will need to restart a layout
-                        console.warn("Buggy css regions layout: the page changed; we need to restart.");
+                        cssConsole.warn("Buggy css regions layout: the page changed; we need to restart.");
                         This.restartLayout = true; 
                         
                     } else {
