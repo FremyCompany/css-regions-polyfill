@@ -487,9 +487,9 @@ cssRegions.NamedFlow.prototype.getContent = function getContent() {
     return this.content.slice(0)
 }
 
-// return a disconnected array of the content of a NamedFlow
-cssRegions.NamedFlow.prototype.getContent = function getContent() {
-    return this.content.slice(0)
+// return a disconnected array of the regions of a NamedFlow
+cssRegions.NamedFlow.prototype.getRegions = function getRegions() {
+    return this.regions.slice(0)
 }
 
 cssRegions.NamedFlow.prototype.getRegionsByContent = function getRegionsByContent(node) {
