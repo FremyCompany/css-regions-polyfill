@@ -84,7 +84,9 @@ However, some caveats apply:
 - Another consequence of the code executing asynchronously is that screen flashing is possible in some cases, especially during the page load if correct `display:none` styling is not applied to hide the source content wrapper before the content itself is flown into a region. It's also advised to put `overflow: hidden` on regions when possible even if it shouldn't be strictly required.
 - The `regionoversetchange` event is not guaranteed to fire only when the overset actually changes. Guaranteeing this would requires storing a lot of information and compare them at runtime, and I decided it would not be worth the time.
 - Dynamic elements cannot be put into a flow without harming their functionnality (this incudes forms, and a lot of interactive objects). This implementation is only suitable for static or mostly static content.
+- In the same vein, `hover` and `active` style do not apply to content inside a region. This limitation could possibly be lifted in some cases but I await feedback this is actually useful before proceeding.
 - Because elements are actually cloned in the regions, you may receive those clones as a result of `getElementsByTagName` or `querySelectorAll` queries, as well as methods such a `elementsFromPoint`. The actual ID and class names of the objects are not preserved in the fragments to reduce the risk, but this is by no mean a complete guarantee. A solution is to check the `data-css-regions-fragment-of` attribute and recover the original source by using the `data-css-regions-fragment-source` attribute.
+- Because computing nested `css-counters` manually would be very expensive in cpu horse power, I decided to leave this case as is. Most non-nested `css-counters` should work fine, however.
 
 ### Browser support
 The polyfill has been tested successfully accross a large range of desktop and mobile browsers. Unsupported browsers include IE8, Opera 12.0 (Presto) and Android Browser 3.0.
