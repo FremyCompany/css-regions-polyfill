@@ -592,9 +592,9 @@ cssRegions.enablePolyfillObjectModel = function() {
                     // TODO: only works properly for elements actually in the region
                     var fragment = document.querySelector('[data-css-regions-fragment-of="'+element.getAttribute('data-css-regions-fragment-source')+'"]');
                     if(pseudo) {
-                        return getComputedStyle(fragment||element);
-                    } else {
                         return getComputedStyle(fragment||element, pseudo);
+                    } else {
+                        return getComputedStyle(fragment||element);
                     }
                 }
             }
