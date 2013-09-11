@@ -104,7 +104,7 @@ var cssRegions = {
 		// delays until all images are loaded
 		var imgs = region.getElementsByTagName('img');
 		for(var imgs_index=imgs.length; imgs_index--; ) {
-			if(!imgs[imgs_index].complete) {
+			if(!imgs[imgs_index].complete && !imgs[imgs_index].hasAttribute('height')) {
 				return setTimeout(
 					function() {
 		            	this.layoutContentInNextRegionsWhenReady(region, regions, remainingContent, callback, startTime+32);
@@ -159,7 +159,7 @@ var cssRegions = {
 		// delays until all images are loaded
 		var imgs = region.getElementsByTagName('img');
 		for(var imgs_index=imgs.length; imgs_index--; ) {
-			if(!imgs[imgs_index].complete) {
+			if(!imgs[imgs_index].complete && !imgs[imgs_index].hasAttribute('height')) {
 				return setTimeout(
 					function() {
 		            	this.layoutContentInLastRegionWhenReady(region, regions, remainingContent, callback, startTime+32);
