@@ -68,16 +68,29 @@ The CSS Region Polyfill
 		- Chrome (recent)
 		- Opera (13+)
 		
+		- IE Mobile (10+)
+		- Safari Mobile (iOS 6+)
+		- Android Browser (4.0+)
+		- Chrome Mobile (recent)
+		- FireFox for Android (recent)
+		
 	- Tier 2:
 		
-		- IE (9)
+		- IE and IE Mobile (9)
 			
 			may require additionnal polyfills for media queries
 			latest version not tested on IE9, not sure everything works
 			
 			planning to fix any issue being reported
 			but I don't promise investigating myself
+			
+		- Android Browser (3.0-)
 		
+			while most tests seem to be working, some issues do
+			pop up from time to time. 
+			
+			planning to fix any issue being reported
+			but I don't promise investigating myself		
 	- Not supported:
 		
 		- Opera (12-)
