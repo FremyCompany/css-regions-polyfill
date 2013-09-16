@@ -2206,7 +2206,8 @@ var cssCascade = {
                         var isMatching = false;
                         var selector = subrules[sr].selector.toCSSString();
                         try {
-                            if(element.matchesSelector) isMatching=element.matchesSelector(selector)
+							if(element.matches) isMatching=element.matches(selector)
+                            else if(element.matchesSelector) isMatching=element.matchesSelector(selector)
                             else if(element.oMatchesSelector) isMatching=element.oMatchesSelector(selector)
                             else if(element.msMatchesSelector) isMatching=element.msMatchesSelector(selector)
                             else if(element.mozMatchesSelector) isMatching=element.mozMatchesSelector(selector)
@@ -2273,7 +2274,8 @@ var cssCascade = {
                         // look if the selector matches
                         var isMatching = false;
                         try {
-                            if(element.matchesSelector) isMatching=element.matchesSelector(selector)
+							if(element.matches) isMatching=element.matches(selector)
+                            else if(element.matchesSelector) isMatching=element.matchesSelector(selector)
                             else if(element.oMatchesSelector) isMatching=element.oMatchesSelector(selector)
                             else if(element.msMatchesSelector) isMatching=element.msMatchesSelector(selector)
                             else if(element.mozMatchesSelector) isMatching=element.mozMatchesSelector(selector)
