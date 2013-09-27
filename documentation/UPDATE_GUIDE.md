@@ -87,4 +87,7 @@ The new polyfill is faster (to much faster, depending on the use cases) than the
 
 However, since the new polyfill works on a whole new range of device, you may want to test the performance on mobile devices as well, or make sure not to use regions for those mobile devices by isolating their use into min-sized media queries.
 
+There are tips and tricks on how to improve the performance in the general documentation of this project (setting "overlfow: hidden" on region elements, display:none on a wrapper to the region content, …).
 
+# How do I…?
+Publish a pull-request with your question if you have any. This way I can reply to you and keep the FAQ up-to-date at the same time ;-)
