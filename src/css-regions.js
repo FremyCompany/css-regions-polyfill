@@ -124,13 +124,13 @@ var cssRegions = {
 			while(current) {
 				
 				if(current != first) {
-                    if(/(region|all|always|always)/i.test(cssCascade.getSpecifiedStyle(current,'break-before',undefined,true).toCSSString())) {
+                    if(/(region|all|always)/i.test(cssCascade.getSpecifiedStyle(current,'break-before',undefined,true).toCSSString())) {
                         shouldSegmentContent = true; break;
                     }
                 }
 				
 				if(current != last) {
-                    if(/(region|all|always|always)/i.test(cssCascade.getSpecifiedStyle(current,'break-after',undefined,true).toCSSString())) {
+                    if(/(region|all|always)/i.test(cssCascade.getSpecifiedStyle(current,'break-after',undefined,true).toCSSString())) {
                         shouldSegmentContent = true; break;
                     }
                 }
