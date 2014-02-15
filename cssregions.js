@@ -1,4 +1,4 @@
-"use script";
+"use strict";
 
 //
 // start by polyfilling caretRangeFromPoint
@@ -511,7 +511,7 @@ Range.prototype.myGetExtensionRect = function() {
         
     }
 }
-"use script";
+"use strict";
 
 //
 // some code for console polyfilling
@@ -4519,7 +4519,7 @@ var cssRegionsHelpers = {
         
     }
 }
-"use script";    
+"use strict";    
 
 ///
 /// now create a module for region reflow

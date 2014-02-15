@@ -1,4 +1,4 @@
-"use script";
+"use strict";
 
 //
 // start by polyfilling caretRangeFromPoint

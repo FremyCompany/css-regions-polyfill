@@ -1,4 +1,4 @@
-"use script";
+"use strict";
 
 //
 // some code for console polyfilling

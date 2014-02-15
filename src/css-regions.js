@@ -1,4 +1,4 @@
-"use script";    
+"use strict";    
 
 ///
 /// now create a module for region reflow
