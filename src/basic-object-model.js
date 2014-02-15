@@ -128,9 +128,9 @@ var basicObjectModel = {
     // allows you to drop event support to any class easily
     //
     EventTarget: {
-        implementsIn: function(eventClass, static) {
+        implementsIn: function(eventClass, static_class) {
             
-            if(!static && typeof(eventClass)=="function") eventClass=eventClass.prototype;
+            if(!static_class && typeof(eventClass)=="function") eventClass=eventClass.prototype;
             
             eventClass.dispatchEvent = basicObjectModel.EventTarget.prototype.dispatchEvent;
             eventClass.addEventListener = basicObjectModel.EventTarget.prototype.addEventListener;

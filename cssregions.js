@@ -641,9 +641,9 @@ var basicObjectModel = {
     // allows you to drop event support to any class easily
     //
     EventTarget: {
-        implementsIn: function(eventClass, static) {
+        implementsIn: function(eventClass, static_class) {
             
-            if(!static && typeof(eventClass)=="function") eventClass=eventClass.prototype;
+            if(!static_class && typeof(eventClass)=="function") eventClass=eventClass.prototype;
             
             eventClass.dispatchEvent = basicObjectModel.EventTarget.prototype.dispatchEvent;
             eventClass.addEventListener = basicObjectModel.EventTarget.prototype.addEventListener;
@@ -4635,8 +4635,33 @@ var cssRegions = {
 			}
 		}
 		
-        // check if there was an overflow
-        if(region.cssRegionHost.scrollHeight != region.cssRegionHost.offsetHeight) {
+        // check if there was an overflow or some break-before/after instruction
+		var regionDidOverflow = region.cssRegionHost.scrollHeight != region.cssRegionHost.offsetHeight;
+		var shouldSegmentContent = regionDidOverflow;
+		if(!shouldSegmentContent) {
+			var first = region.firstElementChild;
+			var last = region.lastElementChild;
+			var current = first;
+			while(current) {
+				
+				if(current != first) {
+                    if(/(region|all|always|always)/i.test(cssCascade.getSpecifiedStyle(current,'break-before',undefined,true).toCSSString())) {
+                        shouldSegmentContent = true; break;
+                    }
+                }
+				
+				if(current != last) {
+                    if(/(region|all|always|always)/i.test(cssCascade.getSpecifiedStyle(current,'break-after',undefined,true).toCSSString())) {
+                        shouldSegmentContent = true; break;
+                    }
+                }
+
+				current = current.nextElementSibling;
+			}
+		}
+		
+		
+        if(shouldSegmentContent) {
             
             // the remaining content is what was overflowing
             remainingContent = this.extractOverflowingContent(region);
@@ -5019,7 +5044,7 @@ var cssRegions = {
             if(current.style) {
                 
                 if(current != first) {
-                    if(/(region|all)/i.test(cssCascade.getSpecifiedStyle(current,'break-after',undefined,true).toCSSString())) {
+                    if(/(region|all|always)/i.test(cssCascade.getSpecifiedStyle(current,'break-after',undefined,true).toCSSString())) {
                         r.setStartAfter(current);
                         r.setEndAfter(current);
                         dontOptimize=true; // no algo involved in breaking, after all
@@ -5027,7 +5052,7 @@ var cssRegions = {
                 }
                 
                 if(current !== region) {
-                    if(/(region|all)/i.test(cssCascade.getSpecifiedStyle(current,'break-before',undefined,true).toCSSString())) {
+                    if(/(region|all|always)/i.test(cssCascade.getSpecifiedStyle(current,'break-before',undefined,true).toCSSString())) {
                         r.setStartBefore(current);
                         r.setEndBefore(current);
                         dontOptimize=true; // no algo involved in breaking, after all
