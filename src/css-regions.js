@@ -523,7 +523,7 @@ var cssRegions = {
             if(current.style) {
                 
                 if(current != first) {
-                    if(/(region|all|always)/i.test(cssCascade.getSpecifiedStyle(current,'break-after',undefined,true).toCSSString())) {
+                    if(/(region|all|always)/i.test(cssCascade.getSpecifiedStyle(current,'break-before',undefined,true).toCSSString())) {
                         r.setStartAfter(current);
                         r.setEndAfter(current);
                         dontOptimize=true; // no algo involved in breaking, after all
@@ -531,7 +531,7 @@ var cssRegions = {
                 }
                 
                 if(current !== region) {
-                    if(/(region|all|always)/i.test(cssCascade.getSpecifiedStyle(current,'break-before',undefined,true).toCSSString())) {
+                    if(/(region|all|always)/i.test(cssCascade.getSpecifiedStyle(current,'break-after',undefined,true).toCSSString())) {
                         r.setStartBefore(current);
                         r.setEndBefore(current);
                         dontOptimize=true; // no algo involved in breaking, after all
