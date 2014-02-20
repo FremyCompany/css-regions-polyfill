@@ -23,20 +23,20 @@ if(!document.caretRangeFromPoint) {
         
         var TextRangeUtils = {
             convertToDOMRange: function (textRange, document) {
-                function adoptBoundary(domRange, textRange, bStart) {
+                var adoptBoundary = function(domRange, textRangeInner, bStart) {
                     // iterate backwards through parent element to find anchor location
-                    var cursorNode = document.createElement('a'), cursor = textRange.duplicate();
+                    var cursorNode = document.createElement('a'), cursor = textRangeInner.duplicate();
                     cursor.collapse(bStart);
                     var parent = cursor.parentElement();
                     do {
                             parent.insertBefore(cursorNode, cursorNode.previousSibling);
                             cursor.moveToElementText(cursorNode);
-                    } while (cursor.compareEndPoints(bStart ? 'StartToStart' : 'StartToEnd', textRange) > 0 && cursorNode.previousSibling);
+                    } while (cursor.compareEndPoints(bStart ? 'StartToStart' : 'StartToEnd', textRangeInner) > 0 && cursorNode.previousSibling);
                     
                     // when we exceed or meet the cursor, we've found the node
-                    if (cursor.compareEndPoints(bStart ? 'StartToStart' : 'StartToEnd', textRange) == -1 && cursorNode.nextSibling) {
+                    if (cursor.compareEndPoints(bStart ? 'StartToStart' : 'StartToEnd', textRangeInner) == -1 && cursorNode.nextSibling) {
                             // data node
-                            cursor.setEndPoint(bStart ? 'EndToStart' : 'EndToEnd', textRange);
+                            cursor.setEndPoint(bStart ? 'EndToStart' : 'EndToEnd', textRangeInner);
                             domRange[bStart ? 'setStart' : 'setEnd'](cursorNode.nextSibling, cursor.text.length);
                     } else {
                             // element
@@ -56,10 +56,10 @@ if(!document.caretRangeFromPoint) {
             },
 
             convertFromDOMRange: function (domRange) {
-                function adoptEndPoint(textRange, domRange, bStart) {
+                var adoptEndPoint = function(textRange, domRangeInner, bStart) {
                     // find anchor node and offset
-                    var container = domRange[bStart ? 'startContainer' : 'endContainer'];
-                    var offset = domRange[bStart ? 'startOffset' : 'endOffset'], textOffset = 0;
+                    var container = domRangeInner[bStart ? 'startContainer' : 'endContainer'];
+                    var offset = domRangeInner[bStart ? 'startOffset' : 'endOffset'], textOffset = 0;
                     var anchorNode = DOMUtils.isDataNode(container) ? container : container.childNodes[offset];
                     var anchorParent = DOMUtils.isDataNode(container) ? container.parentNode : container;
                     // visible data nodes need a text offset
@@ -67,9 +67,9 @@ if(!document.caretRangeFromPoint) {
                         textOffset = offset;
                     
                     // create a cursor element node to position range (since we can't select text nodes)
-                    var cursorNode = domRange._document.createElement('a');
+                    var cursorNode = domRangeInner._document.createElement('a');
                     anchorParent.insertBefore(cursorNode, anchorNode);
-                    var cursor = domRange._document.body.createTextRange();
+                    var cursor = domRangeInner._document.body.createTextRange();
                     cursor.moveToElementText(cursorNode);
                     cursorNode.parentNode.removeChild(cursorNode);
                     // move range

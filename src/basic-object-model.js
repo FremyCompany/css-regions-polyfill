@@ -12,7 +12,7 @@ if(!window.console) {
 		
 	    dir: function(x) { try { 
 			
-			function elm(e) {
+			var elm = function(e) {
 				if(e.innerHTML) {
 					return {
 						tagName: e.tagName,
@@ -28,7 +28,7 @@ if(!window.console) {
 				}
 			};
 			
-			function jsonify(o){
+			var jsonify = function(o) {
 			    var seen=[];
 			    var jso=JSON.stringify(o, function(k,v){
 			        if (typeof v =='object') {
