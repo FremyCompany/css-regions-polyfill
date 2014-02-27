@@ -489,7 +489,7 @@ var cssRegionsHelpers = {
                     }
                     
                     // now, let's work on ::after and ::before
-                    function importPseudo(node1,node2,pseudo) {
+                    var importPseudo = function(node1,node2,pseudo) {
                         
                         //
                         // we'll need to use getSpecifiedStyle here as the pseudo thing is slow

@@ -269,7 +269,7 @@ var cssRegions = {
         // helper for logging info
         /*cssConsole.log("extracting overflow")
         cssConsole.log(pos.bottom)*/
-        function debug() {
+        var debug = function() {
             /*cssConsole.dir({
                 startContainer: r.startContainer,
                 startOffset: r.startOffset,
@@ -278,7 +278,7 @@ var cssRegions = {
             });*/
         }
         
-        function fixNullRect() {
+        var fixNullRect = function() {
             if(rect.bottom==0 && rect.top==0 && rect.left==0 && rect.right==0) {
 				
 				var scrollTop = -(document.documentElement.scrollTop || document.body.scrollTop);

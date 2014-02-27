@@ -73,7 +73,7 @@ var cssCascade = {
         var results = [];
         
         // walk the whole stylesheet...
-        function visit(rules) {
+        var visit = function(rules) {
             for(var r = rules.length; r--; ) {
                 var rule = rules[r]; 
                 
@@ -128,7 +128,7 @@ var cssCascade = {
         var results = [];
         
         // walk the whole stylesheet...
-        function visit(rules) {
+        var visit = function(rules) {
             for(var r = rules.length; r--; ) {
                 var rule = rules[r]; 
                 
@@ -340,7 +340,7 @@ var cssCascade = {
                 : cssCascade.findAllMatchingRules(element)
             );
             
-            function visit(rules) {
+            var visit = function(rules) {
                 
                 for(var i=rules.length; i--; ) {
                     
