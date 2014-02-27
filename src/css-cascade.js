@@ -96,7 +96,7 @@ var cssCascade = {
                             else if(element.mozMatchesSelector) isMatching=element.mozMatchesSelector(selector)
                             else if(element.webkitMatchesSelector) isMatching=element.webkitMatchesSelector(selector)
                             else { throw new Error("wft u no element.matchesSelector?") }
-                        } catch(ex) { debugger; setImmediate(function() { throw ex; }) }
+                        } catch(ex) { cssConsole.warn("Invalid selector " + selector); }
                         
                         if(isMatching) { results.push(subrules[sr]); }
                         
