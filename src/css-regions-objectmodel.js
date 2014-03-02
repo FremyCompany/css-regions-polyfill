@@ -613,4 +613,5 @@ cssRegions.enablePolyfillObjectModel = function() {
 
 }
 
-cssRegions.enablePolyfill();
+// load the polyfill immediately if not especially told otherwise
+if(!("cssRegionsManualTrigger" in window)) { cssRegions.enablePolyfill(); }
