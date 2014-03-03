@@ -23,20 +23,20 @@ if(!document.caretRangeFromPoint) {
         
         var TextRangeUtils = {
             convertToDOMRange: function (textRange, document) {
-                function adoptBoundary(domRange, textRange, bStart) {
+                var adoptBoundary = function(domRange, textRangeInner, bStart) {
                     // iterate backwards through parent element to find anchor location
-                    var cursorNode = document.createElement('a'), cursor = textRange.duplicate();
+                    var cursorNode = document.createElement('a'), cursor = textRangeInner.duplicate();
                     cursor.collapse(bStart);
                     var parent = cursor.parentElement();
                     do {
                             parent.insertBefore(cursorNode, cursorNode.previousSibling);
                             cursor.moveToElementText(cursorNode);
-                    } while (cursor.compareEndPoints(bStart ? 'StartToStart' : 'StartToEnd', textRange) > 0 && cursorNode.previousSibling);
+                    } while (cursor.compareEndPoints(bStart ? 'StartToStart' : 'StartToEnd', textRangeInner) > 0 && cursorNode.previousSibling);
                     
                     // when we exceed or meet the cursor, we've found the node
-                    if (cursor.compareEndPoints(bStart ? 'StartToStart' : 'StartToEnd', textRange) == -1 && cursorNode.nextSibling) {
+                    if (cursor.compareEndPoints(bStart ? 'StartToStart' : 'StartToEnd', textRangeInner) == -1 && cursorNode.nextSibling) {
                             // data node
-                            cursor.setEndPoint(bStart ? 'EndToStart' : 'EndToEnd', textRange);
+                            cursor.setEndPoint(bStart ? 'EndToStart' : 'EndToEnd', textRangeInner);
                             domRange[bStart ? 'setStart' : 'setEnd'](cursorNode.nextSibling, cursor.text.length);
                     } else {
                             // element
@@ -56,10 +56,10 @@ if(!document.caretRangeFromPoint) {
             },
 
             convertFromDOMRange: function (domRange) {
-                function adoptEndPoint(textRange, domRange, bStart) {
+                var adoptEndPoint = function(textRange, domRangeInner, bStart) {
                     // find anchor node and offset
-                    var container = domRange[bStart ? 'startContainer' : 'endContainer'];
-                    var offset = domRange[bStart ? 'startOffset' : 'endOffset'], textOffset = 0;
+                    var container = domRangeInner[bStart ? 'startContainer' : 'endContainer'];
+                    var offset = domRangeInner[bStart ? 'startOffset' : 'endOffset'], textOffset = 0;
                     var anchorNode = DOMUtils.isDataNode(container) ? container : container.childNodes[offset];
                     var anchorParent = DOMUtils.isDataNode(container) ? container.parentNode : container;
                     // visible data nodes need a text offset
@@ -67,9 +67,9 @@ if(!document.caretRangeFromPoint) {
                         textOffset = offset;
                     
                     // create a cursor element node to position range (since we can't select text nodes)
-                    var cursorNode = domRange._document.createElement('a');
+                    var cursorNode = domRangeInner._document.createElement('a');
                     anchorParent.insertBefore(cursorNode, anchorNode);
-                    var cursor = domRange._document.body.createTextRange();
+                    var cursor = domRangeInner._document.body.createTextRange();
                     cursor.moveToElementText(cursorNode);
                     cursorNode.parentNode.removeChild(cursorNode);
                     // move range
@@ -525,7 +525,7 @@ if(!window.console) {
 		
 	    dir: function(x) { try { 
 			
-			function elm(e) {
+			var elm = function(e) {
 				if(e.innerHTML) {
 					return {
 						tagName: e.tagName,
@@ -541,7 +541,7 @@ if(!window.console) {
 				}
 			};
 			
-			function jsonify(o){
+			var jsonify = function(o) {
 			    var seen=[];
 			    var jso=JSON.stringify(o, function(k,v){
 			        if (typeof v =='object') {
@@ -2190,7 +2190,7 @@ var cssCascade = {
         var results = [];
         
         // walk the whole stylesheet...
-        function visit(rules) {
+        var visit = function(rules) {
             for(var r = rules.length; r--; ) {
                 var rule = rules[r]; 
                 
@@ -2213,7 +2213,7 @@ var cssCascade = {
                             else if(element.mozMatchesSelector) isMatching=element.mozMatchesSelector(selector)
                             else if(element.webkitMatchesSelector) isMatching=element.webkitMatchesSelector(selector)
                             else { throw new Error("wft u no element.matchesSelector?") }
-                        } catch(ex) { debugger; setImmediate(function() { throw ex; }) }
+                        } catch(ex) { cssConsole.warn("Invalid selector " + selector); }
                         
                         if(isMatching) { results.push(subrules[sr]); }
                         
@@ -2245,7 +2245,7 @@ var cssCascade = {
         var results = [];
         
         // walk the whole stylesheet...
-        function visit(rules) {
+        var visit = function(rules) {
             for(var r = rules.length; r--; ) {
                 var rule = rules[r]; 
                 
@@ -2457,7 +2457,7 @@ var cssCascade = {
                 : cssCascade.findAllMatchingRules(element)
             );
             
-            function visit(rules) {
+            var visit = function(rules) {
                 
                 for(var i=rules.length; i--; ) {
                     
@@ -4403,7 +4403,7 @@ var cssRegionsHelpers = {
                     }
                     
                     // now, let's work on ::after and ::before
-                    function importPseudo(node1,node2,pseudo) {
+                    var importPseudo = function(node1,node2,pseudo) {
                         
                         //
                         // we'll need to use getSpecifiedStyle here as the pseudo thing is slow
@@ -4790,7 +4790,7 @@ var cssRegions = {
         // helper for logging info
         /*cssConsole.log("extracting overflow")
         cssConsole.log(pos.bottom)*/
-        function debug() {
+        var debug = function() {
             /*cssConsole.dir({
                 startContainer: r.startContainer,
                 startOffset: r.startOffset,
@@ -4799,7 +4799,7 @@ var cssRegions = {
             });*/
         }
         
-        function fixNullRect() {
+        var fixNullRect = function() {
             if(rect.bottom==0 && rect.top==0 && rect.left==0 && rect.right==0) {
 				
 				var scrollTop = -(document.documentElement.scrollTop || document.body.scrollTop);
@@ -6104,4 +6104,5 @@ cssRegions.enablePolyfillObjectModel = function() {
 
 }
 
-cssRegions.enablePolyfill();
+// load the polyfill immediately if not especially told otherwise
+if(!("cssRegionsManualTrigger" in window)) { cssRegions.enablePolyfill(); }
