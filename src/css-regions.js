@@ -131,7 +131,8 @@ var cssRegions = {
 				
 				if(current != last) {
                     if(/(region|all|always)/i.test(cssCascade.getSpecifiedStyle(current,'break-after',undefined,true).toCSSString())) {
-                        shouldSegmentContent = true; break;
+                        current = current.nextElementSibling;
+						shouldSegmentContent = true; break;
                     }
                 }
 
@@ -524,16 +525,16 @@ var cssRegions = {
                 
                 if(current != first) {
                     if(/(region|all|always)/i.test(cssCascade.getSpecifiedStyle(current,'break-before',undefined,true).toCSSString())) {
-                        r.setStartAfter(current);
-                        r.setEndAfter(current);
+                        r.setStartBefore(current);
+                        r.setEndBefore(current);
                         dontOptimize=true; // no algo involved in breaking, after all
                     }
                 }
                 
                 if(current !== region) {
                     if(/(region|all|always)/i.test(cssCascade.getSpecifiedStyle(current,'break-after',undefined,true).toCSSString())) {
-                        r.setStartBefore(current);
-                        r.setEndBefore(current);
+                        r.setStartAfter(current);
+                        r.setEndAfter(current);
                         dontOptimize=true; // no algo involved in breaking, after all
                     }
                 }
