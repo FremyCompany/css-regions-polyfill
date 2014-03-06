@@ -131,7 +131,8 @@ var cssRegions = {
 				
 				if(current != last) {
                     if(/(region|all|always)/i.test(cssCascade.getSpecifiedStyle(current,'break-after',undefined,true).toCSSString())) {
-                        shouldSegmentContent = true; break;
+                        current = current.nextElementSibling;
+						shouldSegmentContent = true; break;
                     }
                 }
 
@@ -518,22 +519,22 @@ var cssRegions = {
             
         // now, let's try to find a break-before/break-after element before the splitting point
         var current = r.endContainer; if(current.hasChildNodes()) {current=current.childNodes[r.endOffset-1]};
-        var first = current || (current = r.endContainer);
+        var first = r.endContainer.firstChild;
         do {
             if(current.style) {
                 
                 if(current != first) {
                     if(/(region|all|always)/i.test(cssCascade.getSpecifiedStyle(current,'break-before',undefined,true).toCSSString())) {
-                        r.setStartAfter(current);
-                        r.setEndAfter(current);
+                        r.setStartBefore(current);
+                        r.setEndBefore(current);
                         dontOptimize=true; // no algo involved in breaking, after all
                     }
                 }
                 
                 if(current !== region) {
                     if(/(region|all|always)/i.test(cssCascade.getSpecifiedStyle(current,'break-after',undefined,true).toCSSString())) {
-                        r.setStartBefore(current);
-                        r.setEndBefore(current);
+                        r.setStartAfter(current);
+                        r.setEndAfter(current);
                         dontOptimize=true; // no algo involved in breaking, after all
                     }
                 }
