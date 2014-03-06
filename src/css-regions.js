@@ -519,7 +519,7 @@ var cssRegions = {
             
         // now, let's try to find a break-before/break-after element before the splitting point
         var current = r.endContainer; if(current.hasChildNodes()) {current=current.childNodes[r.endOffset-1]};
-        var first = current || (current = r.endContainer);
+        var first = r.endContainer.firstChild;
         do {
             if(current.style) {
                 

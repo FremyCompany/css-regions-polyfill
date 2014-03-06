@@ -21,14 +21,14 @@
             }
             
             #content { flow-into: page-content content; }
-            #content > p { break-before: always; }
+            #content > p#B { break-before: always; }
 			
         </style>
     </head>
     <body>
         <div id='content' style='display: none'>
-            <p>A</p>
-			<p>B</p>
+            <p id="A">A</p>
+			<p id="B">B</p>
         </div>
         
         <div id="region1"></div>
