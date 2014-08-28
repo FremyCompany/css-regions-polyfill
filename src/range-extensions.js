@@ -227,7 +227,7 @@ Range.prototype.myMoveTowardRight = function() {
             
         } else {
             
-            // else move before that element
+            // else move after that element
             r.setStart(r.startContainer, r.startOffset+1);
             
         }

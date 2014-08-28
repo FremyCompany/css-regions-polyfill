@@ -1,4 +1,4 @@
-"use strict";    
+"use strict";
 
 ///
 /// now create a module for region reflow
@@ -303,6 +303,7 @@ var cssRegions = {
             if(r && r.endContainer === region.cssRegionHost && r.endOffset==r.endContainer.childNodes.length) {
                 
                 // move back at the end of the region, actually
+				r.setStart(region, region.childNodes.length);
                 r.setEnd(region, region.childNodes.length);
                 
             } else {
