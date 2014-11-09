@@ -227,7 +227,7 @@ Range.prototype.myMoveTowardRight = function() {
             
         } else {
             
-            // else move before that element
+            // else move after that element
             r.setStart(r.startContainer, r.startOffset+1);
             
         }
@@ -1204,7 +1204,7 @@ var cssSyntax = {
     
             case "at-keyword":
                 if(code == 0x2d) {
-                    if(namestartchar(next())) create(new AtKeywordToken(0x2d)) && switchto('at-keyword-rest');
+                    if(namestartchar(next()) || next()==0x2d) create(new AtKeywordToken(0x2d)) && switchto('at-keyword-rest');
                     else if(next(1) == 0x5c && !badescape(next(2))) create(new AtKeywordtoken(0x2d)) && switchto('at-keyword-rest');
                     else parseerror() && emit(new DelimToken(0x40)) && switchto('data') && reconsume();
                 }
@@ -1227,7 +1227,7 @@ var cssSyntax = {
     
             case "ident":
                 if(code == 0x2d) {
-                    if(namestartchar(next())) create(new IdentifierToken(code)) && switchto('ident-rest');
+                    if(namestartchar(next()) || next()==0x2d) create(new IdentifierToken(code)) && switchto('ident-rest');
                     else if(next(1) == 0x5c && !badescape(next(2))) create(new IdentifierToken(code)) && switchto('ident-rest');
                     else emit(new DelimToken(0x2d)) && switchto('data');
                 }
@@ -3790,6 +3790,14 @@ var cssBreak = {
         // all conditions were met
         return false;
     },
+	
+	//
+	// return trus if the break-inside property is 'avoid' or 'avoid-region'
+	//
+	isBreakInsideAvoid: function isBreakInsideAvoid(element, elementStyle) {
+		var breakInside = cssCascade.getSpecifiedStyle(element, 'break-inside', undefined, true).toCSSString().trim().toLowerCase(); 
+		return (breakInside == "avoid" || breakInside == "avoid-region");
+	},
     
     //
     // returns true if the element is unbreakable according to the spec
@@ -3831,8 +3839,12 @@ var cssBreak = {
         // than the border-width to which it belongs
         var hasBigRadius = this.hasBigRadius(element, elementStyle);
         
+		// ADDITION TO THE SPEC:
+		// Someone proposed to support "break-inside: avoid" here
+		var isBreakInsideAvoid = this.isBreakInsideAvoid(element, elementStyle);
+		
         // all of them are monolithic
-        return isReplaced || isScrollable || isSingleLineOfText || isHiddenOverflowing || hasBigRadius;
+        return isReplaced || isScrollable || isSingleLineOfText || isHiddenOverflowing || hasBigRadius || isBreakInsideAvoid;
         
     },
     
@@ -4519,7 +4531,7 @@ var cssRegionsHelpers = {
         
     }
 }
-"use strict";    
+"use strict";
 
 ///
 /// now create a module for region reflow
@@ -4824,6 +4836,7 @@ var cssRegions = {
             if(r && r.endContainer === region.cssRegionHost && r.endOffset==r.endContainer.childNodes.length) {
                 
                 // move back at the end of the region, actually
+				r.setStart(region, region.childNodes.length);
                 r.setEnd(region, region.childNodes.length);
                 
             } else {

@@ -287,6 +287,14 @@ var cssBreak = {
         // all conditions were met
         return false;
     },
+	
+	//
+	// return trus if the break-inside property is 'avoid' or 'avoid-region'
+	//
+	isBreakInsideAvoid: function isBreakInsideAvoid(element, elementStyle) {
+		var breakInside = cssCascade.getSpecifiedStyle(element, 'break-inside', undefined, true).toCSSString().trim().toLowerCase(); 
+		return (breakInside == "avoid" || breakInside == "avoid-region");
+	},
     
     //
     // returns true if the element is unbreakable according to the spec
@@ -328,8 +336,12 @@ var cssBreak = {
         // than the border-width to which it belongs
         var hasBigRadius = this.hasBigRadius(element, elementStyle);
         
+		// ADDITION TO THE SPEC:
+		// Someone proposed to support "break-inside: avoid" here
+		var isBreakInsideAvoid = this.isBreakInsideAvoid(element, elementStyle);
+		
         // all of them are monolithic
-        return isReplaced || isScrollable || isSingleLineOfText || isHiddenOverflowing || hasBigRadius;
+        return isReplaced || isScrollable || isSingleLineOfText || isHiddenOverflowing || hasBigRadius || isBreakInsideAvoid;
         
     },
     
