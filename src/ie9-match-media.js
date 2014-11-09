@@ -9,7 +9,7 @@ window.matchMedia = window.matchMedia || (function( doc, undefined ) {
         var head = doc.head || doc.documentElement.firstElementChild || doc.getElementsByTagName('head')[0],
         element = doc.createElement( "style" );
         element.id = "css-mq-test";
-        element.innerHTML = "#css-mq-test { font-size:666px; }>";
+        element.innerHTML = "#css-mq-test { font-size:666px; }";
         head.insertBefore(element,head.firstChild);
     }
     
