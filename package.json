@@ -1,0 +1,26 @@
+{
+  "name": "cssregions",
+  "title": "CSS Regions Polyfill",
+  "description": "JavaScript library to add support for CSS Regions",
+  "homepage": "https://github.com/adobe-webplatform/css-regions-polyfill-2",
+  "version": "0.3.0",
+  "author": {
+    "name": "Adobe Systems Inc."
+  },
+  "contributors": [
+    "François Remy <francois.remy.dev@outlook.com> (http://fremycompany.com)",
+    "Mihai Corlan <mcorlan@adobe.com> (http://corlan.org/)",
+    "Razvan Caliman <rcaliman@adobe.com> (http://razvancaliman.com/)"
+  ],
+  "licenses": [
+    {
+      "type": "Apache License 2.0"
+    }
+  ],
+  "dependencies": {
+    "grunt": "0.4.x",
+    "grunt-contrib": "~0.2.0",
+	"grunt-contrib-concat": "~0.1.0",
+	"grunt-contrib-uglify": "~0.1.0"
+  }
+}
