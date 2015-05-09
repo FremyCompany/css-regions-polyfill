@@ -6281,4 +6281,6 @@ require.define('src/requirements.js');
 window.cssPolyfills = { require: require };
 
 })();
+window.cssRegions=cssPolyfills.require('src/css-regions/polyfill.js');
+
 //# sourceMappingURL=css-regions-polyfill.js.map
