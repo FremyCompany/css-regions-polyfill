@@ -1,0 +1,101 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>Example using CSS Regions Polyfill</title>
+    <meta charset="UTF-8">
+    <style type="text/css">
+    
+    html, body{
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        font-family: helvetica, arial, sans-serif;
+    }
+    
+    .page{
+        position: relative;
+        width: 60%;
+        height: 600px;
+        margin: 50px auto;
+    }
+    
+    .image{
+        width: 65%;
+        height: 200px;
+        font-size: 2em;
+        color: gray;
+        background: lightgray;
+    }
+    
+    #image1{
+        float: right;
+        margin-bottom: 50px;
+    }
+    
+    #image2{
+        position: relative;
+        z-index: 2;
+        clear: both;
+        margin-top: 50px;
+        height: 400px;
+    }
+    
+    .col{
+        width: 30%;
+        height: 100%;
+        float: left;
+    }
+    
+    #col2 {
+        margin: 0 5%;
+    }
+    
+    #col2, #col3{
+        /* height = .page height - (#image1 height + #image1 margin-bottom) */
+        height: 350px;
+    }
+    
+    #content{
+        /* collect content into a named flow */
+        flow-into: myFlow;
+    }
+    
+    .region{
+        /* render content from the named flow*/
+        flow-from: myFlow;
+    }
+    
+    p{
+        font-family: Palatino, Georgia, serif;
+        text-align: justify;
+        line-height: 1.4em;
+    }
+    
+    h1{
+        margin: 0 0 1.5em;
+    }
+    
+    </style>
+    <link rel="stylesheet" href="../s/css-regions.css" data-no-css-polyfill="true" data-TODO="remove this" />
+</head>
+<body>
+    <div class="page">
+        <div class="region col" id="col1"></div>
+        <div class="image" id="image1">First image</div>
+        <div class="region col" id="col2"></div>
+        <div class="region col" id="col3"></div>
+        <div class="image" id="image2">Second image</div>
+    </div>
+
+    <div id="content">
+        <h1>Example using the CSS Regions polyfill</h1>
+        <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+        <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+        <h2>Going forward</h2>
+        <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+        <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+    </div>
+    
+    <script src="../../../bin/css-regions-polyfill.js"></script>
+</body>
+</html>

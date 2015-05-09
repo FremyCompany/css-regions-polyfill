@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+    <head>
+        <title>CSS Regions - polyfill test</title>
+        <style>
+            html { overflow-y: scroll; }
+            #region1 {
+                background: yellow; color: red;
+                max-height: 50px;
+                flow-from: page-content;
+            }
+            #region2 {
+                background: yellow; color: red;
+                max-height: 100px;
+                flow-from: page-content;
+            }
+            #region3 {
+                background: yellow; color: red;
+                max-height: 50px;
+                flow-from: page-content;
+            }
+            
+            #content { flow-into: page-content content; }
+            
+        </style>
+    </head>
+    <body>
+        <script>
+            // generate some content
+            document.write("<div id='content' style='display: none'>");
+            for(var i=10; i; i--) {
+                document.write("<p>");
+                for(var j=200; j; j--) {
+                    document.write(j+' ')
+                }
+                document.write("</p>");
+            }
+            document.write("</div>");
+        </script>
+        
+        <div id="region1"></div>
+        <hr/>
+        <div id="region2"></div>
+        <hr/>
+        <div id="region3"></div>
+        
+        <script src="../../bin/css-regions-polyfill.js"></script>
+    </body>
+</html>
