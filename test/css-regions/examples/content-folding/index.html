@@ -1,0 +1,95 @@
+<!--
+This example is a modified version of the example found originally at http://css-tricks.com/content-folding/
+-->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=600' />
+    <title>Content Folding Example</title>
+    <link rel='stylesheet' href='style.css'>
+
+    <link rel="stylesheet" href="../support.css" />
+    <script src="http://debug.test/target/target-script-min.js#anonymous"></script>
+    <script src="../../../../bin/css-regions-polyfill.js"></script>
+    <style>
+        #ad-source {
+          display: block;
+          flow-into: ads;
+        }
+
+        aside {
+            display: block;
+            flow-from: ads;
+        }
+
+        [class^='ad-region'] {
+            display: none;
+            height: 155px;
+            width: 100%; /* Weird that this is required */
+            flow-from: ads;
+        }
+    </style>
+</head>
+<body>
+
+<div class="page-wrap">
+    <section class="main-content">
+
+      <h1>Demo for Ad Folding</h1>
+
+      <article class="post" id="post-16515">
+        <h2><a href="http://css-tricks.com/poll-results-will-there-be-a-css-competitor/">Poll Results: Will There Be a CSS Competitor?</a></h2>
+        <div class="date-bubble">
+          <span>Mar</span>
+          <span>17</span>
+          <span>2012</span>
+        </div>
+        <p>In this <a href="http://css-tricks.com/new-poll-in-the-next-10-years-will-we-see-css-competitor/">last poll</a>, we asked:</p>
+        <p>In the next 10 years, will there be a serious alternative to CSS?</p>
+        <p>Of over 9,000 votes so far, the majority are of the opinion that there will not be…</p>
+      </article>
+
+      <div class="ad-region-1"></div>
+
+      <article class="post" id="post-16486">
+        <h2><a href="http://css-tricks.com/lark-queries/">How to Create Stunning Effects With 165 Media Queries or Less!</a></h2>
+        <div class="date-bubble">
+          <span>Mar</span>
+          <span>15</span>
+          <span>2012</span>
+        </div>
+        <p>One bizarre trend emerging in this new RWD era is desktop-browsing web designers resizing their browsers to watch the break-points change the layout. The average user never <em>sits</em> at their desk repetitively shrinking and expanding the browser window like a mad scientist. Yup, we’re all strange.</p>
+      </article>
+
+      <div class="ad-region-2"></div>
+
+      <article class="post" id="post-16469">
+        <h2><a href="http://css-tricks.com/downlevel-hidden-downlevel-revealed/">Downlevel Hidden / Downlevel Revealed</a></h2>
+        <div class="date-bubble">
+          <span>Mar</span>
+          <span>13</span>
+          <span>2012</span>
+        </div>
+        <p>Just gonna clear up a little thing here that I’ve seen people struggle with a few times. There are two different kinds of <a href="http://css-tricks.com/how-to-create-an-ie-only-stylesheet/">conditional comments</a> for Internet Explorer that have slightly different syntaxes: <strong>Downlevel Hidden</strong> and <strong>Downlevel Revealed</strong> (<a href="http://msdn.microsoft.com/en-us/library/ms537512(v=vs.85).aspx#dlhidden">microsoft docs</a>). …</p>
+      </article>
+
+      <div class="ad-region-3"></div>
+
+    </section>
+
+    <aside class="group">
+
+    </aside>
+
+</div>
+
+<div id="ad-source">
+  <a href="#"><img src="ads/1.jpg"></a>
+  <a href="#"><img src="ads/2.jpg"></a>
+  <a href="#"><img src="ads/3.jpg"></a>
+  <a href="#"><img src="ads/4.png"></a>
+</div>
+
+</body>
+</html>
