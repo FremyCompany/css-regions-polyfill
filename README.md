@@ -10,7 +10,7 @@ You can install the polyfill simply by adding a script reference to it on your p
 
     <script src="/cssregions.min.js"></script>
 
-Once the polyfilled is installed, you can use unprefixed css-regions in any of your `<link>` or `<style>` stylesheets accessible to your domain, even the one generated via dynamic insertion of tags via JavaScript:
+Once the polyfill is installed, you can use unprefixed css-regions in any of your `<link>` or `<style>` stylesheets accessible to your domain, even the one generated via dynamic insertion of tags via JavaScript:
 
     .content-source {
         flow-into: content-flow contents;
@@ -27,7 +27,7 @@ That's it. You're ready to go.
 
 ### Supported features
 
-The polyfill support almost all features of the latest css-regions spec. The polyfill has been tested using the W3C test suite to make sure it was actually valid in most corner cases, so that you can rely on it working properly.
+The polyfill supports almost all features of the latest css-regions spec. The polyfill has been tested using the W3C test suite to make sure it was actually valid in most corner cases, so that you can rely on it working properly.
 
 	CSS:
 		

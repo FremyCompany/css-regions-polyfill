@@ -1,0 +1,89 @@
+<!doctype html>
+<html>
+    <head>
+        <title>CSS Regions - polyfill test - events</title>
+        <style>
+            html { overflow-y: scroll; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; }
+            #region1 {
+                background: yellow; color: red;
+                max-height: 150px;
+            }
+            #region2 {
+                background: yellow; color: red;
+                max-height: 150px; width: 75%; margin: auto;
+            }
+            #region3 {
+                background: yellow; color: red;
+                max-height: 150px;
+                region-fragment: break;
+            }
+            #regions {
+                border: 10px solid red;
+            }
+            
+            div#content {
+                flow-into: page content;
+            }
+            
+            #content, body > div:first-of-type {
+                flow-into: page-content content !important;
+            }
+            
+            #region3, #regions > div {
+                flow-from: page-content;
+            }
+            
+            #region3 ~ #region1 {
+                border-top: solid black 200px;
+            }
+            
+        </style>
+    </head>
+    <body 
+        onclick="var c=document.getElementById('content'); c.appendChild(c.firstElementChild.cloneNode(true));"
+        oncontextmenu="var c=document.getElementById('regions'); c.appendChild(c.firstElementChild.cloneNode(true)); return false;">
+        
+        Open your browser console. <br/>
+        If you don't see "[REGION-FRAGMENT-CHANGE FIRED]" every time you click (left or right) on the page, this test doesn't pass.<br/>
+        <br/>
+        
+        <div id='content'>
+            <div style="background: lime; margin: 25px; padding-bottom: 75px; display: inline-block;">Some content</div>
+            <div style="background: lime; margin: 25px; padding-bottom: 75px; display: inline-block;">Some content</div>
+            <div style="background: lime; margin: 25px; padding-bottom: 75px; display: inline-block;">Some content</div>
+            <div style="background: lime; margin: 25px; padding-bottom: 75px; display: inline-block;">Some content</div>
+            <div style="background: lime; margin: 25px; padding-bottom: 75px; display: inline-block;">Some content</div>
+            <div style="background: lime; margin: 25px; padding-bottom: 75px; display: inline-block;">Some content</div>
+            <div style="background: lime; margin: 25px; padding-bottom: 75px; display: inline-block;">Some content</div>
+            <div style="background: lime; margin: 25px; padding-bottom: 75px; display: inline-block;">Some content</div>
+            <div style="background: lime; margin: 25px; padding-bottom: 75px; display: inline-block;">Some content</div>
+            <div style="background: lime; margin: 25px; padding-bottom: 75px; display: inline-block;">Some content</div>
+            <div style="background: lime; margin: 25px; padding-bottom: 75px; display: inline-block;">Some content</div>
+            <div style="background: lime; margin: 25px; padding-bottom: 75px; display: inline-block;">Some content</div>
+        </div>
+        
+        <div id="regions">
+            <div id="region1"></div>
+            <hr/>
+            <div id="region2"></div>
+            <hr/>
+            <div id="region3"></div>
+        </div>
+        
+        <script src="../../bin/css-regions-polyfill.js"></script>
+        <script>
+            
+            var f = document.getNamedFlow('page-content');
+            f.addEventListener('regionfragmentchange', function(event) {
+                
+                // validate the target of the event
+                if(event.target !== f) {debugger; return;}
+                
+                // write something in the console
+                console.log('[REGION-FRAGMENT-CHANGE FIRED]')
+                
+            });
+            
+        </script>
+    </body>
+</html>
