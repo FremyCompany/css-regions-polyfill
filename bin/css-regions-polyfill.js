@@ -1,4 +1,4 @@
-/*! CSS-REGIONS-POLYFILL - v3.0.0 - 2015-05-09 - https://github.com/FremyCompany/css-regions-polyfill - Copyright (c) 2015 François REMY; MIT-Licensed !*/
+/*! CSS-REGIONS-POLYFILL - v3.0.0 - 2015-06-20 - https://github.com/FremyCompany/css-regions-polyfill - Copyright (c) 2015 François REMY; MIT-Licensed !*/
 
 !(function() { 'use strict';
     var module = { exports:{} };
@@ -2554,7 +2554,7 @@ module.exports = (function(window, document) { "use strict";
 			if(element.currentStyle && !window.opera) {
 				
 				// ask IE to manage the style himself...
-				var bestValue = element.myStyle[cssPropertyName] || element.currentStyle[cssPropertyName];
+				var bestValue = element.myStyle[cssPropertyName] || element.currentStyle[cssPropertyName] || '';
 				
 				// return a parsed representation of the value
 				return cssSyntax.parseAListOfComponentValues(bestValue);
@@ -3078,7 +3078,7 @@ module.exports = (function(window, document) { "use strict";
 		// 
 		isReplacedElement: function isReplacedElement(element) {
 			if(!(element instanceof Element)) return false;
-			var replacedElementTags = /^(SVG|MATH|IMG|VIDEO|OBJECT|EMBED|IFRAME|TEXTAREA|BUTTON|INPUT)$/; // TODO: more
+			var replacedElementTags = /^(SVG|MATH|IMG|VIDEO|PICTURE|OBJECT|EMBED|IFRAME|TEXTAREA|BUTTON|INPUT)$/; // TODO: more
 			return replacedElementTags.test(element.tagName);
 		},
 		

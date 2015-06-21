@@ -302,7 +302,7 @@ module.exports = (function(window, document) { "use strict";
 			if(element.currentStyle && !window.opera) {
 				
 				// ask IE to manage the style himself...
-				var bestValue = element.myStyle[cssPropertyName] || element.currentStyle[cssPropertyName];
+				var bestValue = element.myStyle[cssPropertyName] || element.currentStyle[cssPropertyName] || '';
 				
 				// return a parsed representation of the value
 				return cssSyntax.parseAListOfComponentValues(bestValue);

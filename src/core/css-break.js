@@ -11,7 +11,7 @@ module.exports = (function(window, document) { "use strict";
 		// 
 		isReplacedElement: function isReplacedElement(element) {
 			if(!(element instanceof Element)) return false;
-			var replacedElementTags = /^(SVG|MATH|IMG|VIDEO|OBJECT|EMBED|IFRAME|TEXTAREA|BUTTON|INPUT)$/; // TODO: more
+			var replacedElementTags = /^(SVG|MATH|IMG|VIDEO|PICTURE|OBJECT|EMBED|IFRAME|TEXTAREA|BUTTON|INPUT)$/; // TODO: more
 			return replacedElementTags.test(element.tagName);
 		},
 		
