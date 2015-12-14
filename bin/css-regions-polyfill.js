@@ -1,4 +1,4 @@
-/*! CSS-REGIONS-POLYFILL - v3.0.0 - 2015-06-20 - https://github.com/FremyCompany/css-regions-polyfill - Copyright (c) 2015 François REMY; MIT-Licensed !*/
+/*! CSS-REGIONS-POLYFILL - v3.0.0 - 2015-12-13 - https://github.com/FremyCompany/css-regions-polyfill - Copyright (c) 2015 François REMY; MIT-Licensed !*/
 
 !(function() { 'use strict';
     var module = { exports:{} };
@@ -3969,7 +3969,7 @@ Range.prototype.myGetExtensionRect = function() {
             
         };
         
-    } else if(this.bottom==0 && this.endContainer.nodeType === 3) {
+    } else if(rect.bottom==0 && this.endContainer.nodeType === 3) {
         
         // note that if we are in a text node, 
         // we may want to cover all the previous
@@ -5980,6 +5980,10 @@ module.exports = (function(window, document) { "use strict";
 			if(tmp && (tmp=tmp.lastChild) && !tmp.tagName && tmp.nodeValue) {
 				var nodeValue = tmp.nodeValue.replace(/(\s|\r|\n)*$/,'');
 				if(nodeValue) {
+					// if the last cut was just after a &shy; (soft hyphen), we need to append a dash
+					if(/\u00AD$/.test(nodeValue)) {
+						nodeValue = nodeValue.replace(/\u00AD$/, '-');
+					}
 					tmp.nodeValue = nodeValue;
 				} else {
 					tmp.parentNode.removeChild(tmp);
