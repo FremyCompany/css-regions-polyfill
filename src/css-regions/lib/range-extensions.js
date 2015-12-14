@@ -468,7 +468,7 @@ Range.prototype.myGetExtensionRect = function() {
             
         };
         
-    } else if(this.bottom==0 && this.endContainer.nodeType === 3) {
+    } else if(rect.bottom==0 && this.endContainer.nodeType === 3) {
         
         // note that if we are in a text node, 
         // we may want to cover all the previous

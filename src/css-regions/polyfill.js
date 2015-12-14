@@ -706,6 +706,10 @@ module.exports = (function(window, document) { "use strict";
 			if(tmp && (tmp=tmp.lastChild) && !tmp.tagName && tmp.nodeValue) {
 				var nodeValue = tmp.nodeValue.replace(/(\s|\r|\n)*$/,'');
 				if(nodeValue) {
+					// if the last cut was just after a &shy; (soft hyphen), we need to append a dash
+					if(/\u00AD$/.test(nodeValue)) {
+						nodeValue = nodeValue.replace(/\u00AD$/, '-');
+					}
 					tmp.nodeValue = nodeValue;
 				} else {
 					tmp.parentNode.removeChild(tmp);
