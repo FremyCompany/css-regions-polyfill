@@ -142,7 +142,7 @@ module.exports = (function(window, document) { "use strict";
 					
 					var ee = Object.create(Object.getPrototypeOf(e));
 					ee = setUpTarget(ee,v);
-					for(key in e) {
+					for(var key in e) {
 						if(key != "target") setUpPropertyForwarding(e,ee,key);
 					}
 					return ee;
