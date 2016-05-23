@@ -1,4 +1,4 @@
-/*! CSS-REGIONS-POLYFILL - v3.0.0 - 2015-12-13 - https://github.com/FremyCompany/css-regions-polyfill - Copyright (c) 2015 François REMY; MIT-Licensed !*/
+/*! CSS-REGIONS-POLYFILL - v3.0.0 - 2016-05-22 - https://github.com/FremyCompany/css-regions-polyfill - Copyright (c) 2016 François REMY; MIT-Licensed !*/
 
 !(function() { 'use strict';
     var module = { exports:{} };
@@ -4728,13 +4728,24 @@ module.exports = (function(window, document, cssRegions) { "use strict";
 
 	cssRegions.Flow.prototype.addToContent = function(element) {
 		
+		// handle trivial cases real quick
+		var content = this.content; 
+		if(content.length==0 || content[content.length-1].nextSibling === element) {
+			content.push(element);
+			return;
+		}
+		if(content[0].previousSibling === element) {
+			content.unshift(element);
+			return;
+		}
+		
 		// walk the tree to find an element inside the content chain
-		var content = this.content;
+		var currentNodeIndex = -1;
 		var treeWalker = document.createTreeWalker(
 			document.documentElement,
 			NodeFilter.SHOW_ELEMENT,
 			function(node) { 
-				return content.indexOf(node) >= 0 ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT; 
+				return (currentNodeIndex = content.indexOf(node)) >= 0 ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP; 
 			},
 			false
 		); 
@@ -4746,7 +4757,7 @@ module.exports = (function(window, document, cssRegions) { "use strict";
 		if(treeWalker.nextNode()) {
 			
 			// insert the element at his current location
-			content.splice(content.indexOf(treeWalker.currentNode),0,element);
+			content.splice(currentNodeIndex,0,element);
 			
 		} else {
 			
