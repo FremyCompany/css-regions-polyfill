@@ -111,8 +111,9 @@ module.exports = (function(window, document) { "use strict";
 			eventStream = new DOMUpdateEventStream({target:root}); 
 			if(DOMUpdateEventStream != AnimationFrameEventStream) {
 			
+				var reg;
 				// detect the presence of focus-related pseudo-classes
-				var reg = /:(focus|active)\b/gi;
+				reg = /:(focus|active)\b/gi;
 				if(reg.test(simpleSelector)) {
 					
 					// mouse events should be listened
@@ -122,13 +123,13 @@ module.exports = (function(window, document) { "use strict";
 					);
 					
 					// simplify simpleSelector
-					var reg = /:(focus)\b/gi;
+					reg = /:(focus)\b/gi;
 					simpleSelector = simpleSelector.replace(reg, ''); // :active has other hooks
 					
 				}
 				
 				// detect the presence of mouse-button-related pseudo-classes
-				var reg = /:(active)\b/gi;
+				reg = /:(active)\b/gi;
 				if(reg.test(simpleSelector)) {
 					
 					// mouse events should be listened
@@ -143,7 +144,7 @@ module.exports = (function(window, document) { "use strict";
 				}
 
 				// detect the presence of user input pseudo-classes
-				var reg = /:(target|checked|indeterminate|valid|invalid|in-range|out-of-range|user-error)\b/gi;
+				reg = /:(target|checked|indeterminate|valid|invalid|in-range|out-of-range|user-error)\b/gi;
 				if(reg.test(simpleSelector)) {
 					
 					// slowly dynamic stuff do happen
@@ -155,14 +156,14 @@ module.exports = (function(window, document) { "use strict";
 					// simplify simpleSelector
 					simpleSelector = simpleSelector.replace(reg, '');
 
-					var reg = /:(any-link|link|visited|local-link|enabled|disabled|read-only|read-write|required|optional)\b/gi;
+					reg = /:(any-link|link|visited|local-link|enabled|disabled|read-only|read-write|required|optional)\b/gi;
 					// simplify simpleSelector
 					simpleSelector = simpleSelector.replace(reg, '');
 					
 				}
 				
 				// detect the presence of nearly-static pseudo-classes
-				var reg = /:(any-link|link|visited|local-link|enabled|disabled|read-only|read-write|required|optional)\b/gi;
+				reg = /:(any-link|link|visited|local-link|enabled|disabled|read-only|read-write|required|optional)\b/gi;
 				if(reg.test(simpleSelector)) {
 					
 					// nearly static stuff do happen
@@ -177,7 +178,7 @@ module.exports = (function(window, document) { "use strict";
 				}
 				
 				// detect the presence of mouse-related pseudo-classes
-				var reg = /:(hover)\b/gi;
+				reg = /:(hover)\b/gi;
 				if(reg.test(simpleSelector)) {
 					
 					// mouse events should be listened
