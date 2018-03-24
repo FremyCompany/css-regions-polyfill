@@ -1,4 +1,4 @@
-/*! CSS-REGIONS-POLYFILL - v3.0.0 - 2016-05-22 - https://github.com/FremyCompany/css-regions-polyfill - Copyright (c) 2016 François REMY; MIT-Licensed !*/
+/*! CSS-REGIONS-POLYFILL - v3.0.0 - 2018-03-23 - https://github.com/FremyCompany/css-regions-polyfill - Copyright (c) 2018 François REMY; MIT-Licensed !*/
 
 !(function() { 'use strict';
     var module = { exports:{} };
@@ -226,7 +226,7 @@ module.exports = (function(window, document) { "use strict";
 					
 					var ee = Object.create(Object.getPrototypeOf(e));
 					ee = setUpTarget(ee,v);
-					for(key in e) {
+					for(var key in e) {
 						if(key != "target") setUpPropertyForwarding(e,ee,key);
 					}
 					return ee;
@@ -269,6 +269,7 @@ module.exports = (function(window, document) { "use strict";
 	return domEvents;
 	
 })(window, document);
+
 require.define('src/core/dom-events.js');
 
 ////////////////////////////////////////
@@ -2316,7 +2317,7 @@ module.exports = (function(window, document) { "use strict";
 				
 			}
 			
-			if(numberOfIDs>255) numberOfIds=255;
+			if(numberOfIDs>255) numberOfIDs=255;
 			if(numberOfClasses>255) numberOfClasses=255;
 			if(numberOfTags>255) numberOfTags=255;
 			
@@ -3061,6 +3062,7 @@ module.exports = (function(window, document) { "use strict";
 	return cssCascade;
 
 })(window, document);
+
 require.define('src/core/css-cascade.js');
 
 ////////////////////////////////////////
@@ -5994,6 +5996,8 @@ module.exports = (function(window, document) { "use strict";
 					// if the last cut was just after a &shy; (soft hyphen), we need to append a dash
 					if(/\u00AD$/.test(nodeValue)) {
 						nodeValue = nodeValue.replace(/\u00AD$/, '-');
+					} else if(overflowingContent && overflowingContent.textContent[0] == '\u00AD') {
+						nodeValue = nodeValue + '-';
 					}
 					tmp.nodeValue = nodeValue;
 				} else {
@@ -6283,6 +6287,7 @@ module.exports = (function(window, document) { "use strict";
 	
 	return cssRegions;
 })(window, document);
+
 require.define('src/css-regions/polyfill.js');
 
 ////////////////////////////////////////
