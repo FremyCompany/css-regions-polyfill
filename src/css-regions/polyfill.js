@@ -709,6 +709,8 @@ module.exports = (function(window, document) { "use strict";
 					// if the last cut was just after a &shy; (soft hyphen), we need to append a dash
 					if(/\u00AD$/.test(nodeValue)) {
 						nodeValue = nodeValue.replace(/\u00AD$/, '-');
+					} else if(overflowingContent && overflowingContent.textContent[0] == '\u00AD') {
+						nodeValue = nodeValue + '-';
 					}
 					tmp.nodeValue = nodeValue;
 				} else {
