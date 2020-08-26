@@ -200,11 +200,13 @@ module.exports = (function(window, document) { "use strict";
 		// those properties are not safe for computation->specified round-tripping
 		// 
 		computationUnsafeProperties: {
+			"block-size"      : true,
 			"bottom"          : true,
 			"direction"       : true,
 			"display"         : true,
 			"font-size"       : true,
 			"height"          : true,
+			"inline-size"     : true,
 			"left"            : true,
 			"line-height"     : true,
 			"margin-left"     : true,
