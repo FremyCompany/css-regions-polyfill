@@ -1,4 +1,4 @@
-/*! CSS-REGIONS-POLYFILL - v3.0.0 - 2018-03-23 - https://github.com/FremyCompany/css-regions-polyfill - Copyright (c) 2018 François REMY; MIT-Licensed !*/
+/*! CSS-REGIONS-POLYFILL - v3.0.0 - 2020-08-26 - https://github.com/FremyCompany/css-regions-polyfill - Copyright (c) 2020 François REMY; MIT-Licensed !*/
 
 !(function() { 'use strict';
     var module = { exports:{} };
@@ -2453,11 +2453,13 @@ module.exports = (function(window, document) { "use strict";
 		// those properties are not safe for computation->specified round-tripping
 		// 
 		computationUnsafeProperties: {
+			"block-size"      : true,
 			"bottom"          : true,
 			"direction"       : true,
 			"display"         : true,
 			"font-size"       : true,
 			"height"          : true,
+			"inline-size"     : true,
 			"left"            : true,
 			"line-height"     : true,
 			"margin-left"     : true,
