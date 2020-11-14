@@ -680,7 +680,7 @@ module.exports = (function(window, document) { "use strict";
 			}
 			if(typeof(topBorderCut)==="number") {
 				allAncestors[0].removeAttribute('data-css-continued-fragment');
-				allAncestors[0].setAttribute('data-css-continued-fragment',true);
+				allAncestors[0].setAttribute('data-css-special-continued-fragment',true);
 				allAncestors[0].style.borderTopWidth = (availBorderHeight-topBorderCut)+'px';
 			}
 			if(typeof(topPaddingCut)==="number") {
