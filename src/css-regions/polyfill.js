@@ -247,9 +247,9 @@ module.exports = (function(window, document) { "use strict";
 			cssRegionsHelpers.embedTrailingWhiteSpaceNodes(region);
 			
 			// get the region layout
-			var sizingH = region.cssRegionHost.offsetHeight; // avail size (max-height)
-			var sizingW = region.cssRegionHost.offsetWidth; // avail size (max-width)
 			var pos = region.cssRegionHost.getBoundingClientRect(); // avail size?
+			var sizingH = pos.height || (pos.bottom - pos.top); // avail size (max-height)
+			var sizingW = pos.width || (pos.right - pos.left); // avail size (max-width)
 			pos = {top: pos.top, bottom: pos.bottom, left: pos.left, right: pos.right};
 			
 			// substract from the bottom any border/padding of the region
