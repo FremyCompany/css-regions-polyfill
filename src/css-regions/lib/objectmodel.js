@@ -131,11 +131,28 @@ module.exports = (function(window, document, cssRegions) { "use strict";
 		
 		// walk the tree to find an element inside the region chain
 		var regions = this.regions;
+		var regionsWithAncestors = regions.map((region) => {
+			var current = region;
+			var allAncestors=[];
+			while(current !== document.documentElement) {
+				allAncestors.push(current);
+				current = current.parentNode;
+			}
+			return allAncestors;
+		});
+		
+		var insertionIndex;
 		var treeWalker = document.createTreeWalker(
 			document.documentElement,
 			NodeFilter.SHOW_ELEMENT,
-			function(node) { 
-				return regions.indexOf(node) >= 0 ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT; 
+			function(node) {
+				for(var i = 0; i < regionsWithAncestors.length; i++) {
+					if(regionsWithAncestors[i].indexOf(node) >= 0) {
+						insertionIndex = i;
+						return NodeFilter.FILTER_ACCEPT;
+					}
+				}
+				return NodeFilter.FILTER_REJECT;
 			},
 			false
 		);
@@ -147,7 +164,7 @@ module.exports = (function(window, document, cssRegions) { "use strict";
 		if(treeWalker.nextNode()) {
 			
 			// insert the element at his current location
-			regions.splice(this.regions.indexOf(treeWalker.currentNode),0,element);
+			regions.splice(insertionIndex,0,element);
 			
 		} else {
 			
