@@ -291,8 +291,14 @@ module.exports = (function(window, document) { "use strict";
 			var fixNullRect = function() {
 				if(rect.bottom==0 && rect.top==0 && rect.left==0 && rect.right==0) {
 					
-					var scrollTop = -(document.documentElement.scrollTop || document.body.scrollTop);
-					var scrollLeft = -(document.documentElement.scrollLeft || document.body.scrollLeft);
+					var scrollTop = 0;
+					var scrollLeft = 0;
+					var element = r.startContainer;
+					while(element.parentNode !== document) {
+						element = element.parentNode;
+						scrollTop -= element.scrollTop;
+						scrollLeft -= element.scrollLeft;
+					}
 					
 					rect = {
 						width: 0,
