@@ -480,6 +480,13 @@ Range.prototype.myGetExtensionRect = function() {
             
             // if we are in the fucking whitespace land, return first line
             var prevSibRect = Node.getClientRects(this.endContainer)[0];
+
+            // In case there is no rect (e.g. when endContainer is textnode containing single newline)
+            // See issue: https://github.com/FremyCompany/css-regions-polyfill/issues/56)
+            if(!prevSibRect) { 
+                prevSibRect={top:0,right:0,bottom:0,left:0,width:0,height:0}; 
+            }
+
             return prevSibRect;
             
         } else {
