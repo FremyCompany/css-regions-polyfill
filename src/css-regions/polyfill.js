@@ -288,7 +288,7 @@ module.exports = (function(window, document) { "use strict";
 				});*/
 			}
 			
-			var fixNullRect = function() {
+			var fixNullRect = function(rect) {
 				if(rect.bottom==0 && rect.top==0 && rect.left==0 && rect.right==0) {
 					
 					var scrollTop = 0;
@@ -300,7 +300,7 @@ module.exports = (function(window, document) { "use strict";
 						scrollLeft -= element.scrollLeft;
 					}
 					
-					rect = {
+					return {
 						width: 0,
 						heigth: 0,
 						top: scrollTop,
@@ -308,6 +308,8 @@ module.exports = (function(window, document) { "use strict";
 						left: scrollLeft,
 						right: scrollLeft
 					}
+				} else {
+					return rect;
 				}
 			}
 			
@@ -336,7 +338,7 @@ module.exports = (function(window, document) { "use strict";
 			do {
 				
 				// store the current selection rect for fast access
-				var rect = r.myGetExtensionRect(); fixNullRect();
+				var rect = fixNullRect(r.myGetExtensionRect());
 				debug();
 				
 				//
@@ -351,19 +353,18 @@ module.exports = (function(window, document) { "use strict";
 					
 					// look if we can optimize by moving fast forward
 					var nextSibling = r.endContainer.childNodes[r.endOffset];
-					var nextSiblingRect = !nextSibling || Node.getBoundingClientRect(nextSibling);
+					var nextSiblingRect = !nextSibling || fixNullRect(Node.getBoundingClientRect(nextSibling));
 					if(nextSibling && nextSiblingRect.bottom<=pos.top+sizingH) {
 						
 						// if yes, move element by element
 						r.setStartAfter(nextSibling)
 						r.setEndAfter(nextSibling)
 						rect = nextSiblingRect
-						fixNullRect()
 						
 					} else {
 						
 						// otherwise, go char-by-char
-						r.myMoveTowardRight(); rect = r.myGetExtensionRect(); fixNullRect();
+						r.myMoveTowardRight(); rect = fixNullRect(r.myGetExtensionRect());
 						
 					}
 				}
@@ -375,7 +376,7 @@ module.exports = (function(window, document) { "use strict";
 				
 				// move the end point char by char until it's completely in the region
 				while(!(r.endContainer==region && r.endOffset==0) && rect.bottom>pos.top+sizingH) {
-					debug(); r.myMoveOneCharLeft(); rect = r.myGetExtensionRect(); fixNullRect();
+					debug(); r.myMoveOneCharLeft(); rect = fixNullRect(r.myGetExtensionRect());
 				}
 				
 				debug()
@@ -457,7 +458,7 @@ module.exports = (function(window, document) { "use strict";
 								var previousLineBottom = lines[lines.length-2].bottom;
 								r.setEnd(current, current.nodeValue.length);
 								while(rect.bottom>previousLineBottom) {
-									r.myMoveOneCharLeft(); rect = r.myGetExtensionRect(); fixNullRect();
+									r.myMoveOneCharLeft(); rect = fixNullRect(r.myGetExtensionRect());
 								}
 								
 								// make sure we didn't exit the text node by mistake
