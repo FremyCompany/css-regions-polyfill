@@ -137,7 +137,7 @@ module.exports = (function(window, document) { "use strict";
 									else if(element.mozMatchesSelector) isMatching=element.mozMatchesSelector(selector)
 									else if(element.webkitMatchesSelector) isMatching=element.webkitMatchesSelector(selector)
 									else { throw new Error("no element.matches?") }
-								} catch(ex) { debugger; setImmediate(function() { throw ex; }) }
+								} catch(ex) { /*debugger; setImmediate(function() { throw ex; })*/ }
 								
 								// if yes, add it to the list of matched selectors
 								if(isMatching) { results.push(subrules[sr]); }
