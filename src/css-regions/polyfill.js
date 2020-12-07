@@ -557,7 +557,7 @@ module.exports = (function(window, document) { "use strict";
 					}
 					
 				}
-			} while(current = cssRegionsHelpers.getAllLevelPreviousSibling(current, region));
+			} while(current = cssRegionsHelpers.getAllLevelPreviousSiblingOrParent(current, region));
 			
 			// we're almost done! now, let's collect the ancestors to make some splitting postprocessing
 			var current = r.endContainer; var allAncestors=[];

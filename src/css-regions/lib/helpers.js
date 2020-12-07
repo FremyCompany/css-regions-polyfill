@@ -31,6 +31,21 @@ module.exports = (function(window, document) { "use strict";
 			// return that sibling
 			return e.previousSibling;
 		},
+
+		//
+		// returns the previous sibling of the element
+		// or its parent if there are none
+		//
+		getAllLevelPreviousSiblingOrParent: function(e, region) {
+			if(!e || e==region) return null;
+
+			// if it has a previous sibling, return it
+			if (e.previousSibling) return e.previousSibling;
+			
+			// else, if it exists and is not the region, return its parent 
+			if(!e.parentNode || e.parentNode==region) return null;
+			return e.parentNode;
+		},
 		
 		//
 		// prepares the element to become a css region
