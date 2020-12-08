@@ -140,14 +140,12 @@ module.exports = (function(window, document, cssRegions) { "use strict";
 			return;
 		}
 		
-		
 		// walk the tree to find an element inside the region chain
 		var currentNodeIndex = -1;
 		var treeWalker = document.createTreeWalker(
 			document.documentElement,
 			NodeFilter.SHOW_ELEMENT,
 			function(node) {
-				console.log('Tree walking: ', node);
 				return (currentNodeIndex = regions.indexOf(node)) >= 0 ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
 			},
 			false
