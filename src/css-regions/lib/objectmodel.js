@@ -128,14 +128,27 @@ module.exports = (function(window, document, cssRegions) { "use strict";
 	};
 
 	cssRegions.Flow.prototype.addToRegions = function(element) {
+
+		// handle trivial cases real quick
+		var regions = this.regions;
+		if(regions.length==0 || regions[regions.length-1].nextSibling === element) {
+			regions.push(element);
+			return;
+		}
+		if(regions[0].previousSibling === element) {
+			regions.unshift(element);
+			return;
+		}
+		
 		
 		// walk the tree to find an element inside the region chain
-		var regions = this.regions;
+		var currentNodeIndex = -1;
 		var treeWalker = document.createTreeWalker(
 			document.documentElement,
 			NodeFilter.SHOW_ELEMENT,
-			function(node) { 
-				return regions.indexOf(node) >= 0 ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT; 
+			function(node) {
+				console.log('Tree walking: ', node);
+				return (currentNodeIndex = regions.indexOf(node)) >= 0 ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
 			},
 			false
 		);
@@ -147,8 +160,8 @@ module.exports = (function(window, document, cssRegions) { "use strict";
 		if(treeWalker.nextNode()) {
 			
 			// insert the element at his current location
-			regions.splice(this.regions.indexOf(treeWalker.currentNode),0,element);
-			
+			regions.splice(currentNodeIndex,0,element);
+
 		} else {
 			
 			// add the new element to the end of the array
