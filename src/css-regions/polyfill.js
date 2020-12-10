@@ -536,7 +536,7 @@ module.exports = (function(window, document) { "use strict";
 				
 			// now, let's try to find a break-before/break-after element before the splitting point
 			var current = r.endContainer; if(current.hasChildNodes()) { if(r.endOffset>0) { current=current.childNodes[r.endOffset-1] } };
-			var first = r.endContainer.firstChild;
+			var first = region.firstElementChild;
 			do {
 				if(current.style) {
 					
