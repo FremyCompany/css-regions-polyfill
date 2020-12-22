@@ -124,8 +124,9 @@ module.exports = (function(window, document) { "use strict";
 			}
 			
 			// check if there was an overflow or some break-before/after instruction
-			var regionDidOverflow = region.cssRegionHost.scrollHeight != region.cssRegionHost.offsetHeight;
-			var shouldSegmentContent = regionDidOverflow;
+			var regionDidOverflowVertically = region.cssRegionHost.scrollHeight != region.cssRegionHost.offsetHeight;
+			var regionDidOverflowHorizontally = region.cssRegionHost.scrollWidth != region.cssRegionHost.offsetWidth;
+			var shouldSegmentContent = regionDidOverflowVertically || regionDidOverflowHorizontally;
 			if(!shouldSegmentContent) {
 				var first = region.firstElementChild;
 				var last = region.lastElementChild;
@@ -223,8 +224,10 @@ module.exports = (function(window, document) { "use strict";
 				region.cssRegionHost.cssRegionsLastOffsetWidth = region.cssRegionHost.offsetWidth;
 				
 				// WE RETURN FALSE IF WE DIDN'T OVERFLOW
-				return callback.ondone(region.cssRegionHost.offsetHeight != region.cssRegionHost.scrollHeight);
+				var regionDidOverflowVertically = region.cssRegionHost.scrollHeight != region.cssRegionHost.offsetHeight;
+				var regionDidOverflowHorizontally = region.cssRegionHost.scrollWidth != region.cssRegionHost.offsetWidth;
 				
+				return callback.ondone(regionDidOverflowVertically || regionDidOverflowHorizontally);
 			}
 		},
 
@@ -245,6 +248,13 @@ module.exports = (function(window, document) { "use strict";
 			
 			// make sure empty nodes don't make our life more difficult
 			cssRegionsHelpers.embedTrailingWhiteSpaceNodes(region);
+
+			// because we are extracting overflow, one the the following (or both) has to be true.
+			// based on the outcome we check threshold breaches only in the overflowing dimension(s).
+			// note that this is not done to improve efficiency. it is a cheap work-around to deal with
+			// Safari keeping the original bounding box intact for elements split over multiple columns.
+			var regionDidOverflowVertically = region.cssRegionHost.scrollHeight != region.cssRegionHost.offsetHeight;
+			var regionDidOverflowHorizontally = region.cssRegionHost.scrollWidth != region.cssRegionHost.offsetWidth;
 			
 			// get the region layout
 			var pos = region.cssRegionHost.getBoundingClientRect(); // avail size?
@@ -252,10 +262,21 @@ module.exports = (function(window, document) { "use strict";
 			var sizingW = pos.width || (pos.right - pos.left); // avail size (max-width)
 			pos = {top: pos.top, bottom: pos.bottom, left: pos.left, right: pos.right};
 			
-			// substract from the bottom any border/padding of the region
-			var lostHeight = parseInt(getComputedStyle(region.cssRegionHost).paddingBottom);
-			lostHeight += parseInt(getComputedStyle(region.cssRegionHost).borderBottomWidth);
-			pos.bottom -= lostHeight; sizingH -= lostHeight;
+			var regionHostStyle = getComputedStyle(region.cssRegionHost);
+
+			if (regionDidOverflowVertically) {
+				// substract from the bottom any border/padding of the region
+				var lostHeight = parseInt(regionHostStyle.paddingBottom);
+				lostHeight += parseInt(regionHostStyle.borderBottomWidth);
+				pos.bottom -= lostHeight; sizingH -= lostHeight;
+			}
+
+			if (regionDidOverflowHorizontally) {
+				// substract from the right any border/padding of the region
+				var lostWidth = parseInt(regionHostStyle.paddingRight);
+				lostWidth += parseInt(regionHostStyle.borderRightWidth);
+				pos.right -= lostWidth; sizingW -= lostWidth;
+			}
 			
 			//
 			// note: let's use hit targeting to find a dom range
@@ -347,14 +368,24 @@ module.exports = (function(window, document) { "use strict";
 				//
 				
 				// move the end point char by char until it's completely in the region
-				while(!(r.endContainer==region && r.endOffset==r.endContainer.childNodes.length) && rect.bottom<=pos.top+sizingH) {
+				while(
+					!(r.endContainer==region && r.endOffset==r.endContainer.childNodes.length) 
+					&& (!regionDidOverflowVertically || rect.bottom<=pos.top+sizingH)
+					&& (!regionDidOverflowHorizontally || rect.right<=pos.left+sizingW)
+				) {
 					
 					debug();
 					
 					// look if we can optimize by moving fast forward
 					var nextSibling = r.endContainer.childNodes[r.endOffset];
 					var nextSiblingRect = !nextSibling || fixNullRect(Node.getBoundingClientRect(nextSibling));
-					if(nextSibling && nextSiblingRect.bottom<=pos.top+sizingH) {
+
+					// here we DO need to check both horizontal & vertical overflow, regardless of which region
+					// was previously overflowing. This is necessary to force the algorithm to look inside of
+					// elements whose bounding box is overflowing vertically in Safari.
+					// These are after all the elements that are split by the browser's multi-column algorithm
+					// and therefore might contain child elements that cause horizontal overflow.
+					if(nextSibling && nextSiblingRect.bottom<=pos.top+sizingH && nextSiblingRect.right<=pos.left+sizingW) {
 						
 						// if yes, move element by element
 						r.setStartAfter(nextSibling)
@@ -375,7 +406,10 @@ module.exports = (function(window, document) { "use strict";
 				//
 				
 				// move the end point char by char until it's completely in the region
-				while(!(r.endContainer==region && r.endOffset==0) && rect.bottom>pos.top+sizingH) {
+				while(
+					!(r.endContainer==region && r.endOffset==0)
+					&& ((regionDidOverflowVertically && rect.bottom>pos.top+sizingH) || (regionDidOverflowHorizontally && rect.right>pos.left+sizingW))
+				) {
 					debug(); r.myMoveOneCharLeft(); rect = fixNullRect(r.myGetExtensionRect());
 				}
 				
@@ -392,7 +426,11 @@ module.exports = (function(window, document) { "use strict";
 					
 					var current = r.endContainer;
 					while(current = cssRegionsHelpers.getAllLevelPreviousSibling(current, region)) {
-						if(Node.getBoundingClientRect(current).bottom > pos.top + sizingH) {
+						var currentRect = Node.getBoundingClientRect(current);
+						if(
+							(regionDidOverflowVertically && currentRect.bottom > pos.top + sizingH)
+							|| (regionDidOverflowHorizontally && currentRect.right > pos.left + sizingW)
+						) {
 							r.setStart(region,0);
 							r.setEnd(region,0);
 							optimizationFailled=true;
