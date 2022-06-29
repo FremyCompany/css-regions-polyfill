@@ -798,6 +798,10 @@ module.exports = (function(window, document) { "use strict";
 			s.setAttribute("data-css-no-polyfill", true);
 			s.textContent = CSS_STYLE;
 			var head = document.head || document.getElementsByTagName('head')[0];
+			if (!head) {
+                             head = document.createElement("head");
+                             document.documentElement.insertBefore(head, document.documentElement.firstChild);
+                        }
 			head.appendChild(s);
 			
 			// 
